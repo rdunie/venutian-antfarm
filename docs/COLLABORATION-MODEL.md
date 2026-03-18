@@ -34,6 +34,36 @@ flowchart TD
 
 ---
 
+## Worktree Isolation
+
+How agents access code depending on whether the task frontmatter specifies worktree isolation.
+
+```mermaid
+flowchart TD
+    DISPATCH["Agent Dispatched"] --> CHECK{"isolation: worktree\nin frontmatter?"}
+
+    CHECK -->|"Yes"| WORKTREE["Temp Worktree\n(assess committed code)"]
+    CHECK -->|"No"| LIVE["Live Working Tree\n(current state)"]
+
+    WORKTREE --> ASSESS["Agent reads\ncommitted state only"]
+    LIVE --> WORK["Agent reads\ncurrent working state"]
+
+    ASSESS --> DONE["Task Runs"]
+    WORK --> DONE
+
+    style DISPATCH fill:#f5f5f5,stroke:#666
+    style CHECK fill:#f5f5f5,stroke:#666
+    style WORKTREE fill:#bbdefb,stroke:#1976D2
+    style LIVE fill:#e8f5e9,stroke:#4CAF50
+    style ASSESS fill:#bbdefb,stroke:#1976D2
+    style WORK fill:#e8f5e9,stroke:#4CAF50
+    style DONE fill:#f5f5f5,stroke:#666
+```
+
+Use worktree isolation when you want a reviewer or auditor agent to assess only committed (stable) code rather than any in-flight edits. Set `isolation: worktree` in the agent task frontmatter.
+
+---
+
 ## Work Item Lifecycle
 
 How a backlog item flows through the 9-phase lifecycle.

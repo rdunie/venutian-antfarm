@@ -7,6 +7,14 @@
           {
             "type": "command",
             "command": "ops/hooks/collab-sync-check.sh"
+          },
+          {
+            "type": "command",
+            "command": "command -v prettier &>/dev/null && npx prettier --write \"$CLAUDE_FILE_PATH\" 2>/dev/null || true"
+          },
+          {
+            "type": "command",
+            "command": "echo \"$CLAUDE_FILE_PATH\" | grep -qE '\\.(ts|js|vue|jsx|tsx)$' && command -v eslint &>/dev/null && npx eslint --fix \"$CLAUDE_FILE_PATH\" 2>/dev/null || true"
           }
         ]
       },
@@ -52,7 +60,7 @@
           },
           {
             "type": "command",
-            "command": "echo '[PO] Specialist agent completed. Consider running /po review to incorporate findings into the backlog.' || true"
+            "command": "echo '[PO] Agent completed. If this was a specialist build, consider /po review. If this was a reviewer, check findings register.' || true"
           }
         ]
       }
