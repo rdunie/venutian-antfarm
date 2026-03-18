@@ -29,5 +29,27 @@
   "retro": {
     "cadence": 1,
     "note": "Number of items between retros. 1 = retro after every item."
+  },
+  "pathways": {
+    "declared": {
+      "build": [
+        "product-owner -> backend-specialist",
+        "product-owner -> frontend-specialist",
+        "backend-specialist -> security-reviewer",
+        "frontend-specialist -> e2e-test-engineer",
+        "security-reviewer -> product-owner",
+        "e2e-test-engineer -> product-owner"
+      ],
+      "review": [
+        "product-owner -> security-reviewer",
+        "product-owner -> e2e-test-engineer"
+      ],
+      "escalation": [
+        "* -> solution-architect",
+        "* -> scrum-master",
+        "* -> product-owner"
+      ]
+    },
+    "note": "Declared pathways define expected agent-to-agent communication routes. Actual pathways are inferred from handoff events. The delta between declared and actual is the signal: undeclared paths may indicate innovation or governance bypass."
   }
 }

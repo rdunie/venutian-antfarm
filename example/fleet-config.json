@@ -29,5 +29,20 @@
   "retro": {
     "cadence": 2,
     "note": "Every 2 items. Override from default of 1."
+  },
+  "pathways": {
+    "declared": {
+      "build": [
+        "product-owner -> frontend-specialist",
+        "product-owner -> backend-specialist",
+        "frontend-specialist -> product-owner",
+        "backend-specialist -> product-owner"
+      ],
+      "review": [],
+      "escalation": [
+        "* -> solution-architect",
+        "* -> scrum-master"
+      ]
+    }
   }
 }

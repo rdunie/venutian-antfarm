@@ -27,6 +27,7 @@ while [[ $# -gt 0 ]]; do
     --flow) MODE="flow"; shift ;;
     --sm)   MODE="sm";   shift ;;
     --cost) MODE="cost"; shift ;;
+    --pathways) MODE="pathways"; shift ;;
     --item) ITEM_FILTER="$2"; shift 2 ;;
     --since) SINCE="$2"; shift 2 ;;
     *) echo "Unknown flag: $1" >&2; exit 1 ;;
@@ -496,6 +497,7 @@ case "$MODE" in
   flow) flow_quality ;;
   sm)   sm_metrics ;;
   cost) cost_metrics ;;
+  pathways) exec "$SCRIPT_DIR/pathways.sh" ${SINCE:+--since "$SINCE"} ;;
   all)
     dora_metrics
     flow_quality
