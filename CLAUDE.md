@@ -47,9 +47,12 @@ ops/metrics-log.sh bug-fixed 42 --bug-id b1
 ops/metrics-log.sh handoff-sent 42 --from backend-specialist --to security-reviewer
 ops/metrics-log.sh handoff-rejected 42 --from backend-specialist --to security-reviewer --reason missing-tests
 ops/metrics-log.sh agent-invoked product-owner --tokens 45800 --turns 10 --model opus --item 42
+ops/metrics-log.sh item-rejected-at-build 42 --reason context-changed --source solution-architect
 ops/metrics-log.sh task-restarted 42 --reason insufficient-detail
+ops/metrics-log.sh task-discarded 42 --reason superseded
 ops/metrics-log.sh task-blocked 42 --reason awaiting-decision
 ops/metrics-log.sh task-unblocked 42
+ops/metrics-log.sh regression-run --iteration 3
 
 # Dashboard
 ops/dora.sh                   # full dashboard (DORA + flow quality)
@@ -70,12 +73,16 @@ Implementers replace `ops/deploy.sh` with their deployment logic. The contract: 
 
 ## Workflow
 
-1. **Clarify** -- Confirm intent before designing. Ask if ambiguous.
-2. **Plan** -- Plan before building for non-trivial tasks. Get approval first.
-3. **Research** -- Fetch docs before guessing at APIs.
-4. **TDD** -- Tests first. Write tests before implementation.
-5. **Commit often** -- Conventional commits after each passing task.
-6. **Validate** -- Full validation cycle: code, test, typecheck, build, deploy.
+1. **Track** -- When the user requests work not currently tracked, add an item to the backlog before or alongside execution. No untracked work.
+2. **Clarify** -- Confirm intent before designing. Ask if ambiguous.
+3. **Plan** -- Plan before building for non-trivial tasks. Get approval first.
+4. **Research** -- Fetch docs before guessing at APIs.
+5. **Delegate** -- Dispatch specialists for domain-specific work. Ad-hoc requests go to the backlog first.
+6. **TDD** -- Tests first. Write tests before implementation.
+7. **Commit often** -- Conventional commits after each passing task.
+8. **Validate** -- Full validation cycle: code, test, typecheck, build, deploy.
+
+Work items follow the 9-phase lifecycle defined in `.claude/COLLABORATION.md` § Work Item Lifecycle: Groom, Promote, Build, Review, Fix, Deploy, Accept, Retro, Checkpoint.
 
 ## Agent Inheritance
 

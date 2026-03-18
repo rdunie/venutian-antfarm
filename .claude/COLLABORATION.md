@@ -304,7 +304,8 @@ The fleet tracks two complementary metric groups as evidence that core principle
 | `task-discarded`         | PO or specialist          | When item is dropped                           |
 | `task-blocked`           | Blocked agent             | When waiting on a decision/dependency          |
 | `task-unblocked`         | Same agent                | When the block is resolved                     |
-| `regression-run`         | Test engineer             | After periodic regression run completes        |
+| `agent-invoked`          | Dispatching agent         | With --tokens, --turns, --model                |
+| `regression-run`         | e2e-test-engineer         | After periodic regression run completes        |
 
 All events are logged via `ops/metrics-log.sh <event> [args]`. See CLAUDE.md for full command reference.
 
@@ -381,7 +382,7 @@ The receiving agent should be able to act on the handoff without asking for clar
 
 ## Work Item Lifecycle
 
-**Ad-hoc requests become backlog items.** When the user requests work that is not currently tracked, the PO adds an item before or alongside execution. No untracked work.
+**Ad-hoc requests become backlog items.** When the user requests work that is not currently tracked in a tier file, the PO (or the agent receiving the request) adds an item to the appropriate tier file before or alongside execution. This ensures every piece of work is traceable, measurable, and reviewable. The item can be lightweight (one-line description + size estimate) for small requests, or fully groomed for larger ones. The key rule: no untracked work.
 
 Every work item flows through these phases:
 
@@ -406,6 +407,69 @@ After each item (or batch of related items), SM facilitates a team retro:
 3. Triad evaluates collectively
 4. Triad presents to user with assessment. User approves, modifies, or defers.
 5. Approved changes are applied.
+
+### Periodic Regression Testing
+
+Every 3 iterations, the fleet runs a full end-to-end regression test. This cadence and scope will be adjusted based on data -- the first run establishes the baseline, and subsequent runs inform whether to test more or less frequently and which areas to focus on.
+
+**Cadence:** Every 3 accepted iterations. SM tracks the count and triggers the regression run at the threshold.
+
+**Scope -- three validation layers:**
+
+| Layer                      | What's Tested                                                     | Who Executes      |
+| -------------------------- | ----------------------------------------------------------------- | ----------------- |
+| **Back-end validation**    | API responses, data integrity, schema correctness, seed data      | e2e-test-engineer |
+| **Front-end validation**   | UI components, rendering, state management                        | e2e-test-engineer |
+| **Browser-based UX (E2E)** | End-to-end user flows, all roles, all use cases, screenshot capture | e2e-test-engineer |
+
+**Screenshot evidence requirements:**
+
+Browser-based UX validation must capture screenshots structured for comparison across runs:
+
+```
+e2e/regression-screenshots/
+  run-<N>/                          # run number
+    <role>/                         # one per application role
+      <use-case>.png                # all use cases applicable to the role
+```
+
+Not every role sees every use case -- screenshots are captured for the use cases each role has access to per the project's permission matrix.
+
+**Baseline establishment:** The first regression run (run-1) establishes the baseline:
+
+- Expected screenshots for each role + use case combination
+- Expected API responses and data states
+- Expected automation behavior
+- This baseline is the reference point for all future regression comparisons
+
+**Fix discipline during regression testing:**
+
+- **Do NOT fix issues immediately** when discovered during regression testing. Note them and add to backlog as regression findings.
+- **Only fix roadblocks** that prevent completing significant portions of remaining testing:
+  - Environment is down
+  - Missing configurations not loaded
+  - Privileges not adjusted properly
+  - Anything that blocks testing from proceeding
+- **All other issues:** Record as regression findings with severity, affected role(s), affected use case(s), and screenshot evidence.
+- **If a roadblock fix IS needed:** Promote it through the deployment pipeline like any other change. No quick hacks. After the fix is deployed, resume testing where it left off.
+
+**Scope monitoring:**
+
+Track and evaluate after each regression run:
+
+- **Cadence tuning:** Start at every 3 iterations. If regressions are rare, extend to every 5. If regressions are frequent, tighten to every 2. SM proposes adjustments with data.
+- **Coverage tuning:** Start with full coverage. If certain areas never regress, reduce their frequency. If specific areas regress repeatedly, add deeper tests for those areas.
+- **The data drives the decisions.** No adjustment without evidence from at least 2 regression runs.
+
+**Roles:**
+
+| Agent                  | Role in Regression Testing                                                              |
+| ---------------------- | --------------------------------------------------------------------------------------- |
+| **e2e-test-engineer**  | Executes all three validation layers, captures screenshots, records findings            |
+| **infrastructure-ops** | Pre-run health check: environment state, service readiness, database connectivity       |
+| **platform-ops**       | Pre-run health check: deployment versions, env config, build state, pipeline readiness  |
+| **product-owner**      | Reviews regression findings, prioritizes fixes, adds findings to backlog                |
+| **scrum-master**       | Tracks cadence, triggers regression runs, reviews scope adjustments                     |
 
 ## Conflict Resolution
 
