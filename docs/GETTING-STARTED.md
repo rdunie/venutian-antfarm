@@ -1,3 +1,5 @@
+<img src="assets/icon.jpg" alt="Venutian Antfarm" width="80" align="right">
+
 # Getting Started with Venutian Antfarm
 
 _Part of [Venutian Antfarm](../README.md) by [RD Digital Consulting Services, LLC](https://robdunie.com/)._

@@ -1,6 +1,12 @@
-# Venutian Antfarm
+<p align="center">
+  <img src="docs/assets/banner.jpg" alt="Venutian Antfarm — Multi-Agent Fleet Governance Framework" width="600">
+</p>
 
-[![License](https://img.shields.io/badge/License-AGPL_3.0_+_Commercial-blue.svg)](LICENSE)
+<p align="center">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-AGPL_3.0_+_Commercial-blue.svg" alt="License"></a>
+</p>
+
+# Venutian Antfarm
 
 An agent fleet harness framework for structured multi-agent software delivery with progressive autonomy, evidence-based governance, and measurable quality control. Clone it, define your compliance floor, add your specialist agents, and start delivering with a governed fleet.
 

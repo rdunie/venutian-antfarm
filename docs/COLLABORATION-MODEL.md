@@ -1,3 +1,5 @@
+<img src="assets/icon.jpg" alt="Venutian Antfarm" width="80" align="right">
+
 # Agent Collaboration Model
 
 _Part of [Venutian Antfarm](../README.md) by [RD Digital Consulting Services, LLC](https://robdunie.com/)._
