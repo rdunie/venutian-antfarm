@@ -26,11 +26,13 @@ All diagrams must follow the shared color palette.
 
 | Semantic | Background | Border    | Use for                              |
 | -------- | ---------- | --------- | ------------------------------------ |
-| Green    | `#e8f5e9`  | `#4CAF50` | Completed, success, active processes |
-| Blue     | `#bbdefb`  | `#1976D2` | User-facing, actors, strategic       |
-| Orange   | `#fff3e0`  | `#F57C00` | Decisions, warnings, external        |
-| Red      | `#fce4ec`  | `#C62828` | Blocked, compliance, critical        |
-| Grey     | `#f5f5f5`  | `#666`    | Infrastructure, neutral              |
+| Green    | `#a5d6a7`  | `#2e7d32` | Completed, success, active processes |
+| Blue     | `#90caf9`  | `#1565c0` | User-facing, actors, strategic       |
+| Orange   | `#ffcc80`  | `#e65100` | Decisions, warnings, external        |
+| Red      | `#ef9a9a`  | `#b71c1c` | Blocked, compliance, critical        |
+| Grey     | `#bdbdbd`  | `#424242` | Infrastructure, neutral              |
+
+Colors are Material Design 300-level tones. Always include `color:#1a1a1a` in every style directive to force dark text, ensuring readability on both light and dark backgrounds.
 
 **Node shapes:**
 
@@ -66,11 +68,11 @@ See `.claude/COLLABORATION.md` section on DRY Documentation for the full policy.
 
 Each agent maintains documentation within its domain:
 
-| Domain        | Agent              | Key Docs                     |
-| ------------- | ------------------ | ---------------------------- |
-| Collaboration | scrum-master       | .claude/COLLABORATION.md     |
-| Architecture  | solution-architect | Architecture docs            |
-| Roadmap       | product-owner      | docs/plans/                  |
-| Agent defs    | (each agent)       | .claude/agents/              |
-| Metrics       | platform-ops       | ops/ scripts, dashboards     |
-| Doc quality   | (all agents)       | This file                    |
+| Domain        | Agent              | Key Docs                 |
+| ------------- | ------------------ | ------------------------ |
+| Collaboration | scrum-master       | .claude/COLLABORATION.md |
+| Architecture  | solution-architect | Architecture docs        |
+| Roadmap       | product-owner      | docs/plans/              |
+| Agent defs    | (each agent)       | .claude/agents/          |
+| Metrics       | platform-ops       | ops/ scripts, dashboards |
+| Doc quality   | (all agents)       | This file                |

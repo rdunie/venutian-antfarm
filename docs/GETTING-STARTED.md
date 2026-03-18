@@ -1,5 +1,7 @@
 # Getting Started with Venutian Antfarm
 
+_Part of [Venutian Antfarm](../README.md) by [RD Digital Consulting Services, LLC](https://robdunie.com/)._
+
 A step-by-step guide to setting up your agent fleet harness.
 
 ## Prerequisites
@@ -8,10 +10,30 @@ A step-by-step guide to setting up your agent fleet harness.
 - **Git** for version control
 - **jq** for metrics processing (optional but recommended)
 
+## Setup Overview
+
+```mermaid
+flowchart LR
+    S1["1. Clone"] --> S2["2. Compliance\nFloor"]
+    S2 --> S3["3. First\nSpecialist"]
+    S3 --> S4["4. Fleet\nConfig"]
+    S4 --> S5["5. First\nIteration"]
+    S5 --> S6["6. DORA\nDashboard"]
+    S6 --> S7["7. Fleet\nLearns"]
+
+    style S1 fill:#bdbdbd,stroke:#424242,color:#1a1a1a
+    style S2 fill:#ef9a9a,stroke:#b71c1c,color:#1a1a1a
+    style S3 fill:#a5d6a7,stroke:#2e7d32,color:#1a1a1a
+    style S4 fill:#ffcc80,stroke:#e65100,color:#1a1a1a
+    style S5 fill:#a5d6a7,stroke:#2e7d32,color:#1a1a1a
+    style S6 fill:#90caf9,stroke:#1565c0,color:#1a1a1a
+    style S7 fill:#a5d6a7,stroke:#2e7d32,color:#1a1a1a
+```
+
 ## Step 1: Clone the Template
 
 ```bash
-git clone https://github.com/your-org/venutian-antfarm.git my-project
+git clone https://github.com/rdunie/venutian-antfarm.git my-project
 cd my-project
 ```
 
@@ -57,6 +79,7 @@ Retro cadence: every 2 items instead of every 1.
 ```
 
 When `extends` is present:
+
 - Fields in your app agent override the same fields in the harness agent
 - Fields not mentioned in your app agent are preserved from the harness agent
 - This lets you keep the full collaboration protocol while customizing behavior
@@ -76,7 +99,7 @@ Edit `fleet-config.json`:
 
 ## Step 5: Run Your First Iteration
 
-Open Claude Code in your project directory. The 5 core agents are ready:
+Open Claude Code in your project directory. The 6 core agents are ready:
 
 1. **Start with `/po`** to see the status overview
 2. **Add a work item** to `docs/plans/` -- even a simple one like "Set up project structure"

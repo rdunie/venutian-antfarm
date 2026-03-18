@@ -21,7 +21,13 @@
     "run_threshold_fpy": 80
   },
   "agents": {
-    "core": ["product-owner", "solution-architect", "scrum-master", "memory-manager", "platform-ops"],
+    "core": [
+      "product-owner",
+      "solution-architect",
+      "scrum-master",
+      "memory-manager",
+      "platform-ops"
+    ],
     "specialists": [],
     "reviewers": [],
     "output": []

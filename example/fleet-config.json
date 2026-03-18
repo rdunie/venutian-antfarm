@@ -21,7 +21,13 @@
     "run_threshold_fpy": 80
   },
   "agents": {
-    "core": ["product-owner", "solution-architect", "scrum-master", "memory-manager", "platform-ops"],
+    "core": [
+      "product-owner",
+      "solution-architect",
+      "scrum-master",
+      "memory-manager",
+      "platform-ops"
+    ],
     "specialists": ["frontend-specialist", "backend-specialist"],
     "reviewers": [],
     "output": []
@@ -39,10 +45,7 @@
         "backend-specialist -> product-owner"
       ],
       "review": [],
-      "escalation": [
-        "* -> solution-architect",
-        "* -> scrum-master"
-      ]
+      "escalation": ["* -> solution-architect", "* -> scrum-master"]
     }
   }
 }

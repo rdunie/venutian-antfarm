@@ -35,13 +35,13 @@ Every agent manages resources responsibly. Tokens, thinking time, context window
 
 **Budget management:**
 
-| Concern                   | Owner        | How                                                                        |
-| ------------------------- | ------------ | -------------------------------------------------------------------------- |
-| Measure costs             | Platform-ops | Track spending per item/agent/model as part of fleet observability         |
-| Alert at thresholds       | Platform-ops | Push alerts to SM and user when spend approaches limits                    |
+| Concern                   | Owner        | How                                                                         |
+| ------------------------- | ------------ | --------------------------------------------------------------------------- |
+| Measure costs             | Platform-ops | Track spending per item/agent/model as part of fleet observability          |
+| Alert at thresholds       | Platform-ops | Push alerts to SM and user when spend approaches limits                     |
 | Estimate per-item budget  | SA           | During grooming, alongside size/NFRs -- cost is a non-functional constraint |
-| Decide on overruns        | SM           | Process decision: pause, shift models, or extend budget                    |
-| Set total budget envelope | User         | Business decision about overall investment                                 |
+| Decide on overruns        | SM           | Process decision: pause, shift models, or extend budget                     |
+| Set total budget envelope | User         | Business decision about overall investment                                  |
 
 ## Agent Fleet Structure
 
@@ -49,11 +49,11 @@ Every agent manages resources responsibly. Tokens, thinking time, context window
 
 Three agents ensure the fleet operates effectively across business, technical, and process dimensions:
 
-| Agent                  | Role                     | Responsibility                                                    |
-| ---------------------- | ------------------------ | ----------------------------------------------------------------- |
-| **product-owner**      | Business context mentor  | Stakeholder needs, priorities, acceptance criteria, WSJF scores   |
-| **solution-architect** | Technical context mentor | NFRs, architectural constraints, cross-system dependencies        |
-| **scrum-master**       | Process owner            | Pace control, protocol, findings reviews, conflict facilitation   |
+| Agent                  | Role                     | Responsibility                                                  |
+| ---------------------- | ------------------------ | --------------------------------------------------------------- |
+| **product-owner**      | Business context mentor  | Stakeholder needs, priorities, acceptance criteria, WSJF scores |
+| **solution-architect** | Technical context mentor | NFRs, architectural constraints, cross-system dependencies      |
+| **scrum-master**       | Process owner            | Pace control, protocol, findings reviews, conflict facilitation |
 
 The PO, SA, and SM form a **leadership triad** that collaborates closely. They are not siloed leaders of separate domains -- they work together when grooming the backlog, aligning on solution approach, and organizing work. Together they ensure the team delivers the right thing, at the right time, built the right way, through a process that works.
 
@@ -74,21 +74,23 @@ Each specialist owns a domain and is responsible for code, tests, and documentat
 
 Example specialists (see `templates/agents/` for starting points):
 
-| Agent                     | Domain           | Owns                                        |
-| ------------------------- | ---------------- | -------------------------------------------- |
-| **backend-specialist**    | Backend platform | API, data model, business logic, migrations  |
-| **frontend-specialist**   | Frontend UI      | Components, state management, CSS, tests     |
-| **e2e-test-engineer**     | Browser testing  | E2E tests, accessibility, regression testing |
-| **infrastructure-ops**    | App infra        | Deployment, containers, ops scripts          |
+| Agent                   | Domain           | Owns                                         |
+| ----------------------- | ---------------- | -------------------------------------------- |
+| **backend-specialist**  | Backend platform | API, data model, business logic, migrations  |
+| **frontend-specialist** | Frontend UI      | Components, state management, CSS, tests     |
+| **e2e-test-engineer**   | Browser testing  | E2E tests, accessibility, regression testing |
+| **infrastructure-ops**  | App infra        | Deployment, containers, ops scripts          |
 
-### Cross-Cutting Agents (Reviewers)
+### Cross-Cutting Agents (Reviewers + Operations)
 
-These agents review any specialist's output within their domain of concern:
+These agents review any specialist's output or manage cross-cutting concerns:
 
-| Agent                 | Domain            | Reviews For                                              |
-| --------------------- | ----------------- | -------------------------------------------------------- |
-| **security-reviewer** | Security posture  | Auth, secrets, access control, data protection           |
-| **memory-manager**    | Knowledge quality | Memory consistency, learning distribution, stale detection |
+| Agent                  | Domain            | Responsibility                                              |
+| ---------------------- | ----------------- | ----------------------------------------------------------- |
+| **platform-ops**       | Dev platform      | DORA metrics, CI/CD pipelines, cross-environment visibility |
+| **memory-manager**     | Knowledge quality | Memory consistency, learning distribution, stale detection  |
+| **compliance-auditor** | Compliance review | Audits work output against compliance floor during Review   |
+| **security-reviewer**  | Security posture  | Auth, secrets, access control, data protection (template)   |
 
 ### Output Agents (Content Producers)
 
@@ -102,12 +104,12 @@ The agent fleet operates at a dynamic pace that adjusts based on confidence, com
 
 ### Pace Definitions
 
-| Pace      | Autonomy Behavior                                                                             | User Engagement                                                                 | When to Use                                                                   |
-| --------- | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
-| **Crawl** | Nearly everything is "propose." Agents explain reasoning, confirm before acting.              | Frequent check-ins. Confirm approach before execution. Review outputs together. | New process, new agent, complex domain, after a significant mistake           |
-| **Walk**  | Standard three-tier autonomy. Propose for cross-domain and judgment calls.                    | Regular milestones. Review at DoD. Input on non-obvious decisions.              | Process working, agents producing reliable output, few surprises              |
-| **Run**   | Expanded autonomy. Agents chain work across items without waiting.                            | Batch oversight. Findings register is primary channel.                          | High confidence in agent judgment, findings register shows declining issues   |
-| **Fly**   | Full autonomy. Agents execute, commit, promote. Ask only when genuinely blocked.              | On-demand. Metrics-driven oversight.                                            | Proven track record, well-groomed backlog, stable process, mature memories    |
+| Pace      | Autonomy Behavior                                                                | User Engagement                                                                 | When to Use                                                                 |
+| --------- | -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| **Crawl** | Nearly everything is "propose." Agents explain reasoning, confirm before acting. | Frequent check-ins. Confirm approach before execution. Review outputs together. | New process, new agent, complex domain, after a significant mistake         |
+| **Walk**  | Standard three-tier autonomy. Propose for cross-domain and judgment calls.       | Regular milestones. Review at DoD. Input on non-obvious decisions.              | Process working, agents producing reliable output, few surprises            |
+| **Run**   | Expanded autonomy. Agents chain work across items without waiting.               | Batch oversight. Findings register is primary channel.                          | High confidence in agent judgment, findings register shows declining issues |
+| **Fly**   | Full autonomy. Agents execute, commit, promote. Ask only when genuinely blocked. | On-demand. Metrics-driven oversight.                                            | Proven track record, well-groomed backlog, stable process, mature memories  |
 
 ### Pace Rules
 
@@ -136,10 +138,10 @@ This list lives in `.claude/findings/information-needs.md` and is surfaced in `/
 
 ### Two Layers: Working State + Published View
 
-| Layer              | Tool                                | What Lives Here                                                  |
-| ------------------ | ----------------------------------- | ---------------------------------------------------------------- |
-| **Working state**  | Task system (ephemeral)             | Findings, handoffs, WIP status, impediments, coordination noise  |
-| **Published view** | Files (version-controlled)          | User-facing progress, documented decisions, roadmap, governance  |
+| Layer              | Tool                       | What Lives Here                                                 |
+| ------------------ | -------------------------- | --------------------------------------------------------------- |
+| **Working state**  | Task system (ephemeral)    | Findings, handoffs, WIP status, impediments, coordination noise |
+| **Published view** | Files (version-controlled) | User-facing progress, documented decisions, roadmap, governance |
 
 **Principle:** Tasks are the live working state. Files are the published, user-facing record.
 
@@ -233,12 +235,12 @@ A finding is "notable" when it involves: surprise, pattern, boundary tension, le
 
 ### Findings Urgency
 
-| Urgency      | Meaning                                 | Action                                                    |
-| ------------ | --------------------------------------- | --------------------------------------------------------- |
-| **Critical** | Compliance floor violation, data breach | Escalate immediately. Stop work.                          |
-| **High**     | Significant rework, architectural issue | Surface in next status check.                             |
-| **Normal**   | Boundary tension, pattern observed      | Accumulate in register. Review periodically.              |
-| **Low**      | Minor improvement, success to replicate | Review when convenient.                                   |
+| Urgency      | Meaning                                 | Action                                       |
+| ------------ | --------------------------------------- | -------------------------------------------- |
+| **Critical** | Compliance floor violation, data breach | Escalate immediately. Stop work.             |
+| **High**     | Significant rework, architectural issue | Surface in next status check.                |
+| **Normal**   | Boundary tension, pattern observed      | Accumulate in register. Review periodically. |
+| **Low**      | Minor improvement, success to replicate | Review when convenient.                      |
 
 ### 8. No Bugs Left Behind
 
@@ -299,22 +301,22 @@ The fleet tracks two complementary metric groups as evidence that core principle
 
 **Who logs what (every agent must follow this):**
 
-| Event                    | Who logs it               | When                                          |
-| ------------------------ | ------------------------- | --------------------------------------------- |
-| `item-promoted`          | PO                        | Item promoted to active work                   |
-| `item-accepted`          | PO                        | Item passes DoD                                |
-| `ext-deployed`           | Building specialist       | After each deploy (include --type and --env)   |
-| `bug-found`              | Whoever discovers         | With --severity and --source                   |
-| `bug-fixed`              | Whoever fixes             | With --bug-id from bug-found stdout            |
-| `handoff-sent`           | Sending agent             | Before handing off to next agent               |
-| `handoff-rejected`       | Receiving agent           | When sending work back                         |
+| Event                    | Who logs it               | When                                            |
+| ------------------------ | ------------------------- | ----------------------------------------------- |
+| `item-promoted`          | PO                        | Item promoted to active work                    |
+| `item-accepted`          | PO                        | Item passes DoD                                 |
+| `ext-deployed`           | Building specialist       | After each deploy (include --type and --env)    |
+| `bug-found`              | Whoever discovers         | With --severity and --source                    |
+| `bug-fixed`              | Whoever fixes             | With --bug-id from bug-found stdout             |
+| `handoff-sent`           | Sending agent             | Before handing off to next agent                |
+| `handoff-rejected`       | Receiving agent           | When sending work back                          |
 | `item-rejected-at-build` | Building specialist or PO | When a promoted item is rejected at build start |
-| `task-restarted`         | Building specialist       | When scrapping approach mid-execution          |
-| `task-discarded`         | PO or specialist          | When item is dropped                           |
-| `task-blocked`           | Blocked agent             | When waiting on a decision/dependency          |
-| `task-unblocked`         | Same agent                | When the block is resolved                     |
-| `agent-invoked`          | Dispatching agent         | With --tokens, --turns, --model                |
-| `regression-run`         | e2e-test-engineer         | After periodic regression run completes        |
+| `task-restarted`         | Building specialist       | When scrapping approach mid-execution           |
+| `task-discarded`         | PO or specialist          | When item is dropped                            |
+| `task-blocked`           | Blocked agent             | When waiting on a decision/dependency           |
+| `task-unblocked`         | Same agent                | When the block is resolved                      |
+| `agent-invoked`          | Dispatching agent         | With --tokens, --turns, --model                 |
+| `regression-run`         | e2e-test-engineer         | After periodic regression run completes         |
 
 All events are logged via `ops/metrics-log.sh <event> [args]`. See CLAUDE.md for full command reference.
 
@@ -322,11 +324,11 @@ All events are logged via `ops/metrics-log.sh <event> [args]`. See CLAUDE.md for
 
 All agents operate with three-tier autonomy:
 
-| Tier           | Behavior                     | Examples                                                                   |
-| -------------- | ---------------------------- | -------------------------------------------------------------------------- |
-| **Autonomous** | Act, inform after            | Reading code, running tests, writing within own domain, diagnosing issues  |
-| **Propose**    | Recommend, wait for approval | Cross-domain changes, priority changes, new dependencies, architecture     |
-| **Escalate**   | Surface, user decides        | Compliance implications, strategic decisions, destructive operations       |
+| Tier           | Behavior                     | Examples                                                                  |
+| -------------- | ---------------------------- | ------------------------------------------------------------------------- |
+| **Autonomous** | Act, inform after            | Reading code, running tests, writing within own domain, diagnosing issues |
+| **Propose**    | Recommend, wait for approval | Cross-domain changes, priority changes, new dependencies, architecture    |
+| **Escalate**   | Surface, user decides        | Compliance implications, strategic decisions, destructive operations      |
 
 **Default when uncertain: Propose.** It is always safer to ask than to act when the right tier is ambiguous.
 
@@ -336,19 +338,19 @@ All agents operate with three-tier autonomy:
 
 Use the cheapest model that can do the job well. Not every task needs the most capable model.
 
-| Task Type        | Model Tier              | When to Use                                                        |
-| ---------------- | ----------------------- | ------------------------------------------------------------------ |
-| **Judgment**     | Expensive (e.g., Opus)  | Grooming, prioritization, review, architecture, tradeoff analysis  |
-| **Coordination** | Mid-tier (e.g., Sonnet) | Status dashboards, health checks, template expansion, reporting    |
-| **Routine**      | Cheap (e.g., Haiku)     | File checks, validation, line counts, index verification           |
+| Task Type        | Model Tier              | When to Use                                                       |
+| ---------------- | ----------------------- | ----------------------------------------------------------------- |
+| **Judgment**     | Expensive (e.g., Opus)  | Grooming, prioritization, review, architecture, tradeoff analysis |
+| **Coordination** | Mid-tier (e.g., Sonnet) | Status dashboards, health checks, template expansion, reporting   |
+| **Routine**      | Cheap (e.g., Haiku)     | File checks, validation, line counts, index verification          |
 
 ### Thinking-Time Caps
 
-| Task Type        | Model Tier | Thinking Budget  | Rationale                                        |
-| ---------------- | ---------- | ---------------- | ------------------------------------------------ |
-| **Judgment**     | Expensive  | Medium (default) | Deep enough for tradeoffs, bounded               |
-| **Coordination** | Mid-tier   | Low              | Structured reporting, no extended reasoning      |
-| **Routine**      | Cheap      | None (disabled)  | Mechanical checks, no reasoning needed           |
+| Task Type        | Model Tier | Thinking Budget  | Rationale                                   |
+| ---------------- | ---------- | ---------------- | ------------------------------------------- |
+| **Judgment**     | Expensive  | Medium (default) | Deep enough for tradeoffs, bounded          |
+| **Coordination** | Mid-tier   | Low              | Structured reporting, no extended reasoning |
+| **Routine**      | Cheap      | None (disabled)  | Mechanical checks, no reasoning needed      |
 
 If an agent hits the thinking ceiling and needs more, that is a finding: either the task was mis-classified or the context needs enriching.
 
@@ -395,17 +397,17 @@ The receiving agent should be able to act on the handoff without asking for clar
 
 Every work item flows through these phases:
 
-| Phase             | What Happens                                                                      | Who Leads                            |
-| ----------------- | --------------------------------------------------------------------------------- | ------------------------------------ |
-| **1. Groom**      | Triad collaborates: AC, WSJF, NFRs, dependencies                                 | PO leads, SA + SM contribute         |
-| **2. Promote**    | Expand to full work item with story, AC, NFRs. Log `item-promoted`.               | PO                                   |
+| Phase             | What Happens                                                                                                                                                                                                                                                                                                                      | Who Leads                            |
+| ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------ |
+| **1. Groom**      | Triad collaborates: AC, WSJF, NFRs, dependencies                                                                                                                                                                                                                                                                                  | PO leads, SA + SM contribute         |
+| **2. Promote**    | Expand to full work item with story, AC, NFRs. Log `item-promoted`.                                                                                                                                                                                                                                                               | PO                                   |
 | **3. Build**      | **Re-evaluate first:** verify the item's premise still holds against current code, context, and needs. If no longer needed, log `item-rejected-at-build` with `--reason` (context-changed, flawed-suggestion, superseded, duplicate) and `--source` (originating agent). Then execute with TDD. Full validation cycle end-to-end. | PO orchestrates, specialists execute |
-| **4. Review**     | PO verifies AC. Selective specialist reviews dispatched. DoD gate.                | PO dispatches, specialists review    |
-| **5. Fix**        | Address review findings.                                                          | Domain owners                        |
-| **6. Deploy**     | Deploy to target environment. Run validation suite.                               | Platform-ops orchestrates            |
-| **7. Accept**     | All DoD criteria pass. Item moves to Done. Log `item-accepted`.                   | PO                                   |
-| **8. Retro**      | All participants reflect (keep/change/try). SM facilitates.                       | SM facilitates, triad evaluates      |
-| **9. Checkpoint** | SM assesses process health. Pace evaluation. Apply retro outcomes.                | SM                                   |
+| **4. Review**     | PO verifies AC. Selective specialist reviews dispatched. DoD gate.                                                                                                                                                                                                                                                                | PO dispatches, specialists review    |
+| **5. Fix**        | Address review findings.                                                                                                                                                                                                                                                                                                          | Domain owners                        |
+| **6. Deploy**     | Deploy to target environment. Run validation suite.                                                                                                                                                                                                                                                                               | Platform-ops orchestrates            |
+| **7. Accept**     | All DoD criteria pass. Item moves to Done. Log `item-accepted`.                                                                                                                                                                                                                                                                   | PO                                   |
+| **8. Retro**      | All participants reflect (keep/change/try). SM facilitates.                                                                                                                                                                                                                                                                       | SM facilitates, triad evaluates      |
+| **9. Checkpoint** | SM assesses process health. Pace evaluation. Apply retro outcomes.                                                                                                                                                                                                                                                                | SM                                   |
 
 ### Team Retrospective (Phase 8)
 
@@ -425,10 +427,10 @@ Every 3 iterations, the fleet runs a full end-to-end regression test. This caden
 
 **Scope -- three validation layers:**
 
-| Layer                      | What's Tested                                                     | Who Executes      |
-| -------------------------- | ----------------------------------------------------------------- | ----------------- |
-| **Back-end validation**    | API responses, data integrity, schema correctness, seed data      | e2e-test-engineer |
-| **Front-end validation**   | UI components, rendering, state management                        | e2e-test-engineer |
+| Layer                      | What's Tested                                                       | Who Executes      |
+| -------------------------- | ------------------------------------------------------------------- | ----------------- |
+| **Back-end validation**    | API responses, data integrity, schema correctness, seed data        | e2e-test-engineer |
+| **Front-end validation**   | UI components, rendering, state management                          | e2e-test-engineer |
 | **Browser-based UX (E2E)** | End-to-end user flows, all roles, all use cases, screenshot capture | e2e-test-engineer |
 
 **Screenshot evidence requirements:**
@@ -472,13 +474,13 @@ Track and evaluate after each regression run:
 
 **Roles:**
 
-| Agent                  | Role in Regression Testing                                                              |
-| ---------------------- | --------------------------------------------------------------------------------------- |
-| **e2e-test-engineer**  | Executes all three validation layers, captures screenshots, records findings            |
-| **infrastructure-ops** | Pre-run health check: environment state, service readiness, database connectivity       |
-| **platform-ops**       | Pre-run health check: deployment versions, env config, build state, pipeline readiness  |
-| **product-owner**      | Reviews regression findings, prioritizes fixes, adds findings to backlog                |
-| **scrum-master**       | Tracks cadence, triggers regression runs, reviews scope adjustments                     |
+| Agent                  | Role in Regression Testing                                                             |
+| ---------------------- | -------------------------------------------------------------------------------------- |
+| **e2e-test-engineer**  | Executes all three validation layers, captures screenshots, records findings           |
+| **infrastructure-ops** | Pre-run health check: environment state, service readiness, database connectivity      |
+| **platform-ops**       | Pre-run health check: deployment versions, env config, build state, pipeline readiness |
+| **product-owner**      | Reviews regression findings, prioritizes fixes, adds findings to backlog               |
+| **scrum-master**       | Tracks cadence, triggers regression runs, reviews scope adjustments                    |
 
 ### Milestone Release Dispatch
 
@@ -547,10 +549,10 @@ Any agent may suggest improvements. Use this format:
 
 The memory system has two layers with distinct ownership and lifecycle:
 
-| Layer | Path | Contains | Updated By | When |
-|-------|------|----------|------------|------|
+| Layer        | Path              | Contains                                                                                   | Updated By                          | When                         |
+| ------------ | ----------------- | ------------------------------------------------------------------------------------------ | ----------------------------------- | ---------------------------- |
 | **harness/** | `memory/harness/` | Framework learnings: collaboration protocol patterns, tool usage, generic process insights | memory-manager (on harness upgrade) | Harness version changes only |
-| **app/** | `memory/app/` | Domain learnings: project-specific patterns, decisions, gotchas, environment quirks | Any agent during work | Continuously during sessions |
+| **app/**     | `memory/app/`     | Domain learnings: project-specific patterns, decisions, gotchas, environment quirks        | Any agent during work               | Continuously during sessions |
 
 ### Rules
 
@@ -561,13 +563,13 @@ The memory system has two layers with distinct ownership and lifecycle:
 
 ## Escalation Rules
 
-| Escalation Type        | First Try                   | If Unresolved |
-| ---------------------- | --------------------------- | ------------- |
-| Technical disagreement | SA mediates                 | User decides  |
-| Priority disagreement  | PO decides                  | User decides  |
-| Process disagreement   | SM mediates                 | User decides  |
-| Compliance concern     | Compliance floor (always)   | --            |
-| Cross-domain conflict  | SA + PO jointly             | User decides  |
+| Escalation Type        | First Try                 | If Unresolved |
+| ---------------------- | ------------------------- | ------------- |
+| Technical disagreement | SA mediates               | User decides  |
+| Priority disagreement  | PO decides                | User decides  |
+| Process disagreement   | SM mediates               | User decides  |
+| Compliance concern     | Compliance floor (always) | --            |
+| Cross-domain conflict  | SA + PO jointly           | User decides  |
 
 ## Protocol Success Criteria
 
@@ -585,11 +587,11 @@ If these metrics move in the wrong direction, that is a finding -- and a signal 
 
 ## Deferred Concerns (Monitor List)
 
-| #   | Concern                                              | Trigger to Address                                                 | Owner              |
-| --- | ---------------------------------------------------- | ------------------------------------------------------------------ | ------------------- |
-| 1   | No formal ADR (Architecture Decision Record) process | When architectural decisions accumulate and rationale gets lost     | solution-architect |
-| 2   | No agent health metrics (rework rate, handoff clarity)| After 10-20 items flow through the system                          | scrum-master       |
-| 3   | COLLABORATION.md length approaching readability limit| When file exceeds ~300 lines or agents show confusion              | scrum-master       |
-| 4   | Strategic agent cost at Run/Fly pace                 | When expensive model usage exceeds 40% of dispatches               | platform-ops       |
+| #   | Concern                                                | Trigger to Address                                              | Owner              |
+| --- | ------------------------------------------------------ | --------------------------------------------------------------- | ------------------ |
+| 1   | No formal ADR (Architecture Decision Record) process   | When architectural decisions accumulate and rationale gets lost | solution-architect |
+| 2   | No agent health metrics (rework rate, handoff clarity) | After 10-20 items flow through the system                       | scrum-master       |
+| 3   | COLLABORATION.md length approaching readability limit  | When file exceeds ~300 lines or agents show confusion           | scrum-master       |
+| 4   | Strategic agent cost at Run/Fly pace                   | When expensive model usage exceeds 40% of dispatches            | platform-ops       |
 
 Any agent or the user can propose addressing a deferred concern at any time.

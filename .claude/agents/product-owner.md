@@ -94,12 +94,14 @@ Backlog -> Ready -> In Progress -> Review -> Done
 ## Autonomy Configuration
 
 **Autonomous** (act, inform after):
+
 - Adding missing AC to existing items
 - Calculating/updating WSJF scores
 - Flagging items that fail DoR
 - Dispatching existing specialist agents for domain review
 
 **Propose and confirm** (recommend, wait for approval):
+
 - Promoting items to active work
 - Reordering priority within a tier
 - Rejecting completed work
@@ -107,6 +109,7 @@ Backlog -> Ready -> In Progress -> Review -> Done
 - Recommending creation of new specialist agents
 
 **Escalate** (surface, user owns):
+
 - Moving items between tiers
 - Removing/deferring items entirely
 - Scope changes to in-progress work

@@ -1,5 +1,7 @@
 # The Governed Agent Fleet Pattern
 
+_Part of [Venutian Antfarm](../README.md) by [RD Digital Consulting Services, LLC](https://robdunie.com/)._
+
 A reusable architecture for multi-agent software delivery with progressive autonomy, structured governance, and evidence-based quality control.
 
 **Origin:** Extracted from a production 16-agent fleet delivering a compliance-sensitive case management platform (PII-handling, legal domain, zero-knowledge data architecture, self-hosted Kubernetes). The pattern separates domain-specific implementation from generalizable fleet architecture.
@@ -204,7 +206,7 @@ Two complementary metric groups provide evidence for pace decisions and process 
 
 ### 7. Work Item Lifecycle
 
-Every work item flows through 8 phases:
+Every work item flows through 9 phases:
 
 | Phase             | What Happens                                                        | Who Leads      |
 | ----------------- | ------------------------------------------------------------------- | -------------- |
@@ -213,9 +215,10 @@ Every work item flows through 8 phases:
 | **3. Build**      | Specialists execute with TDD. Owner validates end-to-end.           | Specialists    |
 | **4. Review**     | PO verifies AC. Selective specialist reviews dispatched.            | PO dispatches  |
 | **5. Fix**        | Address review findings                                             | Domain owners  |
-| **6. Accept**     | All criteria pass. Item complete.                                   | PO             |
-| **7. Retro**      | All participants reflect. Keep/change/try.                          | SM facilitates |
-| **8. Checkpoint** | Process health assessment. Pace evaluation.                         | SM             |
+| **6. Deploy**     | Deploy to target environment. Run validation suite.                 | Platform-ops   |
+| **7. Accept**     | All criteria pass. Item complete.                                   | PO             |
+| **8. Retro**      | All participants reflect. Keep/change/try.                          | SM facilitates |
+| **9. Checkpoint** | Process health assessment. Pace evaluation.                         | SM             |
 
 **The build phase principle: shift-left validation.** The agent doing the work owns the full cycle: code, test, typecheck, build, deploy, UX validate. Handoffs happen at expertise boundaries (security review, architecture decisions), not at validation boundaries ("someone else should test this").
 
@@ -246,14 +249,14 @@ Map your technical domains to execution agents. Each agent should own a clear do
 
 Example mappings:
 
-| Domain           | Harness Template              | Your Equivalent                            |
-| ---------------- | ----------------------------- | ------------------------------------------ |
-| Backend platform | backend-specialist            | django-expert, rails-specialist            |
-| Data pipelines   | (create your own)             | airflow-engineer, kafka-specialist         |
-| Frontend UI      | frontend-specialist           | react-engineer, flutter-specialist         |
-| E2E testing      | e2e-test-engineer             | cypress-engineer, playwright-specialist    |
-| Infrastructure   | infrastructure-ops            | terraform-engineer, helm-specialist        |
-| Platform/CI      | platform-ops (included)       | github-actions-engineer, devops-specialist |
+| Domain           | Harness Template        | Your Equivalent                            |
+| ---------------- | ----------------------- | ------------------------------------------ |
+| Backend platform | backend-specialist      | django-expert, rails-specialist            |
+| Data pipelines   | (create your own)       | airflow-engineer, kafka-specialist         |
+| Frontend UI      | frontend-specialist     | react-engineer, flutter-specialist         |
+| E2E testing      | e2e-test-engineer       | cypress-engineer, playwright-specialist    |
+| Infrastructure   | infrastructure-ops      | terraform-engineer, helm-specialist        |
+| Platform/CI      | platform-ops (included) | github-actions-engineer, devops-specialist |
 
 **Sizing guidance:** Start with 3-5 execution agents covering your core domains. Add review agents as your compliance needs demand. The triad (PO, SA, SM) is constant regardless of fleet size.
 
@@ -297,16 +300,16 @@ This pattern was originally developed for a self-hosted platform with strict com
 
 Key domain-specific elements from the original deployment:
 
-| Pattern Element | Implementation |
-|---|---|
-| Compliance floor | Data isolation (operational and identity databases separated), row-level access control, content filtering on free-text fields, secrets managed via vault |
-| Execution agents (6) | Backend specialist, pipeline engineer, frontend specialist, E2E test engineer, infrastructure ops, platform/CI ops |
-| Review agents (4) | Security reviewer, data compliance auditor, governance/audit compliance, knowledge/memory manager |
-| Output agents (3) | Documentation quality validator, training content producer, stakeholder video producer |
+| Pattern Element       | Implementation                                                                                                                                                                                  |
+| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Compliance floor      | Data isolation (operational and identity databases separated), row-level access control, content filtering on free-text fields, secrets managed via vault                                       |
+| Execution agents (6)  | Backend specialist, pipeline engineer, frontend specialist, E2E test engineer, infrastructure ops, platform/CI ops                                                                              |
+| Review agents (4)     | Security reviewer, data compliance auditor, governance/audit compliance, knowledge/memory manager                                                                                               |
+| Output agents (3)     | Documentation quality validator, training content producer, stakeholder video producer                                                                                                          |
 | Enforcement hooks (8) | Sensitive data blocker, secrets file blocker, auto-formatter, collaboration doc drift detector, commit-type detector, compact context injector, agent completion logger, session status display |
-| Metrics | 15 event types via CLI helper, DORA + flow quality dashboard |
-| Governance docs | 4-document governance suite with PDF generation, risk registry, role matrix |
-| Tech stack | Headless CMS, SPA framework, workflow engine, PostgreSQL, Vault, Kubernetes |
+| Metrics               | 15 event types via CLI helper, DORA + flow quality dashboard                                                                                                                                    |
+| Governance docs       | 4-document governance suite with PDF generation, risk registry, role matrix                                                                                                                     |
+| Tech stack            | Headless CMS, SPA framework, workflow engine, PostgreSQL, Vault, Kubernetes                                                                                                                     |
 
 **Fleet size rationale:** 16 agents emerged from the domain, not from a target number. Each agent was added when a specialist domain became large enough that generalist agents made recurring mistakes in it. The initial fleet was 5 agents (PO, SA, SM, backend specialist, infrastructure ops). Review and output agents were added as compliance requirements crystallized.
 
@@ -333,9 +336,11 @@ The pattern sacrifices portability for governance depth. This is the right trade
 
 - `.claude/COLLABORATION.md` -- Full collaboration protocol (source of truth)
 - `docs/COLLABORATION-MODEL.md` -- Visual collaboration model with Mermaid diagrams
-- `.claude/agents/` -- Core agent definitions (5 files)
+- `.claude/agents/` -- Core agent definitions (6 files)
 - `.claude/settings.json` -- Hook configuration
+- `.mcp.json` -- Team-shared MCP server configuration
 - `ops/metrics-log.sh` -- Event logging CLI (pluggable backend)
 - `ops/dora.sh` -- DORA + flow quality metrics dashboard
+- `ops/pathways.sh` -- Agent communication pathway analysis
 - `templates/` -- Templates for specialist agents, compliance floor, fleet config
 - `example/` -- Working example with 2 specialist agents

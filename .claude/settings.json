@@ -15,6 +15,10 @@
           {
             "type": "command",
             "command": "echo \"$CLAUDE_FILE_PATH\" | grep -qE '\\.(ts|js|vue|jsx|tsx)$' && command -v eslint &>/dev/null && npx eslint --fix \"$CLAUDE_FILE_PATH\" 2>/dev/null || true"
+          },
+          {
+            "type": "command",
+            "command": "echo \"$CLAUDE_FILE_PATH\" | grep -qE '\\.sh$' && bash -n \"$CLAUDE_FILE_PATH\" 2>&1 || true"
           }
         ]
       },
@@ -35,6 +39,15 @@
           {
             "type": "command",
             "command": "echo \"$CLAUDE_FILE_PATH\" | grep -qE '(\\.env|package-lock\\.json|pnpm-lock\\.yaml|secrets?\\.yaml)$' && echo 'BLOCKED: Cannot edit sensitive or lock file' && exit 2 || exit 0"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo \"$CLAUDE_TOOL_INPUT\" | grep -q 'events.jsonl' && echo 'BLOCKED: Use ops/metrics-log.sh instead of writing events.jsonl directly' && exit 2 || exit 0"
           }
         ]
       }
@@ -79,5 +92,11 @@
   "statusLine": {
     "type": "command",
     "command": "PACE=$(grep -oP '(?<=Current Pace: \\*\\*)[^*]+' .claude/COLLABORATION.md 2>/dev/null || echo 'unknown'); BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo '?'); WT=''; git rev-parse --is-inside-work-tree &>/dev/null && [ \"$(git rev-parse --show-toplevel 2>/dev/null)\" != \"$(git worktree list --porcelain 2>/dev/null | head -1 | sed 's/worktree //')\" ] && WT=' [worktree]'; echo \"$BRANCH$WT | Pace: $PACE | /po for status\""
+  },
+  "enabledPlugins": {
+    "compound-engineering@compound-engineering-plugin": false,
+    "circleback@claude-plugins-official": false,
+    "huggingface-skills@claude-plugins-official": true,
+    "context7@claude-plugins-official": true
   }
 }

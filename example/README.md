@@ -31,6 +31,6 @@ example/
 cp -r example/ my-ecommerce-project/
 cd my-ecommerce-project/
 
-# The 5 core agents + 2 specialists are ready
+# The 6 core agents + 2 specialists are ready
 # Open Claude Code and start with /po
 ```

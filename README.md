@@ -1,6 +1,6 @@
 # Venutian Antfarm
 
-[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![License](https://img.shields.io/badge/License-AGPL_3.0_+_Commercial-blue.svg)](LICENSE)
 
 An agent fleet harness framework for structured multi-agent software delivery with progressive autonomy, evidence-based governance, and measurable quality control. Clone it, define your compliance floor, add your specialist agents, and start delivering with a governed fleet.
 
@@ -8,7 +8,7 @@ An agent fleet harness framework for structured multi-agent software delivery wi
 
 ```bash
 # 1. Clone the template
-git clone https://github.com/your-org/venutian-antfarm.git my-project
+git clone https://github.com/rdunie/venutian-antfarm.git my-project
 cd my-project
 
 # 2. Define your compliance floor
@@ -25,57 +25,52 @@ cp templates/fleet-config.json fleet-config.json
 # Edit fleet-config.json (metrics backend, deploy command, etc.)
 
 # 5. Start working
-# Open Claude Code in your project directory. The 5 core agents
+# Open Claude Code in your project directory. The 6 core agents
 # (product-owner, solution-architect, scrum-master, memory-manager,
-# platform-ops) are ready. Your specialists extend them.
+# platform-ops, compliance-auditor) are ready. Your specialists extend them.
 ```
 
 ## Architecture
 
-```
-                    +------------------+
-                    |  Human Operator  |
-                    +--------+---------+
-                             |
-                    evidence-based oversight
-                             |
-              +--------------+--------------+
-              |     Leadership Triad        |
-              |  PO  +  SA  +  SM           |
-              |  (value) (tech) (process)   |
-              +--------------+--------------+
-                     |               |
-              context/coaching    risk signals
-                     |               |
-         +-----------+---+   +------+--------+
-         | Execution     |   | Review        |
-         | Specialists   |<->| Agents        |
-         | (build)       |   | (validate)    |
-         +-------+-------+   +------+--------+
-                 |                    |
-          +------+------+            |
-          | Output      |<-----------+
-          | Agents      | corrections/accuracy review
-          | (publish)   +----------->+
-          +-------------+  content for review
+```mermaid
+flowchart TD
+    USER(["Human Operator"])
 
-  Harness Layer (this framework):
-    - Leadership triad (PO, SA, SM)
-    - Memory manager, Platform ops
-    - Collaboration protocol, pace control
-    - Metrics pipeline (DORA + flow quality)
-    - Enforcement hooks
+    subgraph Harness ["Harness Layer (this framework)"]
+        S(["Strategic\nPO  SA  SM"])
+        MM["Memory Manager"]
+        PO_OPS["Platform Ops"]
+        CA["Compliance Auditor"]
+    end
 
-  App Layer (you define):
-    - Specialist agents (extends harness agents)
-    - Compliance floor (your domain rules)
-    - Deploy contract (your deployment logic)
-    - Domain-specific review agents
+    subgraph AppLayer ["App Layer (you define)"]
+        E(["Execution\nSpecialists"])
+        R(["Review\nAgents"])
+        O(["Output\nAgents"])
+    end
+
+    USER -->|"evidence-based\noversight"| S
+    S -->|"context +\ncoaching"| E
+    S -.->|"arch/process"| R
+    E -->|"work"| R
+    R -.->|"findings"| E
+    R -.->|"risk signals"| S
+    E -->|"milestone"| O
+    R -.->|"corrections"| O
+
+    style USER fill:#90caf9,stroke:#1565c0,color:#1a1a1a
+    style S fill:#90caf9,stroke:#1565c0,color:#1a1a1a
+    style MM fill:#90caf9,stroke:#1565c0,color:#1a1a1a
+    style PO_OPS fill:#90caf9,stroke:#1565c0,color:#1a1a1a
+    style CA fill:#ef9a9a,stroke:#b71c1c,color:#1a1a1a
+    style E fill:#a5d6a7,stroke:#2e7d32,color:#1a1a1a
+    style R fill:#ef9a9a,stroke:#b71c1c,color:#1a1a1a
+    style O fill:#ffcc80,stroke:#e65100,color:#1a1a1a
 ```
 
 ## What You Get
 
-**5 core agents** that govern any software project:
+**6 core agents** that govern any software project:
 
 | Agent                  | Role                 | What It Does                                                        |
 | ---------------------- | -------------------- | ------------------------------------------------------------------- |
@@ -84,19 +79,198 @@ cp templates/fleet-config.json fleet-config.json
 | **scrum-master**       | Process facilitation | Pace control, findings reviews, conflict resolution, retros         |
 | **memory-manager**     | Knowledge quality    | Memory consistency, learning distribution, stale detection          |
 | **platform-ops**       | Dev platform         | DORA metrics, CI/CD, cross-environment visibility                   |
+| **compliance-auditor** | Compliance review    | Audits work output against compliance floor rules during Review     |
 
-**Progressive autonomy** (Crawl / Walk / Run / Fly) with evidence-based transitions.
+### Progressive Autonomy
 
-**DORA + flow quality metrics** out of the box, with a pluggable backend (JSONL default, webhook/StatsD/OpenTelemetry configurable).
+```mermaid
+flowchart LR
+    CRAWL["Crawl\nPropose everything"] -->|"few findings,\nclean handoffs"| WALK["Walk\nStandard autonomy"]
+    WALK -->|"low rework,\ngood judgment"| RUN["Run\nExpanded autonomy"]
+    RUN -->|"proven record,\nmature memories"| FLY["Fly\nFull autonomy"]
 
-**Agent inheritance** so your app-specific agents extend the harness agents, keeping the core protocol while adding domain knowledge.
+    style CRAWL fill:#ef9a9a,stroke:#b71c1c,color:#1a1a1a
+    style WALK fill:#ffcc80,stroke:#e65100,color:#1a1a1a
+    style RUN fill:#90caf9,stroke:#1565c0,color:#1a1a1a
+    style FLY fill:#a5d6a7,stroke:#2e7d32,color:#1a1a1a
+```
+
+Every fleet starts at Crawl. Evidence-based transitions only. Pace goes both directions.
+
+### Work Item Lifecycle
+
+```mermaid
+flowchart LR
+    G["1. Groom"] --> P["2. Promote"]
+    P --> B["3. Build"]
+    B --> R["4. Review"]
+    R -->|"rework"| F["5. Fix"]
+    F --> R
+    R -->|"pass"| D["6. Deploy"]
+    D --> A["7. Accept"]
+    A --> RT["8. Retro"]
+    RT --> C["9. Checkpoint"]
+    C -->|"next"| G
+
+    style G fill:#90caf9,stroke:#1565c0,color:#1a1a1a
+    style P fill:#90caf9,stroke:#1565c0,color:#1a1a1a
+    style B fill:#a5d6a7,stroke:#2e7d32,color:#1a1a1a
+    style R fill:#ffcc80,stroke:#e65100,color:#1a1a1a
+    style F fill:#ef9a9a,stroke:#b71c1c,color:#1a1a1a
+    style D fill:#a5d6a7,stroke:#2e7d32,color:#1a1a1a
+    style A fill:#a5d6a7,stroke:#2e7d32,color:#1a1a1a
+    style RT fill:#90caf9,stroke:#1565c0,color:#1a1a1a
+    style C fill:#bdbdbd,stroke:#424242,color:#1a1a1a
+```
+
+### Metrics Pipeline
+
+```mermaid
+flowchart LR
+    LOG["ops/metrics-log.sh"] --> JSONL["events.jsonl"]
+    JSONL --> DORA["ops/dora.sh\nDORA metrics"]
+    JSONL --> FLOW["ops/dora.sh --flow\nFlow quality"]
+    DORA --> PACE["SM: pace\nrecommendation"]
+    FLOW --> PACE
+
+    style LOG fill:#a5d6a7,stroke:#2e7d32,color:#1a1a1a
+    style JSONL fill:#bdbdbd,stroke:#424242,color:#1a1a1a
+    style DORA fill:#90caf9,stroke:#1565c0,color:#1a1a1a
+    style FLOW fill:#90caf9,stroke:#1565c0,color:#1a1a1a
+    style PACE fill:#ffcc80,stroke:#e65100,color:#1a1a1a
+```
+
+DORA + flow quality metrics out of the box, with a pluggable backend (JSONL default, webhook/StatsD/OpenTelemetry configurable).
+
+#### Example: Log events
+
+```bash
+$ ops/metrics-log.sh item-promoted 1
+$ ops/metrics-log.sh handoff-sent 1 --from backend-specialist --to security-reviewer
+$ ops/metrics-log.sh agent-invoked product-owner --tokens 12500 --turns 4 --model opus --item 1
+```
+
+#### Example: `ops/dora.sh`
+
+```
+================================================================
+                     DORA METRICS
+================================================================
+
+  DEPLOYMENT FREQUENCY (since 2026-02-16)
+    deployments:   0
+    item-accepted: 0
+    total:         0
+
+  LEAD TIME (item-promoted -> item-accepted)
+    median: 0.00 sessions (0s)
+
+  CHANGE FAILURE RATE
+    regressions: 0 / 0 items = 0%
+
+================================================================
+                    FLOW QUALITY
+================================================================
+
+  FIRST-PASS YIELD (by handoff boundary)
+    backend-specialist        -> security-reviewer         100%
+    Fleet average                                         100%
+
+  REWORK CYCLES
+    Average  0.0 cycles/item
+
+  TASK OUTCOMES
+    Abandoned  0 of 1 promoted = 0%
+    Restarted  0 of 1 promoted = 0%
+```
+
+#### Example: `ops/dora.sh --sm`
+
+```
+================================================================
+                 PACE RECOMMENDATION
+================================================================
+
+  Current pace: Crawl
+
+  DORA signals
+    CFR: -- (no items accepted yet)
+
+  Flow signals
+    FPY: -- (no handoffs logged yet)
+
+  Recommendation: Remain at Crawl -- insufficient data to evaluate
+```
+
+#### Example: `ops/dora.sh --cost`
+
+```
+================================================================
+                 AGENT COST ANALYSIS
+================================================================
+
+  SUMMARY
+    Total invocations: 1
+    Total tokens:      12500
+
+  MODEL SPLIT
+    opus: 1 calls, 12500 tokens
+```
+
+#### Example: `ops/pathways.sh`
+
+```
+╔══════════════════════════════════════════════════════════════╗
+║              COMMUNICATION PATHWAYS                        ║
+╚══════════════════════════════════════════════════════════════╝
+
+  ACTUAL PATHWAYS (inferred from handoff-sent events)
+
+  From                           To                           Count
+  ----                           --                           -----
+  backend-specialist             security-reviewer            1
+
+  FLEET DENSITY
+    Active agents in handoffs: 2
+    Unique communication paths: 1
+    Density: 50% of possible paths (1/2)
+
+  TOP COMMUNICATORS
+
+  Agent                          Sent       Received   Total
+  -----                          ----       --------   -----
+  backend-specialist             8          0          8
+  security-reviewer              0          8          8
+```
+
+### Agent Inheritance
+
+```mermaid
+flowchart LR
+    subgraph H ["Harness Agent"]
+        HF["name, model,\nprotocol, autonomy"]
+    end
+    subgraph A ["App Agent (extends)"]
+        AF["retro cadence,\nautonomy override"]
+    end
+    subgraph M ["Runtime Agent"]
+        MF["merged result"]
+    end
+
+    H -->|"base preserved"| M
+    A -->|"app overrides"| M
+
+    style HF fill:#90caf9,stroke:#1565c0,color:#1a1a1a
+    style AF fill:#ffcc80,stroke:#e65100,color:#1a1a1a
+    style MF fill:#a5d6a7,stroke:#2e7d32,color:#1a1a1a
+```
+
+App fields override harness fields. Unmentioned harness fields are preserved.
 
 ## Key Concepts
 
-- **Compliance Floor**: Non-negotiable rules that override all autonomy tiers and pace settings. Encompasses security, data governance, audit, regulatory, access control, and domain-specific controls. You define yours.
-- **Progressive Autonomy**: Four pace levels (Crawl/Walk/Run/Fly) with evidence-based transitions. Every fleet starts at Crawl.
+- **Compliance Floor**: Non-negotiable rules that override all autonomy tiers and pace settings. You define yours.
 - **Findings Loop**: Structured learning where agents record notable events, the SM curates refinements, and the same finding type should decrease over time.
-- **Agent Inheritance**: App agents `extend` harness agents. App fields override; unmentioned harness fields are preserved.
 
 ## Documentation
 
@@ -108,4 +282,8 @@ cp templates/fleet-config.json fleet-config.json
 
 ## License
 
-Apache 2.0. See [LICENSE](LICENSE).
+Copyright 2026 [RD Digital Consulting Services, LLC](https://robdunie.com/). Dual-licensed under [AGPL 3.0](https://www.gnu.org/licenses/agpl-3.0.html) (with app-layer exemption) and a commercial license. See [LICENSE](LICENSE).
+
+**Open-source use:** Free for internal use, building products, consulting, and education. Your agents, compliance floors, and configs are your IP.
+
+**Commercial license required for:** Offering the framework as a managed service/SaaS, reselling, or white-labeling. Contact [RD Digital Consulting Services, LLC](https://robdunie.com/).

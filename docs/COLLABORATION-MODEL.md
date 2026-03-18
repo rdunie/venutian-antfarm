@@ -1,5 +1,7 @@
 # Agent Collaboration Model
 
+_Part of [Venutian Antfarm](../README.md) by [RD Digital Consulting Services, LLC](https://robdunie.com/)._
+
 Visual guide to how the agent fleet collaborates. Source of truth for collaboration rules: `.claude/COLLABORATION.md`. Source of truth for documentation style: `.claude/DOCUMENTATION-STYLE.md`.
 
 ---
@@ -24,10 +26,10 @@ flowchart TD
     R -.->|"corrections"| O
     O -.->|"content"| R
 
-    style S fill:#bbdefb,stroke:#1976D2
-    style E fill:#e8f5e9,stroke:#4CAF50
-    style R fill:#fce4ec,stroke:#C62828
-    style O fill:#fff3e0,stroke:#F57C00
+    style S fill:#90caf9,stroke:#1565c0,color:#1a1a1a
+    style E fill:#a5d6a7,stroke:#2e7d32,color:#1a1a1a
+    style R fill:#ef9a9a,stroke:#b71c1c,color:#1a1a1a
+    style O fill:#ffcc80,stroke:#e65100,color:#1a1a1a
 ```
 
 **Diamond layout**: Strategic at top feeds both Execution (context) and Reviewers (architecture/process). Execution and Reviewers interact laterally (work and findings). Both feed down to Output (milestones and corrections). Feedback flows back up (risk signals, content for review).
@@ -51,13 +53,13 @@ flowchart TD
     ASSESS --> DONE["Task Runs"]
     WORK --> DONE
 
-    style DISPATCH fill:#f5f5f5,stroke:#666
-    style CHECK fill:#f5f5f5,stroke:#666
-    style WORKTREE fill:#bbdefb,stroke:#1976D2
-    style LIVE fill:#e8f5e9,stroke:#4CAF50
-    style ASSESS fill:#bbdefb,stroke:#1976D2
-    style WORK fill:#e8f5e9,stroke:#4CAF50
-    style DONE fill:#f5f5f5,stroke:#666
+    style DISPATCH fill:#bdbdbd,stroke:#424242,color:#1a1a1a
+    style CHECK fill:#bdbdbd,stroke:#424242,color:#1a1a1a
+    style WORKTREE fill:#90caf9,stroke:#1565c0,color:#1a1a1a
+    style LIVE fill:#a5d6a7,stroke:#2e7d32,color:#1a1a1a
+    style ASSESS fill:#90caf9,stroke:#1565c0,color:#1a1a1a
+    style WORK fill:#a5d6a7,stroke:#2e7d32,color:#1a1a1a
+    style DONE fill:#bdbdbd,stroke:#424242,color:#1a1a1a
 ```
 
 Use worktree isolation when you want a reviewer or auditor agent to assess only committed (stable) code rather than any in-flight edits. Set `isolation: worktree` in the agent task frontmatter.
@@ -82,15 +84,15 @@ flowchart LR
     RET --> CHK["9. Checkpoint\n(process health)"]
     CHK -->|"next item"| B
 
-    style B fill:#bbdefb,stroke:#1976D2
-    style P fill:#bbdefb,stroke:#1976D2
-    style IP fill:#e8f5e9,stroke:#4CAF50
-    style RV fill:#fff3e0,stroke:#F57C00
-    style FIX fill:#fce4ec,stroke:#C62828
-    style DEP fill:#e8f5e9,stroke:#4CAF50
-    style ACC fill:#e8f5e9,stroke:#4CAF50
-    style RET fill:#bbdefb,stroke:#1976D2
-    style CHK fill:#f5f5f5,stroke:#666
+    style B fill:#90caf9,stroke:#1565c0,color:#1a1a1a
+    style P fill:#90caf9,stroke:#1565c0,color:#1a1a1a
+    style IP fill:#a5d6a7,stroke:#2e7d32,color:#1a1a1a
+    style RV fill:#ffcc80,stroke:#e65100,color:#1a1a1a
+    style FIX fill:#ef9a9a,stroke:#b71c1c,color:#1a1a1a
+    style DEP fill:#a5d6a7,stroke:#2e7d32,color:#1a1a1a
+    style ACC fill:#a5d6a7,stroke:#2e7d32,color:#1a1a1a
+    style RET fill:#90caf9,stroke:#1565c0,color:#1a1a1a
+    style CHK fill:#bdbdbd,stroke:#424242,color:#1a1a1a
 ```
 
 Key design decisions:
@@ -120,14 +122,14 @@ flowchart LR
     TRIAD -->|"high consensus\npace increase"| REC["Unified recommendation\nto user"]
     TRIAD -->|"low consensus"| ESC["Each perspective\nto user decides"]
 
-    style CRAWL fill:#fce4ec,stroke:#C62828
-    style WALK fill:#fff3e0,stroke:#F57C00
-    style RUN fill:#bbdefb,stroke:#1976D2
-    style FLY fill:#e8f5e9,stroke:#4CAF50
-    style TRIAD fill:#bbdefb,stroke:#1976D2
-    style AUTO fill:#e8f5e9,stroke:#4CAF50
-    style REC fill:#e8f5e9,stroke:#4CAF50
-    style ESC fill:#fff3e0,stroke:#F57C00
+    style CRAWL fill:#ef9a9a,stroke:#b71c1c,color:#1a1a1a
+    style WALK fill:#ffcc80,stroke:#e65100,color:#1a1a1a
+    style RUN fill:#90caf9,stroke:#1565c0,color:#1a1a1a
+    style FLY fill:#a5d6a7,stroke:#2e7d32,color:#1a1a1a
+    style TRIAD fill:#90caf9,stroke:#1565c0,color:#1a1a1a
+    style AUTO fill:#a5d6a7,stroke:#2e7d32,color:#1a1a1a
+    style REC fill:#a5d6a7,stroke:#2e7d32,color:#1a1a1a
+    style ESC fill:#ffcc80,stroke:#e65100,color:#1a1a1a
 ```
 
 ### Autonomy x Pace
@@ -164,18 +166,18 @@ flowchart TD
     WALK -->|"evidence:\nlow rework"| RUN
     RUN -->|"evidence:\nproven record"| FLY
 
-    style C_A fill:#bbdefb,stroke:#1976D2
-    style C_P fill:#fff3e0,stroke:#F57C00
-    style C_E fill:#fce4ec,stroke:#C62828
-    style W_A fill:#bbdefb,stroke:#1976D2
-    style W_P fill:#fff3e0,stroke:#F57C00
-    style W_E fill:#fce4ec,stroke:#C62828
-    style R_A fill:#bbdefb,stroke:#1976D2
-    style R_P fill:#fff3e0,stroke:#F57C00
-    style R_E fill:#fce4ec,stroke:#C62828
-    style F_A fill:#bbdefb,stroke:#1976D2
-    style F_P fill:#fff3e0,stroke:#F57C00
-    style F_E fill:#fce4ec,stroke:#C62828
+    style C_A fill:#90caf9,stroke:#1565c0,color:#1a1a1a
+    style C_P fill:#ffcc80,stroke:#e65100,color:#1a1a1a
+    style C_E fill:#ef9a9a,stroke:#b71c1c,color:#1a1a1a
+    style W_A fill:#90caf9,stroke:#1565c0,color:#1a1a1a
+    style W_P fill:#ffcc80,stroke:#e65100,color:#1a1a1a
+    style W_E fill:#ef9a9a,stroke:#b71c1c,color:#1a1a1a
+    style R_A fill:#90caf9,stroke:#1565c0,color:#1a1a1a
+    style R_P fill:#ffcc80,stroke:#e65100,color:#1a1a1a
+    style R_E fill:#ef9a9a,stroke:#b71c1c,color:#1a1a1a
+    style F_A fill:#90caf9,stroke:#1565c0,color:#1a1a1a
+    style F_P fill:#ffcc80,stroke:#e65100,color:#1a1a1a
+    style F_E fill:#ef9a9a,stroke:#b71c1c,color:#1a1a1a
 ```
 
 **Key insight:** Compliance floor escalation never relaxes regardless of pace. The expanding blue (Autonomous) zone is the primary indicator of trust growth.
@@ -207,11 +209,11 @@ flowchart TD
     DECIDE -->|"Revise"| REWORK["Back to specialist"]
     DECIDE -->|"Reject"| REJECT["Requirements mismatch"]
 
-    style CHANGE fill:#e8f5e9,stroke:#4CAF50
-    style DONE fill:#e8f5e9,stroke:#4CAF50
-    style REWORK fill:#fff3e0,stroke:#F57C00
-    style REJECT fill:#fce4ec,stroke:#C62828
-    style COMP_REV fill:#fce4ec,stroke:#C62828
+    style CHANGE fill:#a5d6a7,stroke:#2e7d32,color:#1a1a1a
+    style DONE fill:#a5d6a7,stroke:#2e7d32,color:#1a1a1a
+    style REWORK fill:#ffcc80,stroke:#e65100,color:#1a1a1a
+    style REJECT fill:#ef9a9a,stroke:#b71c1c,color:#1a1a1a
+    style COMP_REV fill:#ef9a9a,stroke:#b71c1c,color:#1a1a1a
 ```
 
 ---
@@ -232,9 +234,9 @@ flowchart TD
     AUTO["Autonomy Tiers"] -.->|"overridden by"| Floor
     PRIO["Priority Decisions"] -.->|"overridden by"| Floor
 
-    style S1 fill:#fce4ec,stroke:#C62828
-    style S2 fill:#fce4ec,stroke:#C62828
-    style S3 fill:#fce4ec,stroke:#C62828
+    style S1 fill:#ef9a9a,stroke:#b71c1c,color:#1a1a1a
+    style S2 fill:#ef9a9a,stroke:#b71c1c,color:#1a1a1a
+    style S3 fill:#ef9a9a,stroke:#b71c1c,color:#1a1a1a
 ```
 
 Define your compliance floor in `compliance-floor.md` at the project root. See `templates/compliance-floor.md` for a starting template.
@@ -258,12 +260,12 @@ flowchart TD
     REVIEW -->|"deferred"| REG
     REVIEW -->|"dismissed"| ARCHIVE["Remove from\nactive register"]
 
-    style WORK fill:#e8f5e9,stroke:#4CAF50
-    style FINDING fill:#fff3e0,stroke:#F57C00
-    style CURATE fill:#bbdefb,stroke:#1976D2
-    style REVIEW fill:#bbdefb,stroke:#1976D2
-    style APPLY fill:#e8f5e9,stroke:#4CAF50
-    style DISTRIBUTE fill:#e8f5e9,stroke:#4CAF50
+    style WORK fill:#a5d6a7,stroke:#2e7d32,color:#1a1a1a
+    style FINDING fill:#ffcc80,stroke:#e65100,color:#1a1a1a
+    style CURATE fill:#90caf9,stroke:#1565c0,color:#1a1a1a
+    style REVIEW fill:#90caf9,stroke:#1565c0,color:#1a1a1a
+    style APPLY fill:#a5d6a7,stroke:#2e7d32,color:#1a1a1a
+    style DISTRIBUTE fill:#a5d6a7,stroke:#2e7d32,color:#1a1a1a
 ```
 
 ---
@@ -288,17 +290,17 @@ flowchart TD
     CEILING -->|"Yes"| FIND["Finding:\ntask mis-classified or\ncontext needs enriching"]
     CEILING -->|"No"| DONE["Proceed"]
 
-    style START fill:#fff3e0,stroke:#F57C00
-    style Q1 fill:#fff3e0,stroke:#F57C00
-    style Q2 fill:#fff3e0,stroke:#F57C00
-    style Q3 fill:#fff3e0,stroke:#F57C00
-    style OPUS fill:#e8f5e9,stroke:#4CAF50
-    style SONNET fill:#e8f5e9,stroke:#4CAF50
-    style HAIKU fill:#e8f5e9,stroke:#4CAF50
-    style DONE fill:#e8f5e9,stroke:#4CAF50
-    style CEILING fill:#fff3e0,stroke:#F57C00
-    style FIND fill:#fce4ec,stroke:#C62828
-    style RECLASS fill:#f5f5f5,stroke:#666
+    style START fill:#ffcc80,stroke:#e65100,color:#1a1a1a
+    style Q1 fill:#ffcc80,stroke:#e65100,color:#1a1a1a
+    style Q2 fill:#ffcc80,stroke:#e65100,color:#1a1a1a
+    style Q3 fill:#ffcc80,stroke:#e65100,color:#1a1a1a
+    style OPUS fill:#a5d6a7,stroke:#2e7d32,color:#1a1a1a
+    style SONNET fill:#a5d6a7,stroke:#2e7d32,color:#1a1a1a
+    style HAIKU fill:#a5d6a7,stroke:#2e7d32,color:#1a1a1a
+    style DONE fill:#a5d6a7,stroke:#2e7d32,color:#1a1a1a
+    style CEILING fill:#ffcc80,stroke:#e65100,color:#1a1a1a
+    style FIND fill:#ef9a9a,stroke:#b71c1c,color:#1a1a1a
+    style RECLASS fill:#bdbdbd,stroke:#424242,color:#1a1a1a
 ```
 
 ---
@@ -331,12 +333,12 @@ flowchart LR
     FLOW -->|"FPY, handoff quality,\nrework rate"| SM_PACE
     FLOW -->|"bug severity trends,\nbottlenecks"| PO_PRI
 
-    style LOG fill:#e8f5e9,stroke:#4CAF50
-    style JSONL fill:#f5f5f5,stroke:#666
-    style DORA fill:#bbdefb,stroke:#1976D2
-    style FLOW fill:#bbdefb,stroke:#1976D2
-    style SM_PACE fill:#fff3e0,stroke:#F57C00
-    style PO_PRI fill:#fff3e0,stroke:#F57C00
+    style LOG fill:#a5d6a7,stroke:#2e7d32,color:#1a1a1a
+    style JSONL fill:#bdbdbd,stroke:#424242,color:#1a1a1a
+    style DORA fill:#90caf9,stroke:#1565c0,color:#1a1a1a
+    style FLOW fill:#90caf9,stroke:#1565c0,color:#1a1a1a
+    style SM_PACE fill:#ffcc80,stroke:#e65100,color:#1a1a1a
+    style PO_PRI fill:#ffcc80,stroke:#e65100,color:#1a1a1a
 ```
 
 Key events tracked: `item-promoted`, `item-accepted`, `ext-deployed`, `bug-found`, `bug-fixed`, `handoff-sent`, `handoff-rejected`, `task-restarted`, `task-blocked`, `task-unblocked`, `regression-run`. Pace thresholds: CFR < 10% to Walk; < 5% to Run.
@@ -370,16 +372,334 @@ flowchart TD
     Team -->|"frequent questions"| ENRICH["SIGNAL:\nEnrich the context"]
     ENRICH --> Triad
 
-    style PO_T fill:#bbdefb,stroke:#1976D2
-    style SA_T fill:#bbdefb,stroke:#1976D2
-    style SM_T fill:#bbdefb,stroke:#1976D2
-    style SUCCESS fill:#e8f5e9,stroke:#4CAF50
-    style ENRICH fill:#fff3e0,stroke:#F57C00
+    style PO_T fill:#90caf9,stroke:#1565c0,color:#1a1a1a
+    style SA_T fill:#90caf9,stroke:#1565c0,color:#1a1a1a
+    style SM_T fill:#90caf9,stroke:#1565c0,color:#1a1a1a
+    style SUCCESS fill:#a5d6a7,stroke:#2e7d32,color:#1a1a1a
+    style ENRICH fill:#ffcc80,stroke:#e65100,color:#1a1a1a
 ```
 
-| Activity           | PO Leads              | SA Contributes                 | SM Contributes                 |
-| ------------------ | --------------------- | ------------------------------ | ------------------------------ |
-| Grooming           | Business priority, AC | Architectural implications     | Right-sizing for pace          |
-| Solution alignment | Validates business    | Proposes technical approach    | Checks process feasibility     |
-| Work organization  | Prioritizes items     | Sequences by dependencies      | Coordinates execution mode     |
-| Quality            | Functional correctness| Architectural soundness        | Process discipline             |
+| Activity           | PO Leads               | SA Contributes              | SM Contributes             |
+| ------------------ | ---------------------- | --------------------------- | -------------------------- |
+| Grooming           | Business priority, AC  | Architectural implications  | Right-sizing for pace      |
+| Solution alignment | Validates business     | Proposes technical approach | Checks process feasibility |
+| Work organization  | Prioritizes items      | Sequences by dependencies   | Coordinates execution mode |
+| Quality            | Functional correctness | Architectural soundness     | Process discipline         |
+
+---
+
+## Agent Inheritance
+
+How app-level agents extend harness agents. The merge produces the runtime agent definition.
+
+```mermaid
+flowchart LR
+    subgraph Harness ["Harness Agent"]
+        H_NAME["name: scrum-master"]
+        H_MODEL["model: opus"]
+        H_PROTO["protocol: full"]
+        H_AUTO["autonomy: default"]
+    end
+
+    subgraph App ["App Agent (extends)"]
+        A_RETRO["retro cadence: 2"]
+        A_AUTO["autonomy: override"]
+    end
+
+    subgraph Merged ["Runtime Agent"]
+        M_NAME["name: scrum-master"]
+        M_MODEL["model: opus"]
+        M_PROTO["protocol: full"]
+        M_RETRO["retro cadence: 2"]
+        M_AUTO["autonomy: override"]
+    end
+
+    Harness -->|"base fields\npreserved"| Merged
+    App -->|"app fields\noverride"| Merged
+
+    style H_NAME fill:#90caf9,stroke:#1565c0,color:#1a1a1a
+    style H_MODEL fill:#90caf9,stroke:#1565c0,color:#1a1a1a
+    style H_PROTO fill:#90caf9,stroke:#1565c0,color:#1a1a1a
+    style H_AUTO fill:#90caf9,stroke:#1565c0,color:#1a1a1a
+    style A_RETRO fill:#ffcc80,stroke:#e65100,color:#1a1a1a
+    style A_AUTO fill:#ffcc80,stroke:#e65100,color:#1a1a1a
+    style M_NAME fill:#90caf9,stroke:#1565c0,color:#1a1a1a
+    style M_MODEL fill:#90caf9,stroke:#1565c0,color:#1a1a1a
+    style M_PROTO fill:#90caf9,stroke:#1565c0,color:#1a1a1a
+    style M_RETRO fill:#a5d6a7,stroke:#2e7d32,color:#1a1a1a
+    style M_AUTO fill:#a5d6a7,stroke:#2e7d32,color:#1a1a1a
+```
+
+**Merge rules:** App fields (orange) override matching harness fields. Harness fields (blue) not mentioned in the app definition are preserved. Green fields in the merged result show where overrides landed.
+
+---
+
+## Memory Architecture
+
+Two memory layers with distinct ownership. The memory-manager curates both and bridges them.
+
+```mermaid
+flowchart TD
+    subgraph HarnessLayer ["memory/harness/ (read-only)"]
+        HL["Framework learnings\nCollaboration patterns\nTool usage insights"]
+    end
+
+    subgraph AppLayer ["memory/app/ (read-write)"]
+        AL["Domain learnings\nProject decisions\nEnvironment quirks"]
+    end
+
+    AGENTS(["Any Agent"]) -->|"write during work"| AppLayer
+    MM(["Memory Manager"]) -->|"curate, dedupe,\nresolve conflicts"| AppLayer
+    MM -->|"curate on\nharness upgrade"| HarnessLayer
+
+    AppLayer -.->|"generic pattern?\nflag for promotion"| HarnessLayer
+
+    AGENTS -->|"read"| HarnessLayer
+    AGENTS -->|"read"| AppLayer
+
+    style HL fill:#90caf9,stroke:#1565c0,color:#1a1a1a
+    style AL fill:#a5d6a7,stroke:#2e7d32,color:#1a1a1a
+    style AGENTS fill:#bdbdbd,stroke:#424242,color:#1a1a1a
+    style MM fill:#ffcc80,stroke:#e65100,color:#1a1a1a
+```
+
+**Key constraint:** harness/ is read-only during normal operation. Only updated on harness version changes. app/ is where active learning accumulates.
+
+---
+
+## Handoff Protocol
+
+How work transfers between agents with quality tracking.
+
+```mermaid
+sequenceDiagram
+    participant A as Agent A
+    participant H as Handoff Artifact
+    participant B as Agent B
+    participant M as Metrics
+
+    A->>H: What done, what needed,<br/>context, artifacts, urgency
+    A->>M: log handoff-sent
+    H->>B: Receive handoff
+
+    alt Clear enough to act
+        B->>B: Execute work
+        B->>A: Handoff Complete<br/>(result, artifacts, follow-up)
+        B->>M: log handoff-accepted
+    else Unclear handoff
+        B->>A: Reject with reason
+        B->>M: log handoff-rejected
+        Note over A,B: Finding: unclear handoff<br/>FPY decreases
+    end
+```
+
+The receiving agent should be able to act without asking for clarification. FPY (first-pass yield) by boundary pair is the most actionable metric for handoff quality.
+
+---
+
+## Coordination Layers
+
+Working state (ephemeral) and published view (version-controlled) serve different purposes.
+
+```mermaid
+flowchart TD
+    subgraph Working ["Working State (Tasks)"]
+        FIND["Findings"]
+        HAND["Handoffs"]
+        WIP["WIP Status"]
+        BLOCK["Blockers"]
+    end
+
+    subgraph Published ["Published View (Files)"]
+        PROG["User-facing progress"]
+        DECS["Documented decisions"]
+        ROAD["Roadmap / backlog"]
+        GOV["Governance records"]
+    end
+
+    Working -->|"at checkpoints,\nagent publishes"| Published
+
+    USER(["Human Operator"]) -->|"reads"| Published
+    USER -.->|"rarely needs"| Working
+
+    style FIND fill:#ffcc80,stroke:#e65100,color:#1a1a1a
+    style HAND fill:#ffcc80,stroke:#e65100,color:#1a1a1a
+    style WIP fill:#ffcc80,stroke:#e65100,color:#1a1a1a
+    style BLOCK fill:#ffcc80,stroke:#e65100,color:#1a1a1a
+    style PROG fill:#a5d6a7,stroke:#2e7d32,color:#1a1a1a
+    style DECS fill:#a5d6a7,stroke:#2e7d32,color:#1a1a1a
+    style ROAD fill:#a5d6a7,stroke:#2e7d32,color:#1a1a1a
+    style GOV fill:#a5d6a7,stroke:#2e7d32,color:#1a1a1a
+    style USER fill:#90caf9,stroke:#1565c0,color:#1a1a1a
+```
+
+**Why this split:** Tasks handle concurrent work without write contention. Files stay clean and curated. The user sees checkpointed progress, not coordination noise.
+
+---
+
+## Enforcement Layers
+
+Three enforcement mechanisms from cheapest to most thorough.
+
+```mermaid
+flowchart TD
+    subgraph Hooks ["Layer 1: Hooks"]
+        HK["Shell scripts\non tool events"]
+        HK_C["Cost: zero tokens"]
+        HK_R["Reliability: deterministic"]
+    end
+
+    subgraph Memory ["Layer 2: Memory"]
+        MEM["Persisted behavioral\nrules + context"]
+        MEM_C["Cost: tokens on recall"]
+        MEM_R["Reliability: probabilistic"]
+    end
+
+    subgraph Skills ["Layer 3: Skills"]
+        SK["Loaded prompts with\nmandatory steps"]
+        SK_C["Cost: tokens on load"]
+        SK_R["Reliability: high"]
+    end
+
+    EVENT["Tool Event"] --> Hooks
+    Hooks -->|"pass"| Memory
+    Memory -->|"guides"| Skills
+
+    style HK fill:#a5d6a7,stroke:#2e7d32,color:#1a1a1a
+    style HK_C fill:#a5d6a7,stroke:#2e7d32,color:#1a1a1a
+    style HK_R fill:#a5d6a7,stroke:#2e7d32,color:#1a1a1a
+    style MEM fill:#ffcc80,stroke:#e65100,color:#1a1a1a
+    style MEM_C fill:#ffcc80,stroke:#e65100,color:#1a1a1a
+    style MEM_R fill:#ffcc80,stroke:#e65100,color:#1a1a1a
+    style SK fill:#90caf9,stroke:#1565c0,color:#1a1a1a
+    style SK_C fill:#90caf9,stroke:#1565c0,color:#1a1a1a
+    style SK_R fill:#90caf9,stroke:#1565c0,color:#1a1a1a
+    style EVENT fill:#bdbdbd,stroke:#424242,color:#1a1a1a
+```
+
+**When to use each:** Hooks for file-level guards and formatting (deterministic, free). Memory for cross-session behavioral guidance (probabilistic, cheap). Skills for complex multi-step workflows (reliable, most expensive).
+
+---
+
+## Conflict Resolution
+
+How disagreements are routed to the right mediator.
+
+```mermaid
+flowchart TD
+    CONFLICT{"Agents\ndisagree"} -->|"technical"| SA["SA mediates"]
+    CONFLICT -->|"priority"| PO["PO decides"]
+    CONFLICT -->|"process"| SM["SM mediates"]
+    CONFLICT -->|"compliance"| FLOOR["Compliance floor\nwins (always)"]
+    CONFLICT -->|"cross-domain"| JOINT["SA + PO\njointly"]
+
+    SA -->|"unresolved"| USER(["User decides"])
+    PO -->|"unresolved"| USER
+    SM -->|"unresolved"| USER
+    JOINT -->|"unresolved"| USER
+
+    style CONFLICT fill:#ffcc80,stroke:#e65100,color:#1a1a1a
+    style SA fill:#90caf9,stroke:#1565c0,color:#1a1a1a
+    style PO fill:#90caf9,stroke:#1565c0,color:#1a1a1a
+    style SM fill:#90caf9,stroke:#1565c0,color:#1a1a1a
+    style FLOOR fill:#ef9a9a,stroke:#b71c1c,color:#1a1a1a
+    style JOINT fill:#90caf9,stroke:#1565c0,color:#1a1a1a
+    style USER fill:#bdbdbd,stroke:#424242,color:#1a1a1a
+```
+
+No agent overrides another agent's domain authority. Compliance floor takes precedence over all other disagreements without escalation.
+
+---
+
+## Regression Testing
+
+Periodic validation cycle with cadence tuning.
+
+```mermaid
+flowchart LR
+    COUNT["SM tracks\naccepted items"] -->|"every 3\n(tunable)"| TRIGGER["Trigger\nregression run"]
+
+    TRIGGER --> BACK["Backend\nAPI, data, schema"]
+    TRIGGER --> FRONT["Frontend\nUI, state, render"]
+    TRIGGER --> E2E["Browser E2E\nAll roles, screenshots"]
+
+    BACK --> FINDINGS["Regression\nfindings"]
+    FRONT --> FINDINGS
+    E2E --> FINDINGS
+
+    FINDINGS -->|"add to backlog\n(do NOT fix inline)"| BACKLOG["PO prioritizes\nfixes"]
+    FINDINGS -.->|"data informs"| TUNE{"Adjust\ncadence?"}
+    TUNE -->|"regressions rare"| LESS["Extend to 5"]
+    TUNE -->|"regressions frequent"| MORE["Tighten to 2"]
+
+    style COUNT fill:#90caf9,stroke:#1565c0,color:#1a1a1a
+    style TRIGGER fill:#ffcc80,stroke:#e65100,color:#1a1a1a
+    style BACK fill:#a5d6a7,stroke:#2e7d32,color:#1a1a1a
+    style FRONT fill:#a5d6a7,stroke:#2e7d32,color:#1a1a1a
+    style E2E fill:#a5d6a7,stroke:#2e7d32,color:#1a1a1a
+    style FINDINGS fill:#ef9a9a,stroke:#b71c1c,color:#1a1a1a
+    style BACKLOG fill:#90caf9,stroke:#1565c0,color:#1a1a1a
+    style TUNE fill:#ffcc80,stroke:#e65100,color:#1a1a1a
+    style LESS fill:#bdbdbd,stroke:#424242,color:#1a1a1a
+    style MORE fill:#bdbdbd,stroke:#424242,color:#1a1a1a
+```
+
+**Fix discipline:** Do not fix issues inline during regression testing. Record them as findings. Only fix roadblocks that prevent completing remaining tests.
+
+---
+
+## Budget & Resource Flow
+
+How cost responsibility flows through the fleet.
+
+```mermaid
+flowchart LR
+    PO_B(["Platform-ops\nmeasures costs"]) -->|"per item,\nper agent"| ALERT["Alert at\nthresholds"]
+    SA_B(["SA estimates\nper-item budget"]) -->|"during grooming"| BUDGET["Item budget\n(NFR)"]
+    ALERT -->|"push to"| SM_B(["SM decides\non overruns"])
+    BUDGET --> SM_B
+    SM_B -->|"pause, shift\nmodels, extend"| ACTION["Adjustment"]
+    USER_B(["User sets\nbudget envelope"]) -.->|"total\ninvestment"| SM_B
+
+    style PO_B fill:#a5d6a7,stroke:#2e7d32,color:#1a1a1a
+    style SA_B fill:#90caf9,stroke:#1565c0,color:#1a1a1a
+    style SM_B fill:#ffcc80,stroke:#e65100,color:#1a1a1a
+    style ALERT fill:#ef9a9a,stroke:#b71c1c,color:#1a1a1a
+    style BUDGET fill:#bdbdbd,stroke:#424242,color:#1a1a1a
+    style ACTION fill:#a5d6a7,stroke:#2e7d32,color:#1a1a1a
+    style USER_B fill:#90caf9,stroke:#1565c0,color:#1a1a1a
+```
+
+**Monitoring rule:** If expensive model usage exceeds 40% of total dispatches, investigate whether some judgment tasks could be downgraded with better context enrichment.
+
+---
+
+## Milestone Release
+
+Parallel dispatch to output agents when a batch of items reaches acceptance.
+
+```mermaid
+flowchart TD
+    DECLARE["PO declares milestone\nversion tag + scope"] --> DISPATCH
+
+    subgraph DISPATCH ["Parallel Dispatch (no dependencies)"]
+        DOC["doc-quality\nChangelog, release notes"]
+        TRAIN["training-enablement\nUser guides, walkthroughs"]
+        COMMS["stakeholder-comms\nAnnouncements, demos"]
+    end
+
+    DOC --> TRACK["PO tracks\ncompletion"]
+    TRAIN --> TRACK
+    COMMS --> TRACK
+
+    TRACK --> TAG["Version archive\ngit tag"]
+
+    style DECLARE fill:#90caf9,stroke:#1565c0,color:#1a1a1a
+    style DOC fill:#a5d6a7,stroke:#2e7d32,color:#1a1a1a
+    style TRAIN fill:#a5d6a7,stroke:#2e7d32,color:#1a1a1a
+    style COMMS fill:#a5d6a7,stroke:#2e7d32,color:#1a1a1a
+    style TRACK fill:#ffcc80,stroke:#e65100,color:#1a1a1a
+    style TAG fill:#bdbdbd,stroke:#424242,color:#1a1a1a
+```
+
+Output agents work independently from accepted items and current documentation. If one is blocked, the others continue.

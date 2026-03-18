@@ -4,11 +4,11 @@ Strategic roadmap for the project. Items are organized into tiers by priority.
 
 ## Tier Structure
 
-| Tier | Focus              | Status      |
-| ---- | ------------------ | ----------- |
-| 1    | Launch blockers    | Not started |
-| 2    | Quality baseline   | Not started |
-| 3    | Core features      | Not started |
+| Tier | Focus            | Status      |
+| ---- | ---------------- | ----------- |
+| 1    | Launch blockers  | Not started |
+| 2    | Quality baseline | Not started |
+| 3    | Core features    | Not started |
 
 Create tier files as `tier-N-description.md` in this directory.
 

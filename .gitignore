@@ -1,0 +1,24 @@
+# Local overrides (personal, not shared)
+.claude.local.md
+
+# Environment and secrets
+.env
+.env.*
+secrets.yaml
+credentials.json
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor files
+*.swp
+*.swo
+*~
+
+# Node (if app-layer uses it)
+node_modules/
+
+# Temp files
+/tmp/
+*.tmp

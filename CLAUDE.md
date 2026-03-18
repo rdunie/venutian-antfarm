@@ -2,7 +2,17 @@
 
 ## Project Overview
 
-**Venutian Antfarm** is an agent fleet harness framework for structured multi-agent software delivery. It provides 5 core agents (PO, SA, SM, memory-manager, platform-ops), a collaboration protocol with progressive autonomy, DORA + flow quality metrics, and an agent inheritance mechanism for domain-specific specialization.
+**Venutian Antfarm** is an agent fleet harness framework for structured multi-agent software delivery. It provides 6 core agents (PO, SA, SM, memory-manager, platform-ops, compliance-auditor), a collaboration protocol with progressive autonomy, DORA + flow quality metrics, and an agent inheritance mechanism for domain-specific specialization.
+
+## Quick Start
+
+```bash
+cp templates/fleet-config.json fleet-config.json   # configure your fleet
+cp templates/compliance-floor.md compliance-floor.md # define non-negotiable rules
+# See example/ for a complete working reference
+```
+
+**Prerequisites:** Claude Code CLI, Git, Bash, jq (optional).
 
 ## Directory Structure
 
@@ -12,8 +22,8 @@
 │   ├── settings.json                # Hook configuration
 │   ├── COLLABORATION.md             # Collaboration protocol (source of truth)
 │   ├── DOCUMENTATION-STYLE.md       # Documentation style guide
-│   ├── agents/                      # Core agent definitions (5)
-│   ├── skills/                      # Slash command skills
+│   ├── agents/                      # Core agent definitions (6)
+│   ├── skills/                      # Slash command skills (/po, /retro, /onboard)
 │   ├── findings/                    # Findings register + information needs
 │   └── metrics/                     # Event log (JSONL)
 ├── docs/
@@ -24,14 +34,26 @@
 ├── ops/
 │   ├── metrics-log.sh               # Event logging helper (pluggable backend)
 │   ├── dora.sh                      # DORA + flow quality dashboard
+│   ├── pathways.sh                  # Agent pathway analysis
 │   ├── deploy.sh                    # Deploy contract (implementers override)
 │   └── hooks/                       # Git/tool hooks
-├── templates/                       # Templates for extending the harness
-├── example/                         # Working example app
+├── templates/
+│   ├── compliance-floor.md          # Starter compliance floor
+│   ├── fleet-config.json            # Fleet configuration template
+│   └── agents/                      # Specialist agent templates (5)
+├── example/                         # Working example app (complete reference)
 └── memory/
     ├── harness/                     # Framework-level memories
     └── app/                         # Application-specific memories
 ```
+
+## Key Files
+
+- **`fleet-config.json`** -- Project-level fleet configuration: pace thresholds, agent roster, declared pathways, metrics backend, retro cadence. Copy from `templates/fleet-config.json`.
+- **`.claude/agents/*.md`** -- Agent definitions with frontmatter (`name`, `model`, `color`). The 6 core agents: product-owner, solution-architect, scrum-master, memory-manager, platform-ops, compliance-auditor.
+- **`.claude/findings/register.md`** -- Findings register where notable events are recorded during work.
+- **`.claude/metrics/events.jsonl`** -- Event log (append-only, written by `ops/metrics-log.sh`, never directly).
+- **`.mcp.json`** -- Team-shared MCP server configuration (GitHub MCP). Checked into git.
 
 ## Commands
 
@@ -41,18 +63,11 @@
 # Log events (agents never write JSON directly)
 ops/metrics-log.sh item-promoted 42
 ops/metrics-log.sh item-accepted 42
-ops/metrics-log.sh ext-deployed my-component --type planned
 ops/metrics-log.sh bug-found 42 --severity high --source regression
-ops/metrics-log.sh bug-fixed 42 --bug-id b1
 ops/metrics-log.sh handoff-sent 42 --from backend-specialist --to security-reviewer
-ops/metrics-log.sh handoff-rejected 42 --from backend-specialist --to security-reviewer --reason missing-tests
 ops/metrics-log.sh agent-invoked product-owner --tokens 45800 --turns 10 --model opus --item 42
-ops/metrics-log.sh item-rejected-at-build 42 --reason context-changed --source solution-architect
-ops/metrics-log.sh task-restarted 42 --reason insufficient-detail
-ops/metrics-log.sh task-discarded 42 --reason superseded
-ops/metrics-log.sh task-blocked 42 --reason awaiting-decision
-ops/metrics-log.sh task-unblocked 42
-ops/metrics-log.sh regression-run --iteration 3
+# Other event types: ext-deployed, bug-fixed, handoff-rejected, item-rejected-at-build,
+# task-restarted, task-discarded, task-blocked, task-unblocked, regression-run
 
 # Dashboard
 ops/dora.sh                   # full dashboard (DORA + flow quality)
@@ -63,6 +78,13 @@ ops/dora.sh --cost            # agent cost analysis
 ops/dora.sh --since 7d        # 7-day window
 ```
 
+### Pathway Analysis
+
+```bash
+ops/pathways.sh              # Compare declared vs actual agent communication pathways
+ops/pathways.sh --since 7d   # Scoped to recent window
+```
+
 ### Deployment
 
 ```bash
@@ -70,6 +92,14 @@ ops/deploy.sh <env> <component> [--type planned|hotfix]
 ```
 
 Implementers replace `ops/deploy.sh` with their deployment logic. The contract: exit 0 = success, exit 1 = failure. stdout should include deployment URL or identifier.
+
+### Validation
+
+```bash
+ops/dora.sh                          # Verify metrics pipeline works
+ops/pathways.sh                      # Verify pathway analysis works
+bash -n ops/*.sh                     # Syntax-check all scripts
+```
 
 ## Workflow
 
@@ -96,6 +126,7 @@ extends: harness/scrum-master
 ```
 
 When `extends` is present:
+
 - App fields override harness fields of the same name
 - Harness fields not mentioned in the app definition are preserved
 - The merged result is what the agent sees at runtime
@@ -104,7 +135,19 @@ When `extends` is present:
 
 The compliance floor defines non-negotiable rules that override all autonomy tiers, pace settings, and process decisions. It encompasses security, data governance, audit requirements, regulatory controls, access policies, and domain-specific compliance rules.
 
-Define your compliance floor in `compliance-floor.md` at the project root. Keep it short (3-5 rules), absolute, and enforced by hooks where possible.
+Define your compliance floor in `compliance-floor.md` at the project root (see `templates/compliance-floor.md` for a starter). Keep it short (3-5 rules), absolute, and enforced by hooks where possible.
+
+## Hooks (settings.json)
+
+Active hooks that affect every session:
+
+- **PreToolUse (Edit/Write)**: Blocks edits to `.env`, lock files, and secrets
+- **PreToolUse (Bash)**: Blocks direct writes to `events.jsonl` (enforces `ops/metrics-log.sh`)
+- **PostToolUse (Edit/Write)**: Auto-runs prettier and eslint on changed files; syncs collaboration doc; `bash -n` syntax check on `.sh` files
+- **PostToolUse (Bash)**: Prompts PO review on feat/fix commits
+- **SubagentStop**: Logs agent completion; prompts PO review or findings check
+- **PreCompact**: Preserves key context (agent fleet summary) during auto-compression
+- **SessionStart**: Prompts PO status overview
 
 ## Architecture Constraints
 
@@ -112,6 +155,14 @@ Define your compliance floor in `compliance-floor.md` at the project root. Keep 
 2. **Config over code.** Use framework configuration before writing custom code.
 3. **Agent isolation.** Each agent owns a specific domain and does not modify artifacts outside that domain without involving the domain owner.
 4. **Metrics-driven decisions.** Pace changes, process adjustments, and quality assessments are grounded in measured data.
+
+## Gotchas
+
+- **Metrics backend is pluggable**: Default is JSONL, but `fleet-config.json` supports webhook, StatsD, and OpenTelemetry backends. Always use `ops/metrics-log.sh` regardless of backend.
+- **Pathway analysis catches governance bypasses**: `ops/pathways.sh` compares declared pathways in `fleet-config.json` against actual handoff events. Undeclared paths are flagged -- they may be innovation or unauthorized communication.
+- **Pace thresholds are in `fleet-config.json`**, not in COLLABORATION.md. The collaboration doc records the _current_ pace; the config defines _when_ to promote.
+- **The `example/` directory is a complete working reference** with specialist agents, overrides, compliance floor, and fleet config. Use it as a starting point.
+- **Editing `settings.json`**: Use Write (full rewrite) instead of Edit for `settings.json` — complex escaped strings in hook commands cause JSON validation failures with partial edits.
 
 ## Anti-Patterns
 

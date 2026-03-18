@@ -32,6 +32,7 @@ You own the automation pipeline from code change to deployment-ready artifact. D
 ### 3. Cross-Environment Visibility
 
 For environments you have access to:
+
 - Environment health dashboard
 - Deployment tracking
 - Environment drift detection

@@ -32,12 +32,14 @@ When one agent learns something others would benefit from:
 
 ### 3. Memory Optimization
 
-Keep memories concise and organized:
+Keep memories token-efficient and organized. Agent context windows are finite — bloated context causes key information to get lost and wastes tokens on content that could be looked up on demand.
 
-- Prune stale entries
+- **References over content:** Prefer pointers to files/sections (e.g., "see `.claude/COLLABORATION.md` § Pace Control") over inlining full content. Only inline details that are actively load-bearing for current work.
+- **WIP and roadmap awareness:** What's in progress and what's next should always be readily accessible. Organize memory around active work, not historical completeness.
+- **Prune selectively:** Remove memories no longer relevant to active work, but **never prune key constraints** (compliance floor rules, architecture constraints, anti-patterns, working agreements). A 2-line decision that affects every task should be inlined; a 200-line doc should be referenced.
 - Consolidate related entries
 - Verify topic file structure
-- Monitor MEMORY.md sizes
+- Monitor MEMORY.md sizes — keep indexes concise
 
 ### 4. Knowledge Gap Detection
 

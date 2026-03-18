@@ -1,7 +1,7 @@
 ---
 name: po
 description: Product Owner commands -- backlog management, prioritization, grooming, review, and status. Routes to the product-owner agent.
-argument-hint: '[groom|promote <item>|review|prioritize|next|backlog]'
+argument-hint: "[groom|promote <item>|review|prioritize|next|backlog]"
 ---
 
 # Product Owner
@@ -21,15 +21,15 @@ Route PO commands to the `product-owner` agent.
 
 ## Model Tiering
 
-| Subcommand       | Model  | Rationale                                          |
-| ---------------- | ------ | -------------------------------------------------- |
-| `/po` (status)   | Sonnet | Data lookup, structured reporting                  |
-| `/po next`       | Sonnet | Data lookup with simple priority logic             |
-| `/po groom`      | Opus   | Judgment: writing AC, WSJF scoring, NFR drafting   |
-| `/po promote`    | Sonnet | Template expansion, structured output              |
-| `/po review`     | Opus   | Judgment: AC verification, accept/reject           |
-| `/po prioritize` | Opus   | Judgment: WSJF scoring, tradeoff reasoning         |
-| `/po backlog`    | Sonnet | Data aggregation, structured reporting             |
+| Subcommand       | Model  | Rationale                                        |
+| ---------------- | ------ | ------------------------------------------------ |
+| `/po` (status)   | Sonnet | Data lookup, structured reporting                |
+| `/po next`       | Sonnet | Data lookup with simple priority logic           |
+| `/po groom`      | Opus   | Judgment: writing AC, WSJF scoring, NFR drafting |
+| `/po promote`    | Sonnet | Template expansion, structured output            |
+| `/po review`     | Opus   | Judgment: AC verification, accept/reject         |
+| `/po prioritize` | Opus   | Judgment: WSJF scoring, tradeoff reasoning       |
+| `/po backlog`    | Sonnet | Data aggregation, structured reporting           |
 
 ## Steps
 
