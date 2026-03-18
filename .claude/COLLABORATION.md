@@ -115,13 +115,22 @@ The agent fleet operates at a dynamic pace that adjusts based on confidence, com
 2. **Pace can go both directions.** Encountering a complex new domain, a significant bug, or a process failure is a valid reason to slow down. This is not failure -- it is discipline.
 3. **Pace applies to the fleet, not individual agents.** Exception: a new agent starts at Crawl even if the fleet is at Walk, until it proves itself.
 4. **Complexity overrides pace.** Even at Fly, a genuinely complex task warrants the appropriate pace for that task.
-5. **Significant problems trigger triad consultation.** When a significant problem occurs, the leadership triad convenes to assess impact and recommend how to adjust the pace.
+5. **Significant problems trigger triad consultation.** When a significant problem occurs (major regression, architectural surprise, delivery blocker), the leadership triad convenes to assess impact and recommend how to adjust the pace. If the triad reaches high consensus, they present a unified recommendation to the user. If consensus is low or the triad disagrees on the right response, they escalate to the user with each perspective so the user can decide.
 
 ### Information Needs Tracker
 
 Agents maintain a running list of upcoming information needs -- decisions, context, or access the user can provide ahead of time to prevent blocking later. The product-owner aggregates these during `/po` status.
 
-This list lives in `.claude/findings/information-needs.md` and is surfaced in `/po` status outputs.
+```
+## Upcoming Information Needs
+
+| What | Agent | Needed By | Why |
+|------|-------|-----------|-----|
+| API credentials for staging environment | infrastructure-ops | Before deploy pipeline work begins | Cannot build integration tests without access |
+| Decision: cache topology (local vs. distributed) | solution-architect | Before performance work starts | Architecture decision affects all consumers |
+```
+
+This list lives in `.claude/findings/information-needs.md` and is surfaced in `/po` status and `/po next` outputs.
 
 ## Coordination Architecture
 
@@ -390,7 +399,7 @@ Every work item flows through these phases:
 | ----------------- | --------------------------------------------------------------------------------- | ------------------------------------ |
 | **1. Groom**      | Triad collaborates: AC, WSJF, NFRs, dependencies                                 | PO leads, SA + SM contribute         |
 | **2. Promote**    | Expand to full work item with story, AC, NFRs. Log `item-promoted`.               | PO                                   |
-| **3. Build**      | Re-evaluate first. Execute with TDD. Full validation cycle end-to-end.            | PO orchestrates, specialists execute |
+| **3. Build**      | **Re-evaluate first:** verify the item's premise still holds against current code, context, and needs. If no longer needed, log `item-rejected-at-build` with `--reason` (context-changed, flawed-suggestion, superseded, duplicate) and `--source` (originating agent). Then execute with TDD. Full validation cycle end-to-end. | PO orchestrates, specialists execute |
 | **4. Review**     | PO verifies AC. Selective specialist reviews dispatched. DoD gate.                | PO dispatches, specialists review    |
 | **5. Fix**        | Address review findings.                                                          | Domain owners                        |
 | **6. Deploy**     | Deploy to target environment. Run validation suite.                               | Platform-ops orchestrates            |
@@ -471,6 +480,20 @@ Track and evaluate after each regression run:
 | **product-owner**      | Reviews regression findings, prioritizes fixes, adds findings to backlog                |
 | **scrum-master**       | Tracks cadence, triggers regression runs, reviews scope adjustments                     |
 
+### Milestone Release Dispatch
+
+When a batch of related items reaches acceptance and constitutes a meaningful release:
+
+1. **Declaration.** The user or PO declares a milestone with a version tag and scope summary.
+2. **Parallel dispatch.** Output agents are dispatched in parallel, each producing artifacts independently:
+   - **doc-quality** -- documentation updates, changelog, release notes
+   - **training-enablement** -- user guides, onboarding materials, walkthroughs
+   - **stakeholder comms** -- stakeholder communications, demo scripts, announcements
+3. **Independent production.** Each output agent works from the accepted items and current documentation. No sequential dependency between output agents.
+4. **Version archive.** After all output agents complete, the release is tagged in version control and archived.
+
+Output agents do not need to wait for each other. If one is blocked, the others continue. The PO tracks completion and tags the archive when all are done.
+
 ## Conflict Resolution
 
 When agents disagree about an approach:
@@ -519,6 +542,22 @@ Any agent may suggest improvements. Use this format:
 - Consider it genuinely
 - Decide and log (adopt, adapt, or decline with rationale)
 - If it crosses domains or has systemic impact, escalate to the triad
+
+## Memory Integration
+
+The memory system has two layers with distinct ownership and lifecycle:
+
+| Layer | Path | Contains | Updated By | When |
+|-------|------|----------|------------|------|
+| **harness/** | `memory/harness/` | Framework learnings: collaboration protocol patterns, tool usage, generic process insights | memory-manager (on harness upgrade) | Harness version changes only |
+| **app/** | `memory/app/` | Domain learnings: project-specific patterns, decisions, gotchas, environment quirks | Any agent during work | Continuously during sessions |
+
+### Rules
+
+- **Agents write to app/ during work.** When an agent discovers a domain-specific pattern, gotcha, or decision worth preserving, it writes to `app/` memory.
+- **harness/ is read-only during normal operation.** Implementers do not modify harness memories. These are updated only when the harness itself is upgraded.
+- **memory-manager curates both layers.** It flags stale entries, resolves contradictions, distributes learnings across agents, and ensures memories stay accurate and useful.
+- **Cross-pollination.** When an app/ learning reveals a generic pattern that would benefit any project using this harness, the memory-manager flags it for potential promotion to harness/ in the next harness upgrade cycle.
 
 ## Escalation Rules
 
