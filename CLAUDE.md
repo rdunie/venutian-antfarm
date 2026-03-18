@@ -152,7 +152,7 @@ Active hooks that affect every session:
 ## Architecture Constraints
 
 1. **Compliance floor is sacred.** No agent deprioritizes, defers, or works around compliance floor rules.
-2. **Config over code.** Use framework configuration before writing custom code.
+2. **Config when flexible, code when predictable.** Use framework configuration (fleet-config.json, agent frontmatter, hooks) when flexibility and rapid iteration deliver more value. Use code (scripts, tools, custom logic) when predictability, performance, or cost optimization are the primary drivers.
 3. **Agent isolation.** Each agent owns a specific domain and does not modify artifacts outside that domain without involving the domain owner.
 4. **Metrics-driven decisions.** Pace changes, process adjustments, and quality assessments are grounded in measured data.
 
