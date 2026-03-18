@@ -198,7 +198,7 @@ Two complementary metric groups provide evidence for pace decisions and process 
 | Task restart rate      | % of items restarted mid-execution       | Grooming quality               |
 | Blocked time           | % of lead time spent waiting             | Coordination efficiency        |
 
-**FPY by boundary pair** is the most actionable metric. If the directus-expert -> security-reviewer boundary has low FPY, the grooming process needs to add security checkpoints earlier, or the directus-expert's security awareness needs enrichment.
+**FPY by boundary pair** is the most actionable metric. If the backend-specialist -> security-reviewer boundary has low FPY, the grooming process needs to add security checkpoints earlier, or the backend-specialist's security awareness needs enrichment.
 
 **Implementation:** An append-only event log (JSONL) with a CLI helper for logging events. A dashboard script reads the log and produces the metrics. Agents log events as part of their workflow, not as a separate step.
 
@@ -246,14 +246,14 @@ Map your technical domains to execution agents. Each agent should own a clear do
 
 Example mappings:
 
-| Domain           | Reference Agent       | Your Equivalent                            |
-| ---------------- | --------------------- | ------------------------------------------ |
-| Backend platform | directus-expert       | django-expert, rails-specialist            |
-| Data pipelines   | n8n-workflow-engineer | airflow-engineer, kafka-specialist         |
-| Frontend UI      | vue-ux-engineer       | react-engineer, flutter-specialist         |
-| E2E testing      | e2e-test-engineer     | cypress-engineer, playwright-specialist    |
-| Infrastructure   | infrastructure-ops    | terraform-engineer, helm-specialist        |
-| Platform/CI      | platform-ops          | github-actions-engineer, devops-specialist |
+| Domain           | Harness Template              | Your Equivalent                            |
+| ---------------- | ----------------------------- | ------------------------------------------ |
+| Backend platform | backend-specialist            | django-expert, rails-specialist            |
+| Data pipelines   | (create your own)             | airflow-engineer, kafka-specialist         |
+| Frontend UI      | frontend-specialist           | react-engineer, flutter-specialist         |
+| E2E testing      | e2e-test-engineer             | cypress-engineer, playwright-specialist    |
+| Infrastructure   | infrastructure-ops            | terraform-engineer, helm-specialist        |
+| Platform/CI      | platform-ops (included)       | github-actions-engineer, devops-specialist |
 
 **Sizing guidance:** Start with 3-5 execution agents covering your core domains. Add review agents as your compliance needs demand. The triad (PO, SA, SM) is constant regardless of fleet size.
 
@@ -291,22 +291,22 @@ Every fleet starts at Crawl. This is intentional. You learn more about your proc
 
 ---
 
-## Worked Example: Legal Case Management Platform
+## Worked Example: Compliance-Sensitive Platform
 
-This pattern was developed for a self-hosted case management platform handling sensitive legal proceedings. The system processes PII (names, identification numbers, family relationships), enforces role-based access across multiple organizational hubs, and must meet compliance requirements for data isolation, audit trails, and incident response.
+This pattern was originally developed for a self-hosted platform with strict compliance requirements: PII isolation, role-based access control, audit trails, and incident response procedures. See the `example/` directory in this repository for a minimal working demonstration.
 
-Key domain-specific elements:
+Key domain-specific elements from the original deployment:
 
-| Pattern Element       | Implementation                                                                                                                                                                             |
-| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Compliance floor        | Zero-knowledge PII architecture (operational and identity databases fully separated), row-level access control scoped by organizational hub, content filtering on all free-text fields     |
-| Execution agents (6)  | Backend platform specialist, workflow/pipeline engineer, frontend UI engineer, E2E test engineer, infrastructure ops, platform/CI ops                                                      |
-| Review agents (4)     | Security reviewer, PII compliance auditor, governance/audit compliance, knowledge/memory manager                                                                                           |
-| Output agents (3)     | Documentation quality validator, training content producer, stakeholder video producer                                                                                                     |
-| Enforcement hooks (8) | PII query blocker, secrets file blocker, auto-formatter, collaboration doc drift detector, commit-type detector, compact context injector, agent completion logger, session status display |
-| Metrics               | 15 event types via CLI helper, DORA + flow quality dashboard                                                                                                                               |
-| Governance docs       | 4-document governance suite with PDF generation, risk registry, role matrix                                                                                                                |
-| Tech stack            | Headless CMS (Directus), Vue 3, workflow engine (n8n), PostgreSQL, Vault, Kubernetes                                                                                                       |
+| Pattern Element | Implementation |
+|---|---|
+| Compliance floor | Data isolation (operational and identity databases separated), row-level access control, content filtering on free-text fields, secrets managed via vault |
+| Execution agents (6) | Backend specialist, pipeline engineer, frontend specialist, E2E test engineer, infrastructure ops, platform/CI ops |
+| Review agents (4) | Security reviewer, data compliance auditor, governance/audit compliance, knowledge/memory manager |
+| Output agents (3) | Documentation quality validator, training content producer, stakeholder video producer |
+| Enforcement hooks (8) | Sensitive data blocker, secrets file blocker, auto-formatter, collaboration doc drift detector, commit-type detector, compact context injector, agent completion logger, session status display |
+| Metrics | 15 event types via CLI helper, DORA + flow quality dashboard |
+| Governance docs | 4-document governance suite with PDF generation, risk registry, role matrix |
+| Tech stack | Headless CMS, SPA framework, workflow engine, PostgreSQL, Vault, Kubernetes |
 
 **Fleet size rationale:** 16 agents emerged from the domain, not from a target number. Each agent was added when a specialist domain became large enough that generalist agents made recurring mistakes in it. The initial fleet was 5 agents (PO, SA, SM, backend specialist, infrastructure ops). Review and output agents were added as compliance requirements crystallized.
 
