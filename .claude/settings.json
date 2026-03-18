@@ -1,0 +1,75 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "ops/hooks/collab-sync-check.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo \"$CLAUDE_TOOL_INPUT\" | grep -qP 'git commit.*-m.*(feat|fix)[:(]' && echo '[PO] feat/fix commit detected. Consider running /po review to check if any in-progress item AC is now satisfied.' || true"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo \"$CLAUDE_FILE_PATH\" | grep -qE '(\\.env|package-lock\\.json|pnpm-lock\\.yaml|secrets?\\.yaml)$' && echo 'BLOCKED: Cannot edit sensitive or lock file' && exit 2 || exit 0"
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "matcher": "auto",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo 'Key context: Agent fleet harness with 5 core agents (PO, SA, SM, memory-manager, platform-ops). Progressive autonomy (Crawl/Walk/Run/Fly). Compliance floor overrides all. See CLAUDE.md for details.' > /tmp/antfarm-compact-context.txt"
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "date '+[%H:%M:%S] Agent completed' >> /tmp/antfarm-agent-log.txt",
+            "async": true
+          },
+          {
+            "type": "command",
+            "command": "echo '[PO] Specialist agent completed. Consider running /po review to incorporate findings into the backlog.' || true"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '[PO] Session started. Run /po for a quick status overview: WIP state, next recommended item, and grooming needs.'"
+          }
+        ]
+      }
+    ]
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "PACE=$(grep -oP '(?<=Current Pace: \\*\\*)[^*]+' .claude/COLLABORATION.md 2>/dev/null || echo 'unknown'); echo \"Pace: $PACE | /po for status\""
+  }
+}
