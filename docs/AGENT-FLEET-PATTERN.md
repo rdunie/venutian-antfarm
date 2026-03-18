@@ -28,35 +28,44 @@ This pattern is overkill for simple automation tasks, single-agent workflows, or
 
 ## Pattern Overview
 
-```
-                    +------------------+
-                    |  Human Operator  |
-                    +--------+---------+
-                             |
-                    evidence-based oversight
-                             |
-              +--------------+--------------+
-              |     Leadership Triad        |
-              |  PO  +  SA  +  SM           |
-              |  (value) (tech) (process)   |
-              +--------------+--------------+
-                     |               |
-              context/coaching    risk signals
-                     |               |
-         +-----------+---+   +------+--------+
-         | Execution     |   | Review        |
-         | Specialists   |<->| Agents        |
-         | (build)       |   | (validate)    |
-         +-------+-------+   +------+--------+
-                 |                    |
-          +------+------+            |
-          | Output      |<-----------+
-          | Agents      | corrections/accuracy review
-          | (publish)   +----------->+
-          +-------------+  content for review
+```mermaid
+flowchart TD
+    USER(["Human Operator"])
+
+    subgraph Harness ["Harness Layer (this framework)"]
+        S(["Strategic\nPO  SA  SM"])
+        MM["Memory Manager"]
+        PO_OPS["Platform Ops"]
+        CA["Compliance Auditor"]
+    end
+
+    subgraph AppLayer ["App Layer (you define)"]
+        E(["Execution\nSpecialists"])
+        R(["Review\nAgents"])
+        O(["Output\nAgents"])
+    end
+
+    USER -->|"evidence-based\noversight"| S
+    S -->|"context +\ncoaching"| E
+    S -.->|"arch/process"| R
+    E -->|"work"| R
+    R -.->|"findings"| E
+    R -.->|"risk signals"| S
+    E -->|"milestone"| O
+    R -.->|"corrections"| O
+    O -.->|"content for review"| R
+
+    style USER fill:#90caf9,stroke:#1565c0,color:#1a1a1a
+    style S fill:#90caf9,stroke:#1565c0,color:#1a1a1a
+    style MM fill:#90caf9,stroke:#1565c0,color:#1a1a1a
+    style PO_OPS fill:#90caf9,stroke:#1565c0,color:#1a1a1a
+    style CA fill:#ef9a9a,stroke:#b71c1c,color:#1a1a1a
+    style E fill:#a5d6a7,stroke:#2e7d32,color:#1a1a1a
+    style R fill:#ef9a9a,stroke:#b71c1c,color:#1a1a1a
+    style O fill:#ffcc80,stroke:#e65100,color:#1a1a1a
 ```
 
-Four organizational layers, each with distinct responsibilities. Note the bidirectional flow between Review and Output: output agents submit content for accuracy review (security, compliance, knowledge accuracy), and reviewers send corrections back. Output agents also flag stale source docs as early warnings to review agents.
+Four organizational layers, each with distinct responsibilities. Solid lines show primary work-product flow. Dotted lines show feedback and advisory flows. Note the bidirectional flow between Review and Output: output agents submit content for accuracy review, and reviewers send corrections back.
 
 | Layer         | Purpose                                                      | Model Tier                 | Autonomy                                       |
 | ------------- | ------------------------------------------------------------ | -------------------------- | ---------------------------------------------- |
