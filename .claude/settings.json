@@ -58,7 +58,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "echo 'Key context: Agent fleet harness with 5 core agents (PO, SA, SM, memory-manager, platform-ops). Progressive autonomy (Crawl/Walk/Run/Fly). Compliance floor overrides all. See CLAUDE.md for details.' > /tmp/antfarm-compact-context.txt"
+            "command": "echo 'Key context: Agent fleet harness with 6 core agents (PO, SA, SM, memory-manager, platform-ops, compliance-auditor). Progressive autonomy (Crawl/Walk/Run/Fly). Compliance floor overrides all. See CLAUDE.md for details.' > /tmp/antfarm-compact-context.txt"
           }
         ]
       }
@@ -91,7 +91,7 @@
   },
   "statusLine": {
     "type": "command",
-    "command": "PACE=$(grep -oP '(?<=Current Pace: \\*\\*)[^*]+' .claude/COLLABORATION.md 2>/dev/null || echo 'unknown'); BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo '?'); WT=''; git rev-parse --is-inside-work-tree &>/dev/null && [ \"$(git rev-parse --show-toplevel 2>/dev/null)\" != \"$(git worktree list --porcelain 2>/dev/null | head -1 | sed 's/worktree //')\" ] && WT=' [worktree]'; echo \"$BRANCH$WT | Pace: $PACE | /po for status\""
+    "command": "PACE=$(grep -oP '(?<=Current Pace: \\*\\*)[^*]+' .claude/COLLABORATION.md 2>/dev/null || echo 'unknown'); BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo '?'); WT=''; git rev-parse --is-inside-work-tree &>/dev/null && [ \"$(git rev-parse --show-toplevel 2>/dev/null)\" != \"$(git worktree list --porcelain 2>/dev/null | head -1 | sed 's/worktree //')\" ] && WT=' [worktree]'; PROJECT=$(basename \"$(git rev-parse --show-toplevel 2>/dev/null)\" 2>/dev/null || basename \"$PWD\"); CWD=$(pwd); echo \"$PROJECT:$BRANCH$WT | $CWD | Pace: $PACE\""
   },
   "enabledPlugins": {
     "compound-engineering@compound-engineering-plugin": false,
