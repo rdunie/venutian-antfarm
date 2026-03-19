@@ -22,3 +22,6 @@ node_modules/
 # Temp files
 /tmp/
 *.tmp
+
+# Compliance governance sentinel file (transient, never committed)
+.claude/compliance/.applying
