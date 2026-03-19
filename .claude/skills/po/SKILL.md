@@ -13,7 +13,7 @@ Route PO commands to the `product-owner` agent.
 - `/po` -- WIP status overview (what is in progress, what is next, grooming needs)
 - `/po next` -- Recommend the highest-priority ready item to work on
 - `/po groom` -- Scan active tiers, propose refinements for items missing DoR fields
-- `/po promote <item>` -- Expand a tier file item into a full work item with story + AC
+- `/po promote <item>` -- Expand a tier file item into a full work item with story + AC, create feature branch and draft PR
 - `/po review` -- Review completed work against acceptance criteria + DoD
 - `/po review <item>` -- Review a specific item
 - `/po prioritize` -- Recalculate WSJF scores for active tiers, propose reordering
@@ -38,3 +38,12 @@ Route PO commands to the `product-owner` agent.
 3. Build the agent prompt based on the subcommand.
 4. Review the agent's output and present the summary to the user.
 5. If the agent proposes changes, summarize what will be modified and confirm before applying.
+
+## Promote Branching Workflow
+
+When the subcommand is `promote`, after the PO agent expands the item into a full work item:
+
+1. **Create feature branch.** Run: `git checkout -b <type>/<item-id>-<slug>` where type is `feat`, `fix`, `chore`, or `docs` based on the item category. Push: `git push -u origin <branch-name>`.
+2. **Create draft PR.** Use GitHub MCP `create_pull_request` with `draft: true`. PR body includes the work item's story, acceptance criteria, and NFR flags. PR title format: `<type>: <description> (#<item-id>)`.
+3. **Log events.** Run: `ops/metrics-log.sh branch-created <item-id> --branch <branch-name>` and `ops/metrics-log.sh pr-opened <item-id> --pr <pr-number>`.
+4. **Report.** Present the branch name and PR URL to the user.
