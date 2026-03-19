@@ -21,6 +21,7 @@
     "run_threshold_fpy": 80
   },
   "agents": {
+    "governance": ["compliance-officer", "ciso"],
     "core": [
       "product-owner",
       "solution-architect",
@@ -54,6 +55,11 @@
         "* -> solution-architect",
         "* -> scrum-master",
         "* -> product-owner"
+      ],
+      "governance": [
+        "ciso -> compliance-officer",
+        "compliance-officer -> compliance-auditor",
+        "* -> compliance-officer"
       ]
     },
     "note": "Declared pathways define expected agent-to-agent communication routes. Actual pathways are inferred from handoff events. The delta between declared and actual is the signal: undeclared paths may indicate innovation or governance bypass."
