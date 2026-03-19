@@ -42,6 +42,11 @@ cp templates/fleet-config.json fleet-config.json
 flowchart TD
     USER(["Human Operator"])
 
+    subgraph Gov ["Governance Layer"]
+        CO["Compliance Officer"]
+        CISO_A["CISO"]
+    end
+
     subgraph Harness ["Harness Layer (this framework)"]
         S(["Strategic\nPO  SA  SM"])
         MM["Memory Manager"]
@@ -55,6 +60,9 @@ flowchart TD
         O(["Output\nAgents"])
     end
 
+    USER -->|"approvals +\noversight"| Gov
+    Gov -->|"controls +\ncompliance"| S
+    Gov -.->|"dispatch"| CA
     USER -->|"evidence-based\noversight"| S
     S -->|"context +\ncoaching"| E
     S -.->|"arch/process"| R
@@ -65,6 +73,8 @@ flowchart TD
     R -.->|"corrections"| O
 
     style USER fill:#90caf9,stroke:#1565c0,color:#1a1a1a
+    style CO fill:#ce93d8,stroke:#6a1b9a,color:#1a1a1a
+    style CISO_A fill:#ce93d8,stroke:#6a1b9a,color:#1a1a1a
     style S fill:#90caf9,stroke:#1565c0,color:#1a1a1a
     style MM fill:#90caf9,stroke:#1565c0,color:#1a1a1a
     style PO_OPS fill:#90caf9,stroke:#1565c0,color:#1a1a1a
@@ -76,16 +86,18 @@ flowchart TD
 
 ## What You Get
 
-**6 core agents** that govern any software project:
+**8 agents** across governance and operational tiers:
 
-| Agent                  | Role                 | What It Does                                                        |
-| ---------------------- | -------------------- | ------------------------------------------------------------------- |
-| **product-owner**      | Business context     | Backlog management, prioritization (WSJF), acceptance, quality gate |
-| **solution-architect** | Technical context    | NFRs, architecture decisions, cross-system coherence                |
-| **scrum-master**       | Process facilitation | Pace control, findings reviews, conflict resolution, retros         |
-| **memory-manager**     | Knowledge quality    | Memory consistency, learning distribution, stale detection          |
-| **platform-ops**       | Dev platform         | DORA metrics, CI/CD, cross-environment visibility                   |
-| **compliance-auditor** | Compliance review    | Audits work output against compliance floor rules during Review     |
+| Agent                  | Tier        | Role                 | What It Does                                                        |
+| ---------------------- | ----------- | -------------------- | ------------------------------------------------------------------- |
+| **compliance-officer** | Governance  | Compliance program   | Floor guardianship, change control, conformance monitoring          |
+| **ciso**               | Governance  | Security authority   | Security benchmarks, security controls, threat assessment           |
+| **product-owner**      | Strategic   | Business context     | Backlog management, prioritization (WSJF), acceptance, quality gate |
+| **solution-architect** | Strategic   | Technical context    | NFRs, architecture decisions, cross-system coherence                |
+| **scrum-master**       | Strategic   | Process facilitation | Pace control, findings reviews, conflict resolution, retros         |
+| **memory-manager**     | Operational | Knowledge quality    | Memory consistency, learning distribution, stale detection          |
+| **platform-ops**       | Operational | Dev platform         | DORA metrics, CI/CD, cross-environment visibility                   |
+| **compliance-auditor** | Operational | Compliance review    | Audits work output against compliance floor rules during Review     |
 
 ### Progressive Autonomy
 
