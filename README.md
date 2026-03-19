@@ -280,6 +280,7 @@ App fields override harness fields. Unmentioned harness fields are preserved.
 
 ## Documentation
 
+- **[Governing the Ant Farm](https://medium.com/@robdunie/governing-the-ant-farm-a-governance-first-framework-for-multi-agent-software-delivery-29245fc14bd9)** -- Blog post introducing the framework's philosophy and design
 - **[Getting Started](docs/GETTING-STARTED.md)** -- Step-by-step onboarding guide
 - **[Agent Fleet Pattern](docs/AGENT-FLEET-PATTERN.md)** -- The full pattern specification
 - **[Collaboration Protocol](.claude/COLLABORATION.md)** -- How agents work together

@@ -6,7 +6,7 @@ _Part of [Venutian Antfarm](../README.md) by [RD Digital Consulting Services, LL
 
 A reusable architecture for multi-agent software delivery with progressive autonomy, structured governance, and evidence-based quality control.
 
-**Origin:** Extracted from a production 16-agent fleet delivering a compliance-sensitive case management platform (PII-handling, legal domain, zero-knowledge data architecture, self-hosted Kubernetes). The pattern separates domain-specific implementation from generalizable fleet architecture.
+**Origin:** Extracted from a production 16-agent fleet delivering a compliance-sensitive case management platform (PII-handling, legal domain, zero-knowledge data architecture, self-hosted Kubernetes). The pattern separates domain-specific implementation from generalizable fleet architecture. See the [introductory blog post](https://medium.com/@robdunie/governing-the-ant-farm-a-governance-first-framework-for-multi-agent-software-delivery-29245fc14bd9) for the philosophy behind this approach.
 
 **Last updated:** 2026-03-18
 

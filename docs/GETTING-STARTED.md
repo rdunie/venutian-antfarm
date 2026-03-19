@@ -4,7 +4,7 @@
 
 _Part of [Venutian Antfarm](../README.md) by [RD Digital Consulting Services, LLC](https://robdunie.com/)._
 
-A step-by-step guide to setting up your agent fleet harness.
+A step-by-step guide to setting up your agent fleet harness. For background on the framework's philosophy, see [Governing the Ant Farm](https://medium.com/@robdunie/governing-the-ant-farm-a-governance-first-framework-for-multi-agent-software-delivery-29245fc14bd9).
 
 ## Prerequisites
 
