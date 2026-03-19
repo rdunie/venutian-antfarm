@@ -102,38 +102,84 @@ Three tiers of compliance controls, each with distinct authority and enforcement
 | Producing conformance reports                         | Autonomous                |
 | Publishing compliance enablement                      | Autonomous                |
 
-## CO-CISO Interaction Pattern
+## Governance Collaboration Pattern
+
+### Cx Consultation on Changes
+
+When a change is proposed to the compliance floor or targets, the CO consults all Cx roles to assess cross-domain impact:
 
 ```
-CISO identifies security control needed
-  → CISO submits /compliance propose with security rationale + benchmark reference
-    → CO receives, classifies (Type 1/2/3), assesses risk impact
-      → Type 1 (reduces risk): CO approves, applies, notifies user
-      → Type 2/3: CO presents to user with CISO's rationale + CO's assessment
+Change proposed (by any agent, user, or Cx role)
+  → CO receives, classifies (Type 1/2/3)
+  → CO consults each Cx role: "Does this change impact your area of responsibility?"
+    → Each Cx role responds: impacted / not impacted / abstain
+    → CO collaborates with all Cx roles that flagged impact
+      → Consensus-building: adopt / adopt with changes / decline
+      → Cx roles (aside from CO) may abstain from the consensus
+    → CO presents consensus + dissenting views (if any) to the decision gate
+      → Type 1 (reduces risk, consensus to adopt): CO approves, notifies user
+      → Type 2/3 or no consensus: CO presents to user with full Cx input
         → User approves/rejects
           → CO applies via /compliance apply
 ```
 
-The CO never overrides the CISO on security substance. The CISO never overrides the CO on compliance process. If they disagree, the user resolves it.
+The CO never overrides the CISO on security substance. The CISO never overrides the CO on compliance process. No Cx role overrides another's domain authority. If the Cx roles cannot reach consensus, the user resolves it.
+
+**In sub-project 1 (CO + CISO only):** The consultation is between CO and CISO. When additional Cx roles are added in sub-project 2, the same pattern scales — the CO consults all active Cx roles.
+
+### Executive Memory Architecture
+
+Each Cx role (CO, CISO, and future Cx agents) maintains a structured memory of their governance decisions to refine their understanding of context over time:
+
+**Active context** (`memory/app/<cx-role>-active.md`):
+
+- Current positions on recent changes
+- Active concerns and open questions
+- Cross-references to related proposals
+- Kept concise — only load-bearing context for current work
+
+**Linked archive** (`memory/app/<cx-role>-archive.md`):
+
+- Older positions that are still relevant but not immediately active
+- Referenced from active context when needed, not loaded by default
+- Examples: past decisions that establish precedent, calibration learnings
+
+**Retired archive** (`memory/app/<cx-role>-retired.md`):
+
+- Positions that were changed, disproven, or are no longer useful
+- Not loaded into context — exists only for audit trail
+- Examples: positions reversed by new information, superseded by later decisions
+
+**What each Cx role records per change:**
+
+- The proposal they were consulted on
+- Their assessment of impact on their domain
+- Their recommendation (adopt / adopt with changes / decline / abstain)
+- Their opinion about the final consensus (agree / disagree with rationale)
+- Any refinement to their understanding that resulted
+
+**Memory hygiene:** The memory-manager agent includes Cx executive memories in its consistency audits. Entries that haven't been referenced in 5+ accepted items are candidates for migration from active to linked archive. Entries in linked archive that haven't been referenced in 10+ items are candidates for retirement. The Cx role approves migrations — the memory-manager proposes, never moves autonomously.
 
 ## Change Control Process
 
 ### Change Types
 
-| Type   | Scope                          | Authority                                       | Example                                      |
-| ------ | ------------------------------ | ----------------------------------------------- | -------------------------------------------- |
-| Type 1 | Targets that reduce risk       | CO approves autonomously, notifies user         | CISO adds stricter encryption target         |
-| Type 2 | Targets that don't reduce risk | Requires explicit user approval                 | Replacing one audit standard with equivalent |
-| Type 3 | Any floor change               | Requires explicit user approval — no exceptions | Adding, modifying, or removing a floor rule  |
+| Type   | Scope                          | Authority                                                   | Example                                      |
+| ------ | ------------------------------ | ----------------------------------------------------------- | -------------------------------------------- |
+| Type 1 | Targets that reduce risk       | CO approves autonomously (with Cx consensus), notifies user | CISO adds stricter encryption target         |
+| Type 2 | Targets that don't reduce risk | Requires explicit user approval                             | Replacing one audit standard with equivalent |
+| Type 3 | Any floor change               | Requires explicit user approval — no exceptions             | Adding, modifying, or removing a floor rule  |
 
 ### Change Process (all types)
 
 1. **Request** — Originator (CISO, triad member, user) submits a change proposal to the CO via `/compliance propose`
 2. **Assessment** — CO evaluates: What changes? Why? Risk impact? Which type (1/2/3)?
-3. **Decision gate** — Type 1: CO approves autonomously, notifies user. Type 2-3: CO presents to user with recommendation, waits for approval.
-4. **Application** — CO uses `/compliance apply` to apply the change (the only path through the hook)
-5. **Logging** — Every change is logged in `.claude/compliance/change-log.md` with: who requested, who approved, rationale, risk assessment, before/after diff, timestamp
-6. **Enablement** — If the change affects agent behavior, the CO (or CISO for security) publishes guidance to the affected agents
+3. **Consultation** — CO consults each Cx role for cross-domain impact assessment. Cx roles respond with impact assessment and recommendation. CO collaborates with impacted Cx roles to build consensus.
+4. **Decision gate** — Type 1 with consensus: CO approves autonomously, notifies user. Type 2-3 or no consensus: CO presents to user with Cx input and recommendation, waits for approval.
+5. **Application** — CO uses `/compliance apply` to apply the change (the only path through the hook)
+6. **Logging** — Every change is logged in `.claude/compliance/change-log.md` with: who requested, who approved, Cx consultation results (each role's position), consensus outcome, rationale, risk assessment, before/after diff, timestamp
+7. **Memory** — Each consulted Cx role records their position and opinion about the consensus in their active memory
+8. **Enablement** — If the change affects agent behavior, the CO (or relevant Cx role) publishes guidance to the affected agents
 
 ### Unauthorized Change Handling
 
