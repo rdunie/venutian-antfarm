@@ -1,4 +1,4 @@
-<img src="assets/icon.jpg" alt="Venutian Antfarm" width="80" align="right">
+<img src="assets/venutian-antfarm-icon.jpg" alt="Venutian Antfarm" width="80" align="right">
 
 # Getting Started with Venutian Antfarm
 

@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/assets/banner.jpg" alt="Venutian Antfarm — Multi-Agent Fleet Governance Framework" width="600">
+  <img src="docs/assets/venutian-antfarm-banner.png" alt="Venutian Antfarm — Multi-Agent Fleet Governance Framework" width="600">
 </p>
 
 <p align="center">
