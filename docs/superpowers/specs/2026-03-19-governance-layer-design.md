@@ -137,20 +137,39 @@ The CO never overrides the CISO on security substance. The CISO never overrides 
 
 ### Unauthorized Change Handling
 
-- PreToolUse hook blocks any Edit/Write to `compliance-floor.md` and `.claude/compliance/targets.md`
+- PreToolUse hook blocks any Edit/Write to `compliance-floor.md` and `.claude/compliance/targets.md` unless the sentinel file exists (see Hook Bypass Mechanism below)
 - SessionStart hook verifies `compliance-floor.md` checksum against stored hash
-- If unauthorized change detected (e.g., manual git edit outside Claude Code): CO reverts and issues a **reprimand** — a critical finding in the findings register with category "compliance-violation"
-- Repeated violations by the same agent trigger escalation to the user
+- If unauthorized change detected (e.g., manual git edit outside Claude Code): CO restores the file using `git checkout HEAD -- compliance-floor.md` and issues a **reprimand** — a critical finding in the findings register with category "compliance-violation" and urgency "critical"
+- Attribution for out-of-band changes (manual git edits) is not possible — the reprimand is logged against "unknown/external" with a note to investigate
+- In-session hook-blocked attempts are logged with the tool context available at the time
+
+**Limitation:** Tampering that occurs mid-session via manual git operations outside Claude Code is not detected until the next SessionStart integrity check.
 
 ## Hook Enforcement
 
 ### PreToolUse — Block compliance file edits
 
-Block any Edit/Write to `compliance-floor.md` and `.claude/compliance/targets.md`. Output message: "BLOCKED: Compliance files are protected. Use /compliance propose to submit changes through the Compliance Officer."
+Block any Edit/Write to `compliance-floor.md` and `.claude/compliance/targets.md` **unless** the sentinel file `.claude/compliance/.applying` exists. Output message when blocked: "BLOCKED: Compliance files are protected. Use /compliance propose to submit changes through the Compliance Officer."
+
+### Hook Bypass Mechanism (Sentinel File)
+
+The `/compliance apply` skill is the only legitimate path to modify compliance files. It uses a sentinel file to temporarily allow the edit:
+
+1. `/compliance apply` creates `.claude/compliance/.applying` (containing the proposal-id and timestamp)
+2. The PreToolUse hook checks for the sentinel — if present, allows the edit
+3. `/compliance apply` performs the edit, updates the checksum, appends to the change log
+4. `/compliance apply` removes the sentinel
+
+**Safeguards:**
+
+- If the sentinel exists for more than 60 seconds without being cleaned up, it is treated as a stale lock (skill crashed mid-apply). The next agent to encounter it removes it and logs a finding.
+- The sentinel file is added to `.gitignore` — it should never be committed.
 
 ### SessionStart — Integrity check
 
 Compare `compliance-floor.md` checksum against `.claude/compliance/floor-checksum.sha256`. If mismatch, alert: "[CO] Compliance floor integrity check FAILED. Unauthorized modification detected. The Compliance Officer will investigate and restore."
+
+The checksum file stores both the SHA-256 hash and the git commit hash of the last known-good state, enabling restoration via `git checkout <commit> -- compliance-floor.md`.
 
 ## `/compliance` Skill
 
@@ -176,14 +195,65 @@ Single entry point for all compliance program operations.
 | `/compliance audit`   | Sonnet | Dispatches the Sonnet-tier compliance-auditor    |
 | `/compliance log`     | Sonnet | Data lookup                                      |
 
+## Proposal Storage
+
+Proposals are stored as numbered markdown files in `.claude/compliance/proposals/`:
+
+```
+.claude/compliance/proposals/
+├── 001-add-encryption-at-rest.md
+├── 002-soc2-access-controls.md
+└── ...
+```
+
+Each proposal file contains:
+
+```markdown
+---
+id: 001
+status: pending | approved | rejected | applied
+type: 1 | 2 | 3
+requested-by: ciso
+date: 2026-03-19
+---
+
+## Proposal: [title]
+
+**Change to:** floor | targets
+**Rule (before):** [existing text or "new rule"]
+**Rule (after):** [proposed text]
+**Rationale:** [why this change is needed]
+**Benchmark reference:** [e.g., SOC-2 CC6.1, NIST 800-53 AC-2]
+**Risk assessment:** [how this affects the risk posture]
+```
+
+Proposal IDs are sequential integers, zero-padded to 3 digits. The CO assigns the ID when a proposal is received via `/compliance propose`.
+
 ## Compliance Directory Structure
 
 ```
 .claude/compliance/
 ├── change-log.md              # Append-only audit trail (never edited, only appended)
-├── floor-checksum.sha256      # Integrity check for compliance-floor.md
-└── targets.md                 # Compliance targets (SHOULD tier)
+├── floor-checksum.sha256      # Hash + commit ref for integrity check
+├── targets.md                 # Compliance targets (SHOULD tier)
+├── .applying                  # Sentinel file (transient, gitignored)
+└── proposals/                 # Change proposals
+    ├── 001-example.md
+    └── ...
 ```
+
+## Metrics Integration
+
+New event types for `ops/metrics-log.sh`:
+
+| Event                  | When                                                 | Args                                              |
+| ---------------------- | ---------------------------------------------------- | ------------------------------------------------- |
+| `compliance-proposed`  | Proposal submitted                                   | `--proposal <id> --type <1\|2\|3> --by <agent>`   |
+| `compliance-approved`  | Proposal approved                                    | `--proposal <id> --by <co\|user>`                 |
+| `compliance-rejected`  | Proposal rejected                                    | `--proposal <id> --by <co\|user> --reason <text>` |
+| `compliance-applied`   | Change applied to floor or targets                   | `--proposal <id> --scope <floor\|targets>`        |
+| `compliance-violation` | Unauthorized change detected or hook-blocked attempt | `--source <hook\|checksum>`                       |
+| `compliance-reverted`  | Unauthorized change restored                         | `--method <git-checkout>`                         |
 
 ## Conformance Reporting
 
@@ -229,7 +299,14 @@ Add to COLLABORATION.md § Conflict Resolution:
 
 Add Governance Agents tier above Strategic Agents in the Agent Fleet Structure section.
 
-### fleet-config.json — Governance roster
+### Agent file locations
+
+New agents are placed alongside existing core agents:
+
+- `.claude/agents/compliance-officer.md`
+- `.claude/agents/ciso.md`
+
+### fleet-config.json — Governance roster and pathways
 
 Add `governance` array:
 
@@ -239,6 +316,16 @@ Add `governance` array:
   "core": [...],
   ...
 }
+```
+
+Add governance pathways to `pathways.declared`:
+
+```json
+"governance": [
+  "ciso -> compliance-officer",
+  "compliance-officer -> compliance-auditor",
+  "* -> compliance-officer"
+]
 ```
 
 ### README.md — Architecture diagram and agent table
@@ -251,7 +338,25 @@ Update references to reflect governance tier.
 
 ### settings.json — New hooks
 
-Add PreToolUse and SessionStart hooks for compliance file protection and integrity checking.
+- PreToolUse hook: Block Edit/Write to compliance files (with sentinel bypass)
+- SessionStart hook: Checksum integrity verification
+- PreCompact hook: Update context summary to include governance tier ("8 agents: 2 governance (CO, CISO), 6 core (PO, SA, SM, memory-manager, platform-ops, compliance-auditor)")
+
+### compliance-auditor agent update
+
+Add standing instruction to `.claude/agents/compliance-auditor.md`: "All audit findings are reported to the dispatching agent and copied to the CO." This is a minor behavioral update — the auditor's capabilities and boundaries are otherwise unchanged.
+
+### Conflict resolution merge strategy
+
+The new governance conflict rows are added to the **Escalation Rules table** in COLLABORATION.md (the structured table, not the prose section). The existing row "Compliance concern → Compliance floor (always)" is updated to: "Compliance concern → CO enforces floor (always)."
+
+### Checksum lifecycle
+
+The checksum in `.claude/compliance/floor-checksum.sha256` is generated/regenerated:
+
+- By `/onboard` during initial setup
+- By `/compliance apply` after every successful floor change
+- By the CO on first session for existing projects adopting this spec
 
 ## Cx Role Template
 
@@ -268,8 +373,8 @@ This is a breadcrumb for sub-project 2.
 
 ## What Does NOT Change
 
-- The **compliance-auditor** agent — unchanged, still a lightweight Sonnet reviewer
+- The **compliance-auditor** agent's capabilities and boundaries — still a lightweight Sonnet reviewer (minor update: adds CO copy on findings, see above)
 - The **`/audit` skill** — unchanged, still dispatches the auditor
-- **`ops/` scripts** — no changes needed
+- **`ops/` scripts** — no changes to existing scripts (new event types are added to `ops/metrics-log.sh`)
 - The **work item lifecycle** — governance agents don't participate in build/review phases directly
 - The **triad's operational authority** — PO still owns business, SA owns technical, SM owns process
