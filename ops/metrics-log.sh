@@ -39,6 +39,7 @@ EVENT_TYPE="$1"; shift
 ITEM="" FROM="" TO="" REASON="" SEVERITY="" SOURCE="" BUG_ID_ARG="" EXT="" DEPLOY_TYPE="" DEPLOY_ENV=""
 TOKENS="" TURNS="" DURATION="" MODEL="" TASK=""
 PROPOSAL="" SCOPE="" METHOD="" CHANGE_TYPE=""
+BRANCH="" PR=""
 POSITIONAL=()
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -60,6 +61,8 @@ while [[ $# -gt 0 ]]; do
     --scope)    SCOPE="$2";    shift 2 ;;
     --method)   METHOD="$2";   shift 2 ;;
     --change-type) CHANGE_TYPE="$2"; shift 2 ;;
+    --branch) BRANCH="$2"; shift 2 ;;
+    --pr)     PR="$2";     shift 2 ;;
     *) POSITIONAL+=("$1"); shift ;;
   esac
 done
@@ -251,6 +254,18 @@ case "$EVENT_TYPE" in
        '{"ts":$ts,"event":$event,"method":$method,"agent":$agent}')"
     ;;
 
+  branch-created)
+    emit_event "$(jq -cn --arg ts "$TS" --arg event "$EVENT_TYPE" \
+       --arg item "$ITEM" --arg branch "$BRANCH" --arg agent "$AGENT" \
+       '{"ts":$ts,"event":$event,"item":$item,"branch":$branch,"agent":$agent}')"
+    ;;
+
+  pr-opened|pr-merged)
+    emit_event "$(jq -cn --arg ts "$TS" --arg event "$EVENT_TYPE" \
+       --arg item "$ITEM" --arg pr "$PR" --arg agent "$AGENT" \
+       '{"ts":$ts,"event":$event,"item":$item,"pr":$pr,"agent":$agent}')"
+    ;;
+
   *)
     echo "ERROR: unknown event type '$EVENT_TYPE'" >&2
     echo "Valid types: item-promoted item-accepted ext-deployed bug-found bug-fixed" >&2
@@ -259,6 +274,7 @@ case "$EVENT_TYPE" in
     echo "             agent-invoked regression-run" >&2
     echo "             compliance-proposed compliance-approved compliance-rejected" >&2
     echo "             compliance-applied compliance-violation compliance-reverted" >&2
+    echo "             branch-created pr-opened pr-merged" >&2
     exit 1
     ;;
 esac
