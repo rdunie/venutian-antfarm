@@ -115,7 +115,9 @@ Change proposed (by any agent, user, or Cx role)
     → Each Cx role responds: impacted / not impacted / abstain
     → CO collaborates with all Cx roles that flagged impact
       → Consensus-building: adopt / adopt with changes / decline
-      → Cx roles (aside from CO) may abstain from the consensus
+      → Cx roles (aside from CO) may abstain — UNLESS the change is a core
+        responsibility of their domain or a key risk in their domain is identified,
+        in which case they must participate
     → CO presents consensus + dissenting views (if any) to the decision gate
       → Type 1 (reduces risk, consensus to adopt): CO approves, notifies user
       → Type 2/3 or no consensus: CO presents to user with full Cx input
@@ -154,7 +156,7 @@ Each Cx role (CO, CISO, and future Cx agents) maintains a structured memory of t
 
 - The proposal they were consulted on
 - Their assessment of impact on their domain
-- Their recommendation (adopt / adopt with changes / decline / abstain)
+- Their recommendation (adopt / adopt with changes / decline / abstain — abstain only permitted when the change is outside their core domain and no key risk to their domain is identified)
 - Their opinion about the final consensus (agree / disagree with rationale)
 - Any refinement to their understanding that resulted
 
