@@ -45,6 +45,17 @@ Every agent manages resources responsibly. Tokens, thinking time, context window
 
 ## Agent Fleet Structure
 
+### Governance Agents (Executive Leadership)
+
+Two agents provide independent compliance and security oversight, above the operational chain:
+
+| Agent                  | Role               | Responsibility                                             |
+| ---------------------- | ------------------ | ---------------------------------------------------------- |
+| **compliance-officer** | Compliance program | Floor guardianship, change control, conformance monitoring |
+| **ciso**               | Security authority | Security benchmarks, security controls, threat assessment  |
+
+The governance tier is independent of the triad. The triad does not direct governance agents, and governance agents do not direct day-to-day work. See `docs/superpowers/specs/2026-03-19-governance-layer-design.md` for the full governance design.
+
 ### Strategic Agents (Mentors + Process)
 
 Three agents ensure the fleet operates effectively across business, technical, and process dimensions:
@@ -510,11 +521,53 @@ No agent overrides another agent's domain authority. If unresolved, escalate to 
 
 ## Compliance Floor
 
-Compliance floor items are non-negotiable across all agents. The compliance floor encompasses security, data governance, audit requirements, regulatory controls, access policies, and domain-specific compliance rules.
+The compliance floor is non-negotiable across all agents. The **compliance-officer** is the sole guardian -- no other agent may modify `compliance-floor.md`. Changes go through `/compliance propose`.
 
-Define your compliance floor in `compliance-floor.md` at the project root. Keep it to 3-5 rules that are absolute and, where possible, enforced by hooks.
+Rules are declarative and unconditional: "We MUST ALWAYS..." or "We MUST NEVER..." -- clear, unambiguous, concise. No conditionals. Detailed context is stored separately and referenced.
+
+The compliance floor is the lowest tier of a three-tier compliance hierarchy:
+
+| Tier                    | Type                    | Authority                              | Enforcement            |
+| ----------------------- | ----------------------- | -------------------------------------- | ---------------------- |
+| Floor (MUST)            | Non-negotiable rules    | User approval required for all changes | Hooks + auditor        |
+| Targets (SHOULD)        | Aspirational objectives | CO approves risk-reducing autonomously | Findings, not blockers |
+| Guidance (NICE TO HAVE) | Best practices          | Cx roles delegate to triad             | Informational          |
 
 These rules override autonomy tiers, pace settings, and all other protocol elements -- even autonomous actions at Fly pace must respect the compliance floor.
+
+### Compliance Hierarchy
+
+Three tiers of controls with distinct authority and enforcement. See `docs/superpowers/specs/2026-03-19-governance-layer-design.md` for the full design.
+
+- **Floor (MUST):** Declarative, unconditional statements. "We MUST ALWAYS..." / "We MUST NEVER..." No conditionals. Stored in `compliance-floor.md`. User approval required for all changes. Enforced by hooks and compliance-auditor.
+- **Targets (SHOULD):** Objectives exceeding the floor. Stored in `.claude/compliance/targets.md`. CO approves risk-reducing changes autonomously; others require user approval. Violations are findings, not blockers.
+- **Guidance (NICE TO HAVE):** Best practices from Cx roles, delegated to triad to operationalize. Informational, not enforced. (Deferred to sub-project 2.)
+
+Targets must be above or in addition to the floor -- never weaker.
+
+### Governance Collaboration Pattern
+
+When a change is proposed to the floor or targets:
+
+1. CO receives and classifies (Type 1: risk-reducing target / Type 2: other target / Type 3: floor change)
+2. CO consults each Cx role for domain impact assessment
+3. Cx roles respond: impacted / not impacted / abstain. **A Cx role may not abstain if the change is a core responsibility of their domain or a key risk in their domain is identified.**
+4. CO collaborates with impacted Cx roles to build consensus: adopt / adopt with changes / decline
+5. Decision gate: Type 1 with consensus → CO approves, notifies user. Type 2-3 or no consensus → CO presents to user with full Cx input.
+
+No Cx role overrides another's domain authority. If consensus cannot be reached, the user resolves it.
+
+### Executive Memory Architecture
+
+Each Cx role maintains three-tier memory for governance decisions:
+
+- **Active context** (`memory/app/<cx-role>-active.md`): Current positions, active concerns, cross-references. Loaded into context. Keep concise -- only load-bearing items.
+- **Linked archive** (`memory/app/<cx-role>-archive.md`): Still-relevant older positions. Referenced from active when needed, not loaded by default.
+- **Retired archive** (`memory/app/<cx-role>-retired.md`): Changed, disproven, or obsolete positions. Audit trail only.
+
+Per change, each Cx role records: the proposal, their domain impact assessment, their recommendation, their opinion about the consensus, and any calibration learning.
+
+**Memory hygiene:** Memory-manager includes Cx memories in consistency audits. Active entries unreferenced for 5+ items → candidates for linked archive. Linked entries unreferenced for 10+ items → candidates for retirement. Cx role approves migrations; memory-manager proposes only.
 
 ## Learning Collective
 
@@ -563,13 +616,15 @@ The memory system has two layers with distinct ownership and lifecycle:
 
 ## Escalation Rules
 
-| Escalation Type        | First Try                 | If Unresolved |
-| ---------------------- | ------------------------- | ------------- |
-| Technical disagreement | SA mediates               | User decides  |
-| Priority disagreement  | PO decides                | User decides  |
-| Process disagreement   | SM mediates               | User decides  |
-| Compliance concern     | Compliance floor (always) | --            |
-| Cross-domain conflict  | SA + PO jointly           | User decides  |
+| Escalation Type                     | First Try                                                        | If Unresolved |
+| ----------------------------------- | ---------------------------------------------------------------- | ------------- |
+| Technical disagreement              | SA mediates                                                      | User decides  |
+| Priority disagreement               | PO decides                                                       | User decides  |
+| Process disagreement                | SM mediates                                                      | User decides  |
+| Compliance concern                  | CO enforces floor (always)                                       | --            |
+| Cross-domain conflict               | SA + PO jointly                                                  | User decides  |
+| Governance disagreement (CO ↔ CISO) | Collaborative resolution -- neither overrides the other's domain | User decides  |
+| Governance ↔ Triad disagreement     | Governance prevails on compliance/security matters               | User decides  |
 
 ## Protocol Success Criteria
 
