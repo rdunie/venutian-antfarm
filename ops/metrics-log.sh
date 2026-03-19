@@ -38,6 +38,7 @@ EVENT_TYPE="$1"; shift
 # ── Parse positional + named args ────────────────────────────────────────────
 ITEM="" FROM="" TO="" REASON="" SEVERITY="" SOURCE="" BUG_ID_ARG="" EXT="" DEPLOY_TYPE="" DEPLOY_ENV=""
 TOKENS="" TURNS="" DURATION="" MODEL="" TASK=""
+PROPOSAL="" SCOPE="" METHOD="" CHANGE_TYPE=""
 POSITIONAL=()
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -55,6 +56,10 @@ while [[ $# -gt 0 ]]; do
     --duration) DURATION="$2";   shift 2 ;;
     --model)    MODEL="$2";      shift 2 ;;
     --task)     TASK="$2";       shift 2 ;;
+    --proposal) PROPOSAL="$2"; shift 2 ;;
+    --scope)    SCOPE="$2";    shift 2 ;;
+    --method)   METHOD="$2";   shift 2 ;;
+    --change-type) CHANGE_TYPE="$2"; shift 2 ;;
     *) POSITIONAL+=("$1"); shift ;;
   esac
 done
@@ -216,12 +221,44 @@ case "$EVENT_TYPE" in
        '{"ts":$ts,"event":"regression-run","item":$item,"agent":$agent}')"
     ;;
 
+  compliance-proposed)
+    emit_event "$(jq -cn --arg ts "$TS" --arg event "$EVENT_TYPE" \
+       --arg proposal "$PROPOSAL" --arg type "$CHANGE_TYPE" --arg agent "$AGENT" \
+       '{"ts":$ts,"event":$event,"proposal":$proposal,"type":$type,"agent":$agent}')"
+    ;;
+
+  compliance-approved|compliance-rejected)
+    emit_event "$(jq -cn --arg ts "$TS" --arg event "$EVENT_TYPE" \
+       --arg proposal "$PROPOSAL" --arg by "$AGENT" --arg reason "$REASON" \
+       '{"ts":$ts,"event":$event,"proposal":$proposal,"by":$by,"reason":$reason}')"
+    ;;
+
+  compliance-applied)
+    emit_event "$(jq -cn --arg ts "$TS" --arg event "$EVENT_TYPE" \
+       --arg proposal "$PROPOSAL" --arg scope "$SCOPE" --arg agent "$AGENT" \
+       '{"ts":$ts,"event":$event,"proposal":$proposal,"scope":$scope,"agent":$agent}')"
+    ;;
+
+  compliance-violation)
+    emit_event "$(jq -cn --arg ts "$TS" --arg event "$EVENT_TYPE" \
+       --arg source "$SOURCE" --arg agent "$AGENT" \
+       '{"ts":$ts,"event":$event,"source":$source,"agent":$agent}')"
+    ;;
+
+  compliance-reverted)
+    emit_event "$(jq -cn --arg ts "$TS" --arg event "$EVENT_TYPE" \
+       --arg method "$METHOD" --arg agent "$AGENT" \
+       '{"ts":$ts,"event":$event,"method":$method,"agent":$agent}')"
+    ;;
+
   *)
     echo "ERROR: unknown event type '$EVENT_TYPE'" >&2
     echo "Valid types: item-promoted item-accepted ext-deployed bug-found bug-fixed" >&2
     echo "             handoff-sent handoff-rejected item-rejected-at-build" >&2
     echo "             task-restarted task-discarded task-blocked task-unblocked" >&2
     echo "             agent-invoked regression-run" >&2
+    echo "             compliance-proposed compliance-approved compliance-rejected" >&2
+    echo "             compliance-applied compliance-violation compliance-reverted" >&2
     exit 1
     ;;
 esac
