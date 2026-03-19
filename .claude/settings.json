@@ -39,6 +39,10 @@
           {
             "type": "command",
             "command": "echo \"$CLAUDE_FILE_PATH\" | grep -qE '(\\.env|package-lock\\.json|pnpm-lock\\.yaml|secrets?\\.yaml)$' && echo 'BLOCKED: Cannot edit sensitive or lock file' && exit 2 || exit 0"
+          },
+          {
+            "type": "command",
+            "command": "echo \"$CLAUDE_FILE_PATH\" | grep -qE '(compliance-floor\\.md|compliance/targets\\.md)$' && { [ -f .claude/compliance/.applying ] && find .claude/compliance/.applying -mmin -1 -print -quit 2>/dev/null | grep -q . && exit 0 || echo 'BLOCKED: Compliance files are protected. Use /compliance propose to submit changes through the Compliance Officer.' && exit 2; } || exit 0"
           }
         ]
       },
@@ -58,7 +62,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "echo 'Key context: Agent fleet harness with 6 core agents (PO, SA, SM, memory-manager, platform-ops, compliance-auditor). Progressive autonomy (Crawl/Walk/Run/Fly). Compliance floor overrides all. See CLAUDE.md for details.' > /tmp/antfarm-compact-context.txt"
+            "command": "echo 'Key context: Agent fleet harness with 2 governance agents (CO, CISO) and 6 core agents (PO, SA, SM, memory-manager, platform-ops, compliance-auditor). Compliance floor guarded by CO with hook enforcement. Progressive autonomy (Crawl/Walk/Run/Fly). See CLAUDE.md for details.' > /tmp/antfarm-compact-context.txt"
           }
         ]
       }
@@ -84,6 +88,10 @@
           {
             "type": "command",
             "command": "echo '[PO] Session started. Run /po for a quick status overview: WIP state, next recommended item, and grooming needs.'"
+          },
+          {
+            "type": "command",
+            "command": "[ -f .claude/compliance/floor-checksum.sha256 ] && [ -f compliance-floor.md ] && { EXPECTED=$(head -1 .claude/compliance/floor-checksum.sha256); ACTUAL=$(sha256sum compliance-floor.md | cut -d' ' -f1); [ \"$EXPECTED\" = \"$ACTUAL\" ] && echo '[CO] Compliance floor integrity check passed.' || echo '[CO] Compliance floor integrity check FAILED. Unauthorized modification detected. Run /compliance status to investigate.'; } || true"
           }
         ]
       }

@@ -30,6 +30,19 @@ Check if `compliance-floor.md` exists at project root.
   - SaaS: "Tenant data isolation enforced on every query"
 - **If exists:** Read it, confirm with user, move on.
 
+### Step 2b: Governance Activation
+
+After the compliance floor is defined:
+
+1. **CO takes guardianship.** Generate initial checksum:
+   ```bash
+   mkdir -p .claude/compliance
+   sha256sum compliance-floor.md | cut -d' ' -f1 > .claude/compliance/floor-checksum.sha256
+   echo "$(git rev-parse HEAD)" >> .claude/compliance/floor-checksum.sha256
+   ```
+2. **CISO security review.** Dispatch the CISO agent to evaluate whether the floor adequately covers security for the project's domain. The CISO may propose additions via `/compliance propose`.
+3. **Process proposals.** If the CISO proposed additions, the CO processes them through the standard change control process. User approves the final floor.
+
 ### Step 3: Fleet Configuration
 
 Check if `fleet-config.json` exists at project root.
@@ -85,6 +98,8 @@ Print a checklist of what was set up:
 - [x] Specialist agent added: <name>
 - [x] First backlog item created
 - [x] Validation passed
+- [x] Compliance floor guardianship activated (CO + checksum)
+- [x] Security review completed (CISO)
 
 Next steps:
 - Run `/po` to see your status overview
