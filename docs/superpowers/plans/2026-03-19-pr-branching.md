@@ -117,10 +117,10 @@ to:
 
 - [ ] **Step 3: Add branching steps to the Steps section**
 
-After step 3 ("Build the agent prompt based on the subcommand"), add a new section for the promote subcommand's branching workflow. Insert before step 4:
+After existing step 5 ("If the agent proposes changes..."), append a new section at the end of the file. Do NOT insert inside the numbered list — add it as a separate section after the Steps list:
 
 ```markdown
-### Promote Branching Workflow
+## Promote Branching Workflow
 
 When the subcommand is `promote`, after the PO agent expands the item into a full work item:
 
@@ -158,7 +158,7 @@ Read `.claude/skills/deploy/SKILL.md`.
 
 - [ ] **Step 2: Rewrite the skill**
 
-Replace the entire content of `.claude/skills/deploy/SKILL.md` with:
+Use the Write tool to replace the entire content of `.claude/skills/deploy/SKILL.md`. Compose the full markdown file from the following specification:
 
 **Frontmatter:** Same name and argument-hint. Updated description:
 
@@ -438,5 +438,7 @@ Expected: No errors
 
 - [ ] **Step 7: Verify existing agents unchanged (except auditor)**
 
-Run: `git diff HEAD -- .claude/agents/product-owner.md .claude/agents/scrum-master.md .claude/agents/solution-architect.md .claude/agents/ciso.md .claude/agents/compliance-officer.md`
+Run: `git diff HEAD -- .claude/agents/product-owner.md .claude/agents/scrum-master.md .claude/agents/solution-architect.md .claude/agents/memory-manager.md .claude/agents/platform-ops.md .claude/agents/ciso.md .claude/agents/compliance-officer.md`
 Expected: No changes
+
+**Note on template agents:** The spec mentions updating reviewer agents (security-reviewer, SA) for PR-native review. Template agents under `templates/agents/` are intentionally unchanged — implementers add PR review behavior when they customize them for their project. Only the core compliance-auditor (`.claude/agents/`) gets the PR dispatch pattern because it's a core agent dispatched on every review.
