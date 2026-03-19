@@ -4,18 +4,22 @@
 
 Integrate pull requests and trunk-based branching into the work item lifecycle. Each work item gets a feature branch and draft PR at Promote (Phase 2), lives on that branch through Build/Review/Fix, and merges to main at Deploy (Phase 6). PRs serve as the canonical work item artifact and create a distinct feedback channel for code-level review separate from process feedback in the findings register.
 
+**Backward compatibility:** PRs are the standard mechanism for all projects using this framework. Projects that cannot use GitHub PRs (e.g., no GitHub remote) continue with the pre-PR workflow -- the lifecycle phases remain the same, only the merge gate is absent.
+
 ## Branch Lifecycle Tied to Work Items
 
 Each work item gets a branch and PR created at Promote, lived on through Build/Review/Fix, and merged at Deploy.
 
-| Phase      | What Happens                                             | Branch/PR State                 |
-| ---------- | -------------------------------------------------------- | ------------------------------- |
-| 2. Promote | PO creates branch + draft PR                             | Branch created, draft PR opened |
-| 3. Build   | Specialist works on the branch, pushes commits           | Commits on branch               |
-| 4. Review  | PO dispatches reviewers → findings posted as PR comments | PR in review                    |
-| 5. Fix     | Specialist pushes fixes to the same branch               | More commits on branch          |
-| 6. Deploy  | PO marks PR ready, merges to main, triggers deploy       | PR merged, branch deleted       |
-| 7. Accept  | PO verifies on main/deployed environment                 | --                              |
+| Phase      | What Happens                                                       | Who               | Branch/PR State                 |
+| ---------- | ------------------------------------------------------------------ | ----------------- | ------------------------------- |
+| 2. Promote | PO creates branch + draft PR                                       | PO                | Branch created, draft PR opened |
+| 3. Build   | Specialist works on the branch, pushes commits                     | Specialist        | Commits on branch               |
+| 4. Review  | PO dispatches reviewers → findings posted as PR comments           | PO + reviewers    | PR in review                    |
+| 5. Fix     | Specialist pushes fixes to the same branch                         | Specialist        | More commits on branch          |
+| 6. Deploy  | PO merges PR to main; platform-ops deploys through promotion order | PO + platform-ops | PR merged, branch deleted       |
+| 7. Accept  | PO verifies on main/deployed environment                           | PO                | --                              |
+
+**Deploy phase clarification:** The PO owns the merge decision (PR has all approvals → merge to main). Platform-ops owns the deployment execution (run `ops/deploy.sh` through the promotion order). These are two distinct steps within Phase 6.
 
 ### Branch Naming Convention
 
@@ -31,11 +35,21 @@ Example: `feat: add user authentication (#42)`.
 
 ### Draft PR
 
-Created at Promote as a draft. The PR body includes the work item's story, acceptance criteria, and NFR flags. Converted to "ready for review" when the specialist signals build is complete. This prevents premature merge while keeping the PR visible as a tracking artifact.
+Created at Promote as a draft. The PR body includes the work item's story, acceptance criteria, and NFR flags. Converted to "ready for review" when the specialist signals build is complete (via a handoff to the PO with `handoff-sent` event). This prevents premature merge while keeping the PR visible as a tracking artifact.
+
+### Branch and PR Operations
+
+Branch creation and switching uses local git commands. PR management uses the GitHub MCP.
+
+- **Branch creation:** `git checkout -b <branch-name>` + `git push -u origin <branch-name>` (local git)
+- **PR creation:** GitHub MCP `create_pull_request` (with `draft: true`)
+- **Draft → ready:** GitHub MCP `update_pull_request` (remove draft status)
+- **PR merge:** GitHub MCP `merge_pull_request`
+- **Branch deletion:** `git push origin --delete <branch-name>` after merge (local git)
 
 ### Branch Health
 
-Branches that exist for more than 2 accepted items without merging are flagged by the SM as a finding with category "process" and urgency "normal". This aligns with trunk-based development -- short-lived branches are a health signal.
+Branches that exist for more than 2 accepted items without merging are flagged by the SM as a finding with category "process" and urgency "normal". Detection: the SM checks open branches against the accepted item count during the Checkpoint phase (Phase 9) using `git branch -r --no-merged main` and comparing against item-accepted events.
 
 ## PR-Native Code Review
 
@@ -55,14 +69,24 @@ During Review (Phase 4), the PO dispatches review agents who post findings direc
 - Overall assessment (pass/fail/needs-work)
 - Summary of findings count and severity
 
+### GitHub MCP Tool Mapping for Reviews
+
+| Action                  | MCP Tool                    | Notes                                           |
+| ----------------------- | --------------------------- | ----------------------------------------------- |
+| Read PR diff            | `pull_request_read`         | Get the full diff for review                    |
+| Post line-level comment | `pull_request_review_write` | With `event: "COMMENT"` and line-level position |
+| Post general comment    | `add_issue_comment`         | PR-level summary                                |
+| Approve PR              | `pull_request_review_write` | With `event: "APPROVE"`                         |
+| Request changes         | `pull_request_review_write` | With `event: "REQUEST_CHANGES"`                 |
+
 ### Review Workflow
 
-1. Specialist signals build complete → PO converts draft PR to "ready for review"
-2. PO dispatches relevant reviewers (compliance-auditor always, others based on the work item's domain)
-3. Each reviewer reads the PR diff, posts findings as PR comments via GitHub MCP
-4. If blocking findings exist → PR stays in review, specialist fixes on the branch, pushes
+1. Specialist signals build complete via handoff to PO → PO converts draft PR to "ready for review" using `update_pull_request`
+2. PO dispatches relevant reviewers: compliance-auditor always, others based on `pathways.declared.review` in fleet-config.json
+3. Each reviewer reads the PR diff via `pull_request_read`, posts findings as PR comments via GitHub MCP
+4. If blocking findings exist → reviewer uses `pull_request_review_write` with `REQUEST_CHANGES`, specialist fixes on the branch, pushes
 5. Reviewers re-review (only the changed files or unresolved comments)
-6. When all reviewers approve → PO proceeds to Deploy
+6. When all reviewers approve via `pull_request_review_write` with `APPROVE` → PO proceeds to Deploy
 
 ### Two Feedback Channels
 
@@ -77,14 +101,14 @@ The compliance-auditor still copies all findings to the CO (per the governance l
 
 ## Environment Discipline
 
-**The rule:** All code changes happen on feature branches in the dev environment only. Agents may read/diagnose in other environments (test, staging, prod), but fixes must flow through the deployment chain.
+**The rule:** All code changes happen on feature branches in the dev environment only. Agents may read/diagnose in other environments, but fixes must flow through the deployment chain.
 
 ### What This Means
 
 - **Build phase:** Specialist works on a feature branch. All code changes, test runs, and validation happen against the dev environment.
-- **Diagnose in any environment:** Agents may read logs, query databases, inspect configuration, and run diagnostic commands in test/staging/prod. This is read-only investigation.
+- **Diagnose in any environment:** Agents may read logs, query databases, inspect configuration, and run diagnostic commands in any non-dev environment. This is read-only investigation.
 - **No hotfix shortcuts:** Even urgent production fixes follow the chain: create a branch, fix on the branch, PR review, merge, deploy through environments. The `/deploy` skill supports `--type hotfix` -- a hotfix follows the same chain but may skip non-blocking review steps at the PO's discretion.
-- **No direct environment patching:** No agent may modify code, configuration, or data directly in test/staging/prod. If a deploy reveals an issue, the fix goes back to a branch.
+- **No direct environment patching:** No agent may modify code, configuration, or data directly in non-dev environments. If a deploy reveals an issue, the fix goes back to a branch.
 
 ### Enforcement
 
@@ -94,14 +118,17 @@ The compliance-auditor still copies all findings to the CO (per the governance l
 
 ### Promotion Order
 
-Each environment is deployed in order. You can't skip environments. You can't push code to an environment without it first passing through the prior environment.
+Each environment is deployed in order. You can't skip environments. You can't push code to an environment without it first passing through the prior environment. Environment names are project-specific (configured in fleet-config.json).
 
 ```json
 "deploy": {
+  "command": "ops/deploy.sh",
   "environments": ["dev", "test", "prod"],
   "promotion_order": ["dev", "test", "prod"]
 }
 ```
+
+Projects with additional environments (e.g., staging between test and prod) add them to both arrays.
 
 ## Fix Ownership and Learning
 
@@ -134,7 +161,7 @@ If the original specialist no longer exists (e.g., removed template agent) or th
 ### Handoff Pattern for Production Issues
 
 ```
-Issue discovered in test/staging/prod
+Issue discovered in test/prod
   → Infrastructure/platform agent diagnoses (read-only in affected env)
   → Handoff to original author specialist:
     "What was found, where, root cause, suggested fix approach"
@@ -142,17 +169,35 @@ Issue discovered in test/staging/prod
   → Normal PR → merge → deploy chain
 ```
 
+## Metrics Integration
+
+### Required Event Types
+
+New event types for `ops/metrics-log.sh`:
+
+| Event            | When                                 | Args                          |
+| ---------------- | ------------------------------------ | ----------------------------- |
+| `branch-created` | PO creates feature branch at Promote | `--item <id> --branch <name>` |
+| `pr-opened`      | Draft PR created                     | `--item <id> --pr <number>`   |
+| `pr-merged`      | PR merged to main at Deploy          | `--item <id> --pr <number>`   |
+
+### Optional Metrics (not required for v1)
+
+- Time-to-merge (branch created → PR merged) as a lead time supplement
+- Review rounds per PR (correlates with first-pass yield)
+- Stale branch count (SM health signal)
+
 ## Framework Changes
 
 ### Updated Skills
 
-- **`/po promote`** -- Creates feature branch and draft PR when promoting an item. PR body includes story, AC, and NFR flags.
-- **`/deploy`** -- Merges the PR to main (validates PR has all approvals). Triggers deploy through promotion order.
+- **`/po promote`** -- Creates feature branch (local git) and draft PR (GitHub MCP `create_pull_request`) when promoting an item. PR body includes story, AC, and NFR flags. Logs `branch-created` and `pr-opened` events.
+- **`/deploy`** -- Two-step: (1) PO merges PR via `merge_pull_request` (validates all reviewer approvals), logs `pr-merged`; (2) platform-ops deploys through promotion order via `ops/deploy.sh`. The skill validates that the source is a merged PR on main.
 - **`/retro`** -- Can pull PR data (comment count, review rounds, time-to-merge) as supplementary metrics.
 
 ### Updated Agents
 
-- **Reviewer agents** (compliance-auditor, security-reviewer, SA) -- Updated dispatch pattern to post findings as PR comments via GitHub MCP. They still send a handoff completion to the PO summarizing findings, but code-level detail lives on the PR.
+- **Reviewer agents** (compliance-auditor, security-reviewer, SA) -- Updated dispatch pattern to post findings as PR comments via GitHub MCP (`pull_request_review_write` for line-level, `add_issue_comment` for summaries). They still send a handoff completion to the PO summarizing findings, but code-level detail lives on the PR.
 
 ### COLLABORATION.md
 
@@ -176,16 +221,10 @@ Add `promotion_order` to the existing `deploy` section:
 }
 ```
 
-### New Metrics Opportunities (optional, not required for v1)
-
-- Time-to-merge (branch created → PR merged) as a lead time supplement
-- Review rounds per PR (correlates with first-pass yield)
-- Stale branch count (SM health signal)
-
 ## What Does NOT Change
 
 - The **9-phase work item lifecycle** -- same phases, same owners, same gates
 - The **findings register** -- still used for process feedback
 - The **compliance floor mechanism** -- hooks enforce on the branch, PR merge adds a second gate
 - The **agent autonomy model** -- unchanged
-- The **metrics pipeline** -- same events, PR data is supplementary
+- The **existing metrics pipeline** -- same events, PR events are supplementary
