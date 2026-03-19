@@ -426,3 +426,9 @@ This is a breadcrumb for sub-project 2.
 - **`ops/` scripts** — no changes to existing scripts (new event types are added to `ops/metrics-log.sh`)
 - The **work item lifecycle** — governance agents don't participate in build/review phases directly
 - The **triad's operational authority** — PO still owns business, SA owns technical, SM owns process
+
+## Deferred Concerns
+
+| Concern                                                                                                                                                                     | Trigger to Address          | Owner        |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------- | ------------ |
+| Sentinel file bypass is a platform workaround. If Claude Code adds `$CLAUDE_AGENT_NAME` or `$CLAUDE_SKILL_NAME` to hook context, replace sentinel with direct caller check. | Claude Code hook API update | platform-ops |

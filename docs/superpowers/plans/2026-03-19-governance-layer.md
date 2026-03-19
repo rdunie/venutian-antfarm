@@ -518,17 +518,47 @@ Replace the existing Escalation Rules table (lines 566-572) with:
 | Governance ↔ Triad disagreement     | Governance prevails on compliance/security matters              | User decides  |
 ```
 
-- [ ] **Step 5: Add Compliance Hierarchy and Executive Memory Architecture sections**
+- [ ] **Step 5: Add Compliance Hierarchy, Governance Collaboration, and Executive Memory sections**
 
-Add after the Compliance Floor section, before the Learning Collective section. These are the detailed protocol sections that agents cross-reference:
+Add after the Compliance Floor section, before the Learning Collective section. These are the protocol sections that agents cross-reference. Keep concise — enough for agents to act on, with cross-references to the spec for full detail.
 
-**Compliance Hierarchy** — Reference to the three-tier model (floor/targets/guidance) with definitions. Keep concise — the full design is in the spec doc.
+Insert this content:
 
-**Governance Collaboration Pattern** — The Cx consultation process: CO consults Cx roles, consensus-building, abstention rules.
+```markdown
+### Compliance Hierarchy
 
-**Executive Memory Architecture** — Three-tier memory model (active/linked-archive/retired) for Cx roles. Memory hygiene rules.
+Three tiers of controls with distinct authority and enforcement. See `docs/superpowers/specs/2026-03-19-governance-layer-design.md` for the full design.
 
-These sections should be concise protocol references (not full spec copies) — enough for agents to act on, with a cross-reference to the spec for full detail.
+- **Floor (MUST):** Declarative, unconditional statements. "We MUST ALWAYS..." / "We MUST NEVER..." No conditionals. Stored in `compliance-floor.md`. User approval required for all changes. Enforced by hooks and compliance-auditor.
+- **Targets (SHOULD):** Objectives exceeding the floor. Stored in `.claude/compliance/targets.md`. CO approves risk-reducing changes autonomously; others require user approval. Violations are findings, not blockers.
+- **Guidance (NICE TO HAVE):** Best practices from Cx roles, delegated to triad to operationalize. Informational, not enforced. (Deferred to sub-project 2.)
+
+Targets must be above or in addition to the floor — never weaker.
+
+### Governance Collaboration Pattern
+
+When a change is proposed to the floor or targets:
+
+1. CO receives and classifies (Type 1: risk-reducing target / Type 2: other target / Type 3: floor change)
+2. CO consults each Cx role for domain impact assessment
+3. Cx roles respond: impacted / not impacted / abstain. **A Cx role may not abstain if the change is a core responsibility of their domain or a key risk in their domain is identified.**
+4. CO collaborates with impacted Cx roles to build consensus: adopt / adopt with changes / decline
+5. Decision gate: Type 1 with consensus → CO approves, notifies user. Type 2-3 or no consensus → CO presents to user with full Cx input.
+
+No Cx role overrides another's domain authority. If consensus cannot be reached, the user resolves it.
+
+### Executive Memory Architecture
+
+Each Cx role maintains three-tier memory for governance decisions:
+
+- **Active context** (`memory/app/<cx-role>-active.md`): Current positions, active concerns, cross-references. Loaded into context. Keep concise — only load-bearing items.
+- **Linked archive** (`memory/app/<cx-role>-archive.md`): Still-relevant older positions. Referenced from active when needed, not loaded by default.
+- **Retired archive** (`memory/app/<cx-role>-retired.md`): Changed, disproven, or obsolete positions. Audit trail only.
+
+Per change, each Cx role records: the proposal, their domain impact assessment, their recommendation, their opinion about the consensus, and any calibration learning.
+
+**Memory hygiene:** Memory-manager includes Cx memories in consistency audits. Active entries unreferenced for 5+ items → candidates for linked archive. Linked entries unreferenced for 10+ items → candidates for retirement. Cx role approves migrations; memory-manager proposes only.
+```
 
 - [ ] **Step 6: Commit**
 
@@ -825,7 +855,111 @@ git commit -m "feat: add Cx role template for governance agent extensibility"
 
 ---
 
-## Task 12: Add Skills Table Entry
+## Task 12: Update .gitignore
+
+**Files:**
+
+- Modify: `.gitignore` (create if not exists)
+
+- [ ] **Step 1: Add sentinel file to .gitignore**
+
+Append to `.gitignore` (create if it doesn't exist):
+
+```
+# Compliance governance sentinel file (transient, never committed)
+.claude/compliance/.applying
+```
+
+- [ ] **Step 2: Commit**
+
+```bash
+git add .gitignore
+git commit -m "chore: gitignore compliance sentinel file"
+```
+
+---
+
+## Task 13: Update ops/metrics-log.sh for Compliance Events
+
+**Files:**
+
+- Modify: `ops/metrics-log.sh`
+
+- [ ] **Step 1: Read ops/metrics-log.sh to find the event type validation**
+
+Read `ops/metrics-log.sh` and look for where event types are listed or validated (e.g., a case statement or array of valid types).
+
+- [ ] **Step 2: Add 6 new compliance event types**
+
+Add these event types to the validation: `compliance-proposed`, `compliance-approved`, `compliance-rejected`, `compliance-applied`, `compliance-violation`, `compliance-reverted`.
+
+Follow the existing pattern for how event types are registered (case statement, array, etc.).
+
+- [ ] **Step 3: Verify the script parses**
+
+Run: `bash -n ops/metrics-log.sh`
+Expected: No errors
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add ops/metrics-log.sh
+git commit -m "feat: add compliance event types to metrics-log.sh"
+```
+
+---
+
+## Task 14: Update /onboard Skill
+
+**Files:**
+
+- Modify: `.claude/skills/onboard/SKILL.md`
+
+- [ ] **Step 1: Read the current onboard skill**
+
+Read `.claude/skills/onboard/SKILL.md`.
+
+- [ ] **Step 2: Add governance setup steps**
+
+After Step 2 (Compliance Floor) and before Step 3 (Fleet Configuration), add:
+
+````markdown
+### Step 2b: Governance Activation
+
+After the compliance floor is defined:
+
+1. **CO takes guardianship.** Generate initial checksum:
+   ```bash
+   sha256sum compliance-floor.md | cut -d' ' -f1 > .claude/compliance/floor-checksum.sha256
+   echo "$(git rev-parse HEAD)" >> .claude/compliance/floor-checksum.sha256
+   ```
+````
+
+2. **CISO security review.** Dispatch the CISO agent to evaluate whether the floor adequately covers security for the project's domain. The CISO may propose additions via `/compliance propose`.
+3. **Process proposals.** If the CISO proposed additions, the CO processes them through the standard change control process. User approves the final floor.
+
+```
+
+- [ ] **Step 3: Update the Summary checklist**
+
+Add to the onboarding summary:
+```
+
+- [x] Compliance floor guardianship activated (CO + checksum)
+- [x] Security review completed (CISO)
+
+````
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add .claude/skills/onboard/SKILL.md
+git commit -m "feat: add governance activation to onboarding flow"
+````
+
+---
+
+## Task 15: Add Skills Table Entry
 
 **Files:**
 
@@ -839,7 +973,12 @@ Add a row to the Skills table in README.md (the table added in the fleet-skills 
 | `/compliance` | Compliance program: propose, review, apply, audit, log | compliance-officer |
 ```
 
-- [ ] **Step 2: Commit**
+- [ ] **Step 2: Verify the row was added**
+
+Run: `grep '/compliance' README.md`
+Expected: Row with "compliance-officer" as primary agent
+
+- [ ] **Step 3: Commit**
 
 ```bash
 git add README.md
@@ -848,7 +987,7 @@ git commit -m "docs: add /compliance skill to README skills table"
 
 ---
 
-## Task 13: Final Validation
+## Task 16: Final Validation
 
 - [ ] **Step 1: Verify all new files exist**
 
@@ -899,3 +1038,23 @@ Expected: No errors
 
 Run: `git diff HEAD -- .claude/agents/product-owner.md .claude/agents/scrum-master.md .claude/agents/solution-architect.md .claude/agents/memory-manager.md .claude/agents/platform-ops.md`
 Expected: No changes
+
+- [ ] **Step 11: Verify .gitignore includes sentinel**
+
+Run: `grep -c '.applying' .gitignore`
+Expected: 1
+
+- [ ] **Step 12: Verify compliance event types in metrics-log.sh**
+
+Run: `grep -c 'compliance-proposed\|compliance-applied\|compliance-violation' ops/metrics-log.sh`
+Expected: At least 3
+
+- [ ] **Step 13: Verify /compliance skill in Skills table**
+
+Run: `grep -c '/compliance' README.md`
+Expected: At least 1
+
+- [ ] **Step 14: Verify onboard skill includes governance activation**
+
+Run: `grep -c 'Governance Activation' .claude/skills/onboard/SKILL.md`
+Expected: 1
