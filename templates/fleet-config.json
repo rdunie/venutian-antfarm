@@ -12,7 +12,8 @@
   },
   "deploy": {
     "command": "ops/deploy.sh",
-    "environments": ["dev", "test", "prod"]
+    "environments": ["dev", "test", "prod"],
+    "promotion_order": ["dev", "test", "prod"]
   },
   "pace": {
     "current": "Crawl",
