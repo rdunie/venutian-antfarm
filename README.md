@@ -316,17 +316,18 @@ App fields override harness fields. Unmentioned harness fields are preserved.
 
 ## Skills
 
-| Skill       | What It Does                                           | Primary Agent      |
-| ----------- | ------------------------------------------------------ | ------------------ |
-| `/po`       | Backlog management, prioritization, grooming, review   | product-owner      |
-| `/retro`    | Run a retrospective for a completed work item          | scrum-master       |
-| `/onboard`  | Interactive project setup                              | --                 |
-| `/handoff`  | Structured agent-to-agent handoff with metrics logging | all agents         |
-| `/deploy`   | Deployment orchestration with pre/post validation      | platform-ops       |
-| `/findings` | Findings register: log, review, triage, patterns       | scrum-master       |
-| `/audit`    | Compliance audit against the compliance floor          | compliance-auditor |
-| `/pace`     | Pace control: status, evaluation, transitions          | scrum-master       |
-| `/memory`   | Memory management: audit, distribute, optimize, gaps   | memory-manager     |
+| Skill         | What It Does                                           | Primary Agent      |
+| ------------- | ------------------------------------------------------ | ------------------ |
+| `/po`         | Backlog management, prioritization, grooming, review   | product-owner      |
+| `/retro`      | Run a retrospective for a completed work item          | scrum-master       |
+| `/onboard`    | Interactive project setup                              | --                 |
+| `/handoff`    | Structured agent-to-agent handoff with metrics logging | all agents         |
+| `/deploy`     | Deployment orchestration with pre/post validation      | platform-ops       |
+| `/findings`   | Findings register: log, review, triage, patterns       | scrum-master       |
+| `/audit`      | Compliance audit against the compliance floor          | compliance-auditor |
+| `/pace`       | Pace control: status, evaluation, transitions          | scrum-master       |
+| `/memory`     | Memory management: audit, distribute, optimize, gaps   | memory-manager     |
+| `/compliance` | Compliance program: propose, review, apply, audit, log | compliance-officer |
 
 All skills can be overridden by implementers. Create `.claude/skills/<name>/SKILL.md` in your project to replace the harness default.
 
