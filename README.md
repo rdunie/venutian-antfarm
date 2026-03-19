@@ -302,6 +302,22 @@ App fields override harness fields. Unmentioned harness fields are preserved.
 - **Compliance Floor**: Non-negotiable rules that override all autonomy tiers and pace settings. You define yours.
 - **Findings Loop**: Structured learning where agents record notable events, the SM curates refinements, and the same finding type should decrease over time.
 
+## Skills
+
+| Skill       | What It Does                                           | Primary Agent      |
+| ----------- | ------------------------------------------------------ | ------------------ |
+| `/po`       | Backlog management, prioritization, grooming, review   | product-owner      |
+| `/retro`    | Run a retrospective for a completed work item          | scrum-master       |
+| `/onboard`  | Interactive project setup                              | --                 |
+| `/handoff`  | Structured agent-to-agent handoff with metrics logging | all agents         |
+| `/deploy`   | Deployment orchestration with pre/post validation      | platform-ops       |
+| `/findings` | Findings register: log, review, triage, patterns       | scrum-master       |
+| `/audit`    | Compliance audit against the compliance floor          | compliance-auditor |
+| `/pace`     | Pace control: status, evaluation, transitions          | scrum-master       |
+| `/memory`   | Memory management: audit, distribute, optimize, gaps   | memory-manager     |
+
+All skills can be overridden by implementers. Create `.claude/skills/<name>/SKILL.md` in your project to replace the harness default.
+
 ## Documentation
 
 - **[Governing the Ant Farm](https://medium.com/@robdunie/governing-the-ant-farm-a-governance-first-framework-for-multi-agent-software-delivery-29245fc14bd9)** -- Blog post introducing the framework's philosophy and design
