@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-**Venutian Antfarm** is an agent fleet harness framework for structured multi-agent software delivery. It provides 6 core agents (PO, SA, SM, memory-manager, platform-ops, compliance-auditor), a collaboration protocol with progressive autonomy, DORA + flow quality metrics, and an agent inheritance mechanism for domain-specific specialization.
+**Venutian Antfarm** is an agent fleet harness framework for structured multi-agent software delivery. It provides 8 agents across 2 tiers: governance (compliance-officer, CISO) and operational (PO, SA, SM, memory-manager, platform-ops, compliance-auditor), a collaboration protocol with progressive autonomy, DORA + flow quality metrics, and an agent inheritance mechanism for domain-specific specialization.
 
 ## Quick Start
 
@@ -24,6 +24,7 @@ cp templates/compliance-floor.md compliance-floor.md # define non-negotiable rul
 │   ├── DOCUMENTATION-STYLE.md       # Documentation style guide
 │   ├── agents/                      # Core agent definitions (6)
 │   ├── skills/                      # Slash command skills (/po, /retro, /onboard)
+│   ├── compliance/                   # Compliance governance (change log, targets, proposals)
 │   ├── findings/                    # Findings register + information needs
 │   └── metrics/                     # Event log (JSONL)
 ├── docs/
@@ -50,7 +51,7 @@ cp templates/compliance-floor.md compliance-floor.md # define non-negotiable rul
 ## Key Files
 
 - **`fleet-config.json`** -- Project-level fleet configuration: pace thresholds, agent roster, declared pathways, metrics backend, retro cadence. Copy from `templates/fleet-config.json`.
-- **`.claude/agents/*.md`** -- Agent definitions with frontmatter (`name`, `model`, `color`). The 6 core agents: product-owner, solution-architect, scrum-master, memory-manager, platform-ops, compliance-auditor.
+- **`.claude/agents/*.md`** -- Agent definitions with frontmatter (`name`, `model`, `color`). The 8 agents: 2 governance (compliance-officer, ciso) + 6 operational (product-owner, solution-architect, scrum-master, memory-manager, platform-ops, compliance-auditor).
 - **`.claude/findings/register.md`** -- Findings register where notable events are recorded during work.
 - **`.claude/metrics/events.jsonl`** -- Event log (append-only, written by `ops/metrics-log.sh`, never directly).
 - **`.mcp.json`** -- Team-shared MCP server configuration (GitHub MCP). Checked into git.
