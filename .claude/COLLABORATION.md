@@ -402,6 +402,47 @@ The receiving agent should be able to act on the handoff without asking for clar
 - Identify merge risk before starting parallel work
 - Each agent commits independently. Merge conflicts are a finding.
 
+## Branching and Pull Requests
+
+### Branch Lifecycle
+
+Each work item gets a feature branch and draft PR at Promote (Phase 2). The PR is the canonical work item artifact -- it tracks progress, collects review feedback, and gates deployment.
+
+- **Branch naming:** `<type>/<item-id>-<slug>` (feat, fix, chore, docs)
+- **PR title:** `<type>: <description> (#<item-id>)`
+- **Draft PR** created at Promote, converted to "ready for review" when specialist signals build complete via handoff to PO
+- **Branch operations** use local git; **PR operations** use GitHub MCP
+
+### PR-Native Code Review
+
+During Review (Phase 4), reviewers post findings directly to the PR:
+
+- **Line-level comments** via `pull_request_review_write` for specific code issues
+- **General comments** via `add_issue_comment` for overall assessment
+- **Approve** via `pull_request_review_write` with `event: "APPROVE"`
+- **Request changes** via `pull_request_review_write` with `event: "REQUEST_CHANGES"`
+- Compliance-auditor is always dispatched; other reviewers per `pathways.declared.review`
+
+Code feedback lives on the PR. Process feedback lives in the findings register.
+
+### Environment Discipline
+
+All code changes happen on feature branches in the dev environment only. Agents may diagnose in any environment (read-only), but fixes must flow through the deployment chain: branch → PR → merge to main → deploy through promotion order.
+
+- No hotfix shortcuts -- even urgent fixes follow the chain (PO may skip non-blocking review steps)
+- No direct environment patching -- direct modifications are a critical finding
+- Promotion order is defined in `fleet-config.json` under `deploy.promotion_order`
+
+### Fix Ownership and Learning
+
+The agent that authored the code is responsible for fixing issues, regardless of where discovered. Diagnosis is collaborative (any agent, any environment, read-only). The fix returns to the author so the learning stays with the agent that needs it.
+
+When ownership is ambiguous: triad reaches consensus → if weak alignment, escalate to Cx stakeholders → if unresolved, user decides.
+
+### Branch Health
+
+Branches existing for more than 2 accepted items without merging are flagged by SM during Checkpoint (Phase 9) as a "process" finding using `git branch -r --no-merged main`.
+
 ## Work Item Lifecycle
 
 **Ad-hoc requests become backlog items.** When the user requests work that is not currently tracked in a tier file, the PO (or the agent receiving the request) adds an item to the appropriate tier file before or alongside execution. This ensures every piece of work is traceable, measurable, and reviewable. The item can be lightweight (one-line description + size estimate) for small requests, or fully groomed for larger ones. The key rule: no untracked work.
@@ -411,11 +452,11 @@ Every work item flows through these phases:
 | Phase             | What Happens                                                                                                                                                                                                                                                                                                                      | Who Leads                            |
 | ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------ |
 | **1. Groom**      | Triad collaborates: AC, WSJF, NFRs, dependencies                                                                                                                                                                                                                                                                                  | PO leads, SA + SM contribute         |
-| **2. Promote**    | Expand to full work item with story, AC, NFRs. Log `item-promoted`.                                                                                                                                                                                                                                                               | PO                                   |
+| **2. Promote**    | Expand to full work item with story, AC, NFRs. Create feature branch + draft PR. Log `item-promoted`, `branch-created`, `pr-opened`.                                                                                                                                                                                              | PO                                   |
 | **3. Build**      | **Re-evaluate first:** verify the item's premise still holds against current code, context, and needs. If no longer needed, log `item-rejected-at-build` with `--reason` (context-changed, flawed-suggestion, superseded, duplicate) and `--source` (originating agent). Then execute with TDD. Full validation cycle end-to-end. | PO orchestrates, specialists execute |
-| **4. Review**     | PO verifies AC. Selective specialist reviews dispatched. DoD gate.                                                                                                                                                                                                                                                                | PO dispatches, specialists review    |
+| **4. Review**     | PO verifies AC. Dispatches reviewers who post findings as PR comments. DoD gate.                                                                                                                                                                                                                                                  | PO dispatches, specialists review    |
 | **5. Fix**        | Address review findings.                                                                                                                                                                                                                                                                                                          | Domain owners                        |
-| **6. Deploy**     | Deploy to target environment. Run validation suite.                                                                                                                                                                                                                                                                               | Platform-ops orchestrates            |
+| **6. Deploy**     | PO merges approved PR to main. Platform-ops deploys through promotion order. Log `pr-merged`, `ext-deployed`.                                                                                                                                                                                                                     | PO merges, platform-ops deploys      |
 | **7. Accept**     | All DoD criteria pass. Item moves to Done. Log `item-accepted`.                                                                                                                                                                                                                                                                   | PO                                   |
 | **8. Retro**      | All participants reflect (keep/change/try). SM facilitates.                                                                                                                                                                                                                                                                       | SM facilitates, triad evaluates      |
 | **9. Checkpoint** | SM assesses process health. Pace evaluation. Apply retro outcomes.                                                                                                                                                                                                                                                                | SM                                   |
