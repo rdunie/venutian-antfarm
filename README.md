@@ -151,9 +151,10 @@ DORA + flow quality metrics out of the box, with a pluggable backend (JSONL defa
 #### Example: Log events
 
 ```bash
-$ ops/metrics-log.sh item-promoted 1
-$ ops/metrics-log.sh handoff-sent 1 --from backend-specialist --to security-reviewer
-$ ops/metrics-log.sh agent-invoked product-owner --tokens 12500 --turns 4 --model opus --item 1
+$ ops/metrics-log.sh item-promoted 42
+$ ops/metrics-log.sh handoff-sent 42 --from backend-specialist --to security-reviewer
+$ ops/metrics-log.sh bug-found 42 --severity high --source regression
+$ ops/metrics-log.sh agent-invoked product-owner --tokens 45800 --turns 10 --model opus --item 42
 ```
 
 #### Example: `ops/dora.sh`
@@ -163,31 +164,43 @@ $ ops/metrics-log.sh agent-invoked product-owner --tokens 12500 --turns 4 --mode
                      DORA METRICS
 ================================================================
 
-  DEPLOYMENT FREQUENCY (since 2026-02-16)
-    deployments:   0
-    item-accepted: 0
-    total:         0
+  DEPLOYMENT FREQUENCY (since 2026-02-17)
+    deployments:   14
+    item-accepted: 23
+    total:         37
 
   LEAD TIME (item-promoted -> item-accepted)
-    median: 0.00 sessions (0s)
+    median: 1.75 sessions (25200s)
 
   CHANGE FAILURE RATE
-    regressions: 0 / 0 items = 0%
+    regressions: 2 / 23 items = 8%
+
+  DEPLOYMENT REWORK RATE
+    hotfix deploys: 3 / 14 = 21%
+
+  MTTR (high/critical bugs)
+    median: 0.38 sessions (5400s)
 
 ================================================================
                     FLOW QUALITY
 ================================================================
 
   FIRST-PASS YIELD (by handoff boundary)
-    backend-specialist        -> security-reviewer         100%
-    Fleet average                                         100%
+    backend-specialist        -> security-reviewer         87%
+    frontend-specialist       -> ux-reviewer               91%
+    backend-specialist        -> compliance-auditor        95%
+    infra-specialist          -> security-reviewer         100%
+    Fleet average                                         92%
 
   REWORK CYCLES
-    Average  0.0 cycles/item
+    Average  0.4 cycles/item
 
   TASK OUTCOMES
-    Abandoned  0 of 1 promoted = 0%
-    Restarted  0 of 1 promoted = 0%
+    Abandoned  1 of 23 promoted = 4%
+    Restarted  2 of 23 promoted = 8%
+
+  BLOCKED TIME
+    Average  0.25 sessions/item
 ```
 
 #### Example: `ops/dora.sh --sm`
@@ -197,15 +210,16 @@ $ ops/metrics-log.sh agent-invoked product-owner --tokens 12500 --turns 4 --mode
                  PACE RECOMMENDATION
 ================================================================
 
-  Current pace: Crawl
+  PACE RECOMMENDATION
+    Current pace: Walk
 
   DORA signals
-    CFR: -- (no items accepted yet)
+    CFR: 8% (Walk threshold: <=10%)
 
   Flow signals
-    FPY: -- (no handoffs logged yet)
+    FPY: 92%
 
-  Recommendation: Remain at Crawl -- insufficient data to evaluate
+  Recommendation: Advance to Run
 ```
 
 #### Example: `ops/dora.sh --cost`
@@ -216,11 +230,13 @@ $ ops/metrics-log.sh agent-invoked product-owner --tokens 12500 --turns 4 --mode
 ================================================================
 
   SUMMARY
-    Total invocations: 1
-    Total tokens:      12500
+    Total invocations: 87
+    Total tokens:      1482300
 
   MODEL SPLIT
-    opus: 1 calls, 12500 tokens
+    opus: 34 calls, 892400 tokens
+    sonnet: 48 calls, 561200 tokens
+    haiku: 5 calls, 28700 tokens
 ```
 
 #### Example: `ops/pathways.sh`
@@ -234,19 +250,27 @@ $ ops/metrics-log.sh agent-invoked product-owner --tokens 12500 --turns 4 --mode
 
   From                           To                           Count
   ----                           --                           -----
-  backend-specialist             security-reviewer            1
+  backend-specialist             security-reviewer            18
+  frontend-specialist            ux-reviewer                  14
+  backend-specialist             compliance-auditor           11
+  infra-specialist               security-reviewer            7
+  frontend-specialist            compliance-auditor           4
 
   FLEET DENSITY
-    Active agents in handoffs: 2
-    Unique communication paths: 1
-    Density: 50% of possible paths (1/2)
+    Active agents in handoffs: 5
+    Unique communication paths: 5
+    Density: 25% of possible paths (5/20)
 
   TOP COMMUNICATORS
 
   Agent                          Sent       Received   Total
   -----                          ----       --------   -----
-  backend-specialist             8          0          8
-  security-reviewer              0          8          8
+  backend-specialist             29         0          29
+  security-reviewer              0          25         25
+  frontend-specialist            18         0          18
+  compliance-auditor             0          15         15
+  ux-reviewer                    0          14         14
+  infra-specialist               7          0          7
 ```
 
 ### Agent Inheritance
