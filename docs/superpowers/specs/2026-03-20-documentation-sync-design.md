@@ -66,15 +66,17 @@ Three focused diagrams, one per tier:
 
 Shows the 7 Cx roles and their key relationships:
 
+- CO ↔ User (floor changes require user approval; CO reports conformance posture)
+- CEO ↔ User (executive brief; all CEO decisions escalated at Crawl pace)
+- All Cx ↔ CO (propose floor rules + targets; CO consults all Cx on changes for consensus)
 - CISO → CO (security controls for the floor)
 - CTO → SA (technology direction)
 - CFO → platform-ops (cost data interpretation)
 - COO → SM (operational standards)
 - CKO → knowledge-ops (distribution direction)
-- CEO ↔ User (executive brief)
-- All Cx → CO (floor rule proposals)
+- CO monitors CEO autonomy grants
 
-Orienting text: "The governance tier sets policy and standards. Each Cx role owns a domain and proposes controls to the CO for the compliance floor. The CEO is the user's proxy; the CO monitors all governance agents."
+Orienting text: "The governance tier sets policy and standards. The CO is the compliance floor guardian — all floor changes require user approval. Each Cx role proposes controls to the CO and participates in consensus when consulted. The CEO is the user's proxy and operates on an independent trust-based pace."
 
 **2. Leadership + Operational Tier Detail**
 
