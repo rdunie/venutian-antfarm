@@ -211,21 +211,23 @@ Use worktree isolation when you want a reviewer or auditor agent to assess only 
 How a backlog item flows through the 9-phase lifecycle.
 
 ```mermaid
-flowchart LR
+flowchart TD
     B["1. Groom\n(triad)"] -->|"passes DoR"| P["2. Promote\n(work item)"]
     P --> IP["3. Build\n(specialists)"]
     IP --> RV["4. Review\n(AC + specialists)"]
-    RV -->|"rework"| FIX["5. Fix"]
-    FIX -->|"re-validate"| IP
     RV -->|"all pass"| DEP["6. Deploy\n(per environment)"]
-    DEP -->|"code problem"| FIX
-    DEP -->|"env problem"| ENVFIX["Env Fix\n(infra resolves)"]
-    ENVFIX -->|"resume"| DEP
     DEP -->|"all envs pass"| ACC["7. Accept"]
-    ACC -->|"rejection"| FIX
     ACC --> RET["8. Retro\n(team reflects)"]
     RET --> CHK["9. Checkpoint\n(process health)"]
     CHK -->|"next item"| B
+
+    RV -->|"rework"| FIX["5. Fix"]
+    DEP -->|"code problem"| FIX
+    ACC -->|"rejection"| FIX
+    FIX -->|"re-validate"| IP
+
+    DEP -->|"env problem"| ENVFIX["Env Fix\n(infra resolves)"]
+    ENVFIX -->|"resume"| DEP
 
     style B fill:#90caf9,stroke:#1565c0,color:#1a1a1a
     style P fill:#90caf9,stroke:#1565c0,color:#1a1a1a

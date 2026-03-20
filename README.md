@@ -134,18 +134,20 @@ Every fleet starts at Crawl. Evidence-based transitions only. Pace goes both dir
 ### Work Item Lifecycle
 
 ```mermaid
-flowchart LR
+flowchart TD
     G["1. Groom"] --> P["2. Promote"]
     P --> B["3. Build"]
     B --> R["4. Review"]
-    R -->|"rework"| F["5. Fix"]
-    F -->|"re-validate"| B
     R -->|"pass"| D["6. Deploy\n(per env)"]
     D -->|"all envs pass"| A["7. Accept"]
-    A -->|"rejection"| F
     A --> RT["8. Retro"]
     RT --> C["9. Checkpoint"]
     C -->|"next"| G
+
+    R -->|"rework"| F["5. Fix"]
+    D -->|"code problem"| F
+    A -->|"rejection"| F
+    F -->|"re-validate"| B
 
     style G fill:#90caf9,stroke:#1565c0,color:#1a1a1a
     style P fill:#90caf9,stroke:#1565c0,color:#1a1a1a
