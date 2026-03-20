@@ -21,12 +21,22 @@
     "run_threshold_fpy": 80
   },
   "agents": {
+    "governance": [
+      "compliance-officer",
+      "ciso",
+      "ceo",
+      "cto",
+      "cfo",
+      "coo",
+      "cko"
+    ],
     "core": [
       "product-owner",
       "solution-architect",
       "scrum-master",
-      "memory-manager",
-      "platform-ops"
+      "knowledge-ops",
+      "platform-ops",
+      "compliance-auditor"
     ],
     "specialists": ["frontend-specialist", "backend-specialist"],
     "reviewers": [],
@@ -35,6 +45,15 @@
   "retro": {
     "cadence": 2,
     "note": "Every 2 items. Override from default of 1."
+  },
+  "knowledge": {
+    "cadence": {
+      "crawl": 1,
+      "walk": 2,
+      "run": 4,
+      "fly": 0
+    },
+    "note": "Items between knowledge distributions per pace. 0 = on-demand/retro only."
   },
   "pathways": {
     "declared": {
@@ -45,7 +64,17 @@
         "backend-specialist -> product-owner"
       ],
       "review": [],
-      "escalation": ["* -> solution-architect", "* -> scrum-master"]
+      "escalation": ["* -> solution-architect", "* -> scrum-master"],
+      "governance": [
+        "ciso -> compliance-officer",
+        "compliance-officer -> compliance-auditor",
+        "* -> compliance-officer",
+        "cko -> knowledge-ops",
+        "cto -> solution-architect",
+        "cfo -> platform-ops",
+        "coo -> scrum-master",
+        "* -> ceo"
+      ]
     }
   }
 }
