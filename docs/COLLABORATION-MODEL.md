@@ -51,6 +51,7 @@ flowchart LR
     O(["Output\ndoc  training\n(you define)"])
 
     USER -->|"approvals +\noversight"| Gov
+    USER -->|"evidence-based\noversight"| S
     Gov -->|"controls +\ncompliance"| S
     S -->|"context"| E
     S -.->|"arch/process"| R
