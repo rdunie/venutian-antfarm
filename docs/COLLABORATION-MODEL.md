@@ -216,7 +216,7 @@ flowchart LR
     P --> IP["3. Build\n(specialists)"]
     IP --> RV["4. Review\n(AC + specialists)"]
     RV -->|"rework"| FIX["5. Fix"]
-    FIX --> RV
+    FIX -->|"re-validate"| IP
     RV -->|"all pass"| DEP["6. Deploy"]
     DEP -->|"validation fail"| FIX
     DEP -->|"all green"| ACC["7. Accept"]

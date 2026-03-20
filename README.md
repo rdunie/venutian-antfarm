@@ -139,7 +139,7 @@ flowchart LR
     P --> B["3. Build"]
     B --> R["4. Review"]
     R -->|"rework"| F["5. Fix"]
-    F --> R
+    F -->|"re-validate"| B
     R -->|"pass"| D["6. Deploy"]
     D --> A["7. Accept"]
     A -->|"rejection"| F
