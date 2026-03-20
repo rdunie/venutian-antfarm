@@ -53,11 +53,22 @@ Fleet-wide guidance is the v1 mechanism. Targeted guidance (role-specific delive
 
 ## Agent Definitions
 
+### Universal Cx Pattern: Floor and Targets
+
+Every Cx role operates within the three-tier compliance hierarchy. Each Cx role:
+
+- **Proposes floor rules (MUST)** in their domain to the CO via `/compliance propose`. These are non-negotiable minimums. User approval always required.
+- **Defines targets (SHOULD)** in their domain. Aspirational objectives that go into `.claude/compliance/targets.md` via the CO's change control process. Risk-reducing targets can be approved autonomously by the CO; others require user approval.
+- **Publishes guidance (NICE TO HAVE)** in their domain to the guidance registry. Informational, no approval required.
+
+The floor/target distinction is not optional — it is how every Cx role contributes to governance. If a Cx role cannot articulate what their domain's floor rules are, they haven't finished defining their governance posture.
+
 ### CEO (Digital Twin of Implementer)
 
 - **Model:** Opus
 - **Core identity:** Proxy for the user's strategic judgment. Represents the user's intent when they're not directly engaged. Ensures fleet decisions align with mission, vision, and stakeholder commitments.
 - **Owns:** Strategic priorities, product direction, executive brief
+- **Floor/target domain:** Strategic alignment floor rules (e.g., "We MUST ALWAYS validate work items against the stated mission before promotion"), strategic targets (e.g., "should maintain a roadmap aligned to quarterly stakeholder commitments")
 - **Independent pace:** Starts at Crawl, separate from fleet pace. CEO can never increase its own pace — only the user can promote. CEO can slow itself down. CEO can recommend specific autonomy grants but requires explicit user approval for each.
 - **Guidance domain:** Mission alignment, strategic priorities, stakeholder commitments
 
@@ -73,13 +84,15 @@ Fleet-wide guidance is the v1 mechanism. Targeted guidance (role-specific delive
 
 #### CEO Autonomy Model
 
-| Action                                      | Autonomy                                        |
-| ------------------------------------------- | ----------------------------------------------- |
-| Surfacing decisions to executive brief      | Autonomous                                      |
-| Recommending strategic priorities           | Propose to user (always, at current Crawl pace) |
-| Making strategic decisions on user's behalf | Only with explicit autonomy grant from user     |
-| Slowing own pace                            | Autonomous                                      |
-| Increasing own pace                         | Never — user only                               |
+| Action                                            | Autonomy                                        |
+| ------------------------------------------------- | ----------------------------------------------- |
+| Surfacing decisions to executive brief            | Autonomous                                      |
+| Recommending strategic priorities                 | Propose to user (always, at current Crawl pace) |
+| Proposing floor rules to CO (strategic alignment) | Propose to user (CEO is at Crawl)               |
+| Defining strategic targets                        | Propose to user (CEO is at Crawl)               |
+| Making strategic decisions on user's behalf       | Only with explicit autonomy grant from user     |
+| Slowing own pace                                  | Autonomous                                      |
+| Increasing own pace                               | Never — user only                               |
 
 ### CTO (Technology Enablement Authority)
 
@@ -111,18 +124,21 @@ Fleet-wide guidance is the v1 mechanism. Targeted guidance (role-specific delive
 - **Model:** Sonnet (cost-conscious by design)
 - **Core identity:** Balanced cost governance. Not lowest cost, not maximum throughput — the right investment proportional to pace and value delivered.
 - **Owns:** Token budget strategy, cost-per-item baselines, resource allocation guidance
+- **Floor/target domain:** Cost governance floor rules (e.g., "We MUST NEVER deploy without a cost impact assessment for Opus-tier agent invocations"), cost targets (e.g., "should maintain cost-per-item below baseline trend")
 - **Relationship to platform-ops:** Platform-ops measures costs (tracks token usage, model split). CFO interprets the data and sets strategy.
 - **Guidance domain:** Cost expectations, budget thresholds, efficiency standards
 
 #### CFO Autonomy Model
 
-| Action                              | Autonomy                         |
-| ----------------------------------- | -------------------------------- |
-| Monitoring cost metrics             | Autonomous                       |
-| Publishing cost guidance            | Autonomous                       |
-| Setting budget thresholds/alerts    | Propose to user                  |
-| Recommending model tier adjustments | Propose to SM (process decision) |
-| Flagging cost overruns              | Autonomous (alert to user + SM)  |
+| Action                                        | Autonomy                                       |
+| --------------------------------------------- | ---------------------------------------------- |
+| Monitoring cost metrics                       | Autonomous                                     |
+| Publishing cost guidance                      | Autonomous                                     |
+| Proposing floor rules to CO (cost governance) | Autonomous (CO manages approval)               |
+| Defining cost targets                         | Autonomous if risk-reducing, propose otherwise |
+| Setting budget thresholds/alerts              | Propose to user                                |
+| Recommending model tier adjustments           | Propose to SM (process decision)               |
+| Flagging cost overruns                        | Autonomous (alert to user + SM)                |
 
 ### COO (Operational Efficiency)
 
@@ -147,6 +163,7 @@ Fleet-wide guidance is the v1 mechanism. Targeted guidance (role-specific delive
 - **Model:** Sonnet
 - **Core identity:** Knowledge quality authority. Sets the standards for what the fleet should know, when learnings should distribute, and what the quality bar is for agent knowledge. Directs knowledge-ops to execute.
 - **Owns:** Knowledge quality standards, distribution cadence strategy, knowledge gap identification
+- **Floor/target domain:** Knowledge governance floor rules (e.g., "We MUST NEVER deploy an agent without critical project knowledge"), knowledge targets (e.g., "should achieve zero stale memories per audit cycle")
 - **Relationship to knowledge-ops:** CKO sets policy and direction; knowledge-ops executes (audits, distributes, optimizes files). Same pattern as CISO → compliance-auditor.
 - **Guidance domain:** Knowledge quality standards, learning distribution practices
 
