@@ -17,6 +17,8 @@ Update all framework documentation and diagrams to reflect the current state: 13
 ## What We Leave Alone
 
 - `docs/superpowers/specs/` and `docs/superpowers/plans/` — historical documents reflecting the state at time of writing. Not updated.
+- `README.md` and `CLAUDE.md` — already updated to reflect current state (13 core agents, knowledge-ops, governance tier). No changes needed.
+- `docs/AGENT-FLEET-PATTERN.md` lines 9 and 325 — "16-agent fleet" references are historical (describing the production fleet the pattern was extracted from, not this framework's agent count). Intentionally preserved.
 
 ## Color System
 
@@ -114,13 +116,18 @@ Update existing flow diagrams:
 
 ### docs/GETTING-STARTED.md
 
-- Update "6 core agents" to "13 core agents (7 governance + 6 operational)"
+- Update "6 core agents" (line 104) to "13 core agents (7 governance + 6 operational)"
 - List the governance tier agents alongside the existing operational agents
 - Add a note about the governance tier being active from the first session (onboarding activates CO + CISO)
+- Update learning loop description (line 129): SM triggers distribution, knowledge-ops executes under CKO direction (not SM distributing directly)
+- Add the new skills to the available commands section: `/compliance`, `/governance`, `/pace`, `/audit`, `/memory`, `/deploy`, `/findings`, `/handoff`
+- Verify "11 core principles" count (line 138) is still accurate against current COLLABORATION.md
 
 ### docs/COLLABORATION-MODEL.md
 
-- Replace all "memory-manager" references with "knowledge-ops" (diagrams and text)
+- Replace all "memory-manager" references with "knowledge-ops" (diagrams and text, including line 259, 441, 454)
+- Fix line 19: "memory" in the Reviewers node of the Fleet Structure diagram — knowledge-ops is a harness operational agent, not a user-defined reviewer. Restructure this node.
+- Restructure the Fleet Structure diagram (lines 15-35) to include the governance layer — this is the first diagram readers see and currently has no governance tier at all
 - Redesign the overview diagram using the layered approach
 - Add the three tier detail diagrams (governance, leadership+operational, bridge)
 - Update existing flow diagrams for knowledge-ops rename
@@ -130,10 +137,11 @@ Update existing flow diagrams:
 
 ### docs/AGENT-FLEET-PATTERN.md
 
-- Rename "Memory Manager" → "Knowledge Ops" in all Mermaid diagrams and the worked example table
+- Rename "Memory Manager" → "Knowledge Ops" in all Mermaid diagrams (line 37) and the worked example table (line 318: "knowledge/memory manager" → "knowledge-ops")
+- Add governance layer subgraph to the Pattern Overview diagram (lines 31-66)
 - Add a "Governance Tier" section describing the Cx model
 - Reference the governance layer design for full detail
-- Update agent counts throughout (e.g., "Core agent definitions (6 files)" → 13)
+- Update agent counts throughout (e.g., "Core agent definitions (6 files)" at line 350 → 13)
 - Update diagram color coding to match the tier color system
 
 ### example/README.md
@@ -145,6 +153,7 @@ Update existing flow diagrams:
 
 - Add governance roster (7 Cx roles)
 - Rename memory-manager → knowledge-ops in core
+- Add compliance-auditor to core roster (currently missing — pre-existing gap)
 - Add knowledge cadence config
 - Add governance pathways
 
