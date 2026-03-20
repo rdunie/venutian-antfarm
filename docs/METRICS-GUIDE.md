@@ -147,7 +147,7 @@ ops/pathways.sh --since 7d   # Scoped to recent window
 
 ## Example Output: Mature Application
 
-The following examples show realistic output from a fleet that has delivered 47 items over 8 weeks with 5 specialist agents.
+The following examples show realistic output from a fleet that has delivered 47 items over 14 days with 5 specialist agents.
 
 ### `ops/dora.sh`
 
@@ -199,7 +199,7 @@ The following examples show realistic output from a fleet that has delivered 47 
 
 #### Interpreting DORA Metrics
 
-**Deployment Frequency** measures throughput. 85 total deployments+acceptances over 8 weeks (~10.6/week) indicates a healthy delivery cadence. Declining frequency may signal blockers or scope creep.
+**Deployment Frequency** measures throughput. 85 total deployments+acceptances over 14 days (~3.4/day) indicates a healthy delivery cadence. Declining frequency may signal blockers or scope creep.
 
 **Lead Time** (1.5 sessions median) measures how long work takes from promotion to acceptance. Lower is better but not at the cost of quality. A rising lead time trend suggests items are growing in complexity or rework is increasing.
 
@@ -210,17 +210,17 @@ The following examples show realistic output from a fleet that has delivered 47 
 ```mermaid
 xychart-beta
     title "DORA Metrics Over 8 Weeks"
-    x-axis ["Wk 1", "Wk 2", "Wk 3", "Wk 4", "Wk 5", "Wk 6", "Wk 7", "Wk 8"]
+    x-axis ["D1", "D2", "D3", "D4", "D5", "D6", "D7", "D8", "D9", "D10", "D11", "D12", "D13", "D14"]
     y-axis "Items Accepted" 0 --> 10
-    bar [3, 4, 5, 6, 7, 6, 8, 8]
+    bar [1, 2, 2, 3, 3, 4, 3, 4, 4, 3, 4, 5, 4, 5]
 ```
 
 ```mermaid
 xychart-beta
     title "Change Failure Rate Trend"
-    x-axis ["Wk 1", "Wk 2", "Wk 3", "Wk 4", "Wk 5", "Wk 6", "Wk 7", "Wk 8"]
+    x-axis ["D1", "D2", "D3", "D4", "D5", "D6", "D7", "D8", "D9", "D10", "D11", "D12", "D13", "D14"]
     y-axis "CFR %" 0 --> 25
-    line [20, 15, 12, 8, 7, 6, 5, 6]
+    line [20, 18, 15, 14, 12, 10, 9, 8, 7, 7, 6, 6, 5, 6]
 ```
 
 The CFR trend shows the fleet improving from 20% (early Crawl) to 6% (ready for Run). This is the signature of a learning fleet -- structured feedback loops compound over time.
@@ -401,34 +401,34 @@ The most valuable use of metrics is not measuring what happened — it is observ
 
 ### Example 1: Backend Specialist Learns Input Validation
 
-In weeks 1-3, the security-reviewer repeatedly rejected the backend-specialist's handoffs for missing input validation. The FPY for this boundary was 72%.
+In days 1-5, the security-reviewer repeatedly rejected the backend-specialist's handoffs for missing input validation. The FPY for this boundary was 72%.
 
-After the retro at week 3, the SM distributed a finding: "backend-specialist should validate all user input before handoff." The knowledge-ops agent wrote this to the backend-specialist's memory.
+After the retro on day 5, the SM distributed a finding: "backend-specialist should validate all user input before handoff." The knowledge-ops agent wrote this to the backend-specialist's memory.
 
-In weeks 4-8, the same boundary's FPY rose to 96%. The backend-specialist stopped making the same mistake — not because it was told to in each task, but because the learning was embedded in its memory.
+From day 6 onward, the same boundary's FPY rose to 96%. The backend-specialist stopped making the same mistake — not because it was told to in each task, but because the learning was embedded in its memory.
 
 ```mermaid
 xychart-beta
-    title "Backend → Security Reviewer FPY (adaptation visible at week 4)"
-    x-axis ["Wk 1", "Wk 2", "Wk 3", "Wk 4", "Wk 5", "Wk 6", "Wk 7", "Wk 8"]
+    title "Backend → Security Reviewer FPY (adaptation visible at day 6)"
+    x-axis ["D1", "D2", "D3", "D4", "D5", "D6", "D7", "D8", "D9", "D10", "D11", "D12", "D13", "D14"]
     y-axis "FPY %" 60 --> 100
-    line [70, 72, 75, 88, 90, 94, 95, 96]
+    line [70, 71, 72, 73, 75, 78, 85, 88, 90, 92, 94, 95, 95, 96]
 ```
 
-**What the human sees:** A clear inflection point at week 4 — the retro finding landed. If the FPY had not improved, the retro would flag that the refinement didn't work and propose a different approach.
+**What the human sees:** A clear inflection point at day 6 — the retro finding landed. If the FPY had not improved, the next retro would flag that the refinement didn't work and propose a different approach.
 
 ### Example 2: Fleet Learns to Estimate Better
 
-In early weeks, 15% of promoted items were abandoned or restarted — the fleet was over-committing to items that turned out larger or less valuable than expected. The grooming phase wasn't catching these issues.
+In the first few days, 15% of promoted items were abandoned or restarted — the fleet was over-committing to items that turned out larger or less valuable than expected. The grooming phase wasn't catching these issues.
 
 After repeated findings, the PO refined its grooming process: tighter acceptance criteria, better WSJF calibration, and a "re-evaluate at build start" gate (Phase 3). The task outcome metrics show the improvement:
 
 ```mermaid
 xychart-beta
     title "Task Abandonment + Restart Rate (fleet learns to estimate)"
-    x-axis ["Wk 1", "Wk 2", "Wk 3", "Wk 4", "Wk 5", "Wk 6", "Wk 7", "Wk 8"]
+    x-axis ["D1", "D2", "D3", "D4", "D5", "D6", "D7", "D8", "D9", "D10", "D11", "D12", "D13", "D14"]
     y-axis "% of Promoted Items" 0 --> 25
-    line [22, 18, 15, 12, 10, 8, 7, 6]
+    line [22, 20, 18, 16, 15, 13, 12, 11, 10, 9, 8, 7, 7, 6]
 ```
 
 **What the human sees:** The fleet is wasting less effort over time. Items that get promoted are more likely to complete. This is the PO learning to groom better — a behavioral change driven by metrics feedback.
@@ -440,12 +440,12 @@ As the fleet progresses from Crawl to Walk, agent cost per item should decrease 
 ```mermaid
 xychart-beta
     title "Tokens Per Accepted Item (cost efficiency improves with pace)"
-    x-axis ["Wk 1", "Wk 2", "Wk 3", "Wk 4", "Wk 5", "Wk 6", "Wk 7", "Wk 8"]
+    x-axis ["D1", "D2", "D3", "D4", "D5", "D6", "D7", "D8", "D9", "D10", "D11", "D12", "D13", "D14"]
     y-axis "Tokens (thousands)" 80 --> 200
-    line [185, 170, 155, 140, 130, 125, 120, 118]
+    line [185, 178, 170, 162, 155, 148, 140, 135, 130, 128, 125, 122, 120, 118]
 ```
 
-**What the human sees:** Early items cost ~185K tokens each (Crawl pace — lots of judgment calls, context enrichment, rework). By week 8, items cost ~118K tokens (Walk pace — agents have learned the patterns). The fleet is delivering more value per token.
+**What the human sees:** Early items cost ~185K tokens each (Crawl pace — lots of judgment calls, context enrichment, rework). By day 14, items cost ~118K tokens (Walk pace — agents have learned the patterns). The fleet is delivering more value per token.
 
 ### Example 4: Rework Cycles Decrease After Refinement
 
@@ -454,12 +454,57 @@ The rework cycle metric (average fix passes before acceptance) shows whether rev
 ```mermaid
 xychart-beta
     title "Rework Cycles Per Item (review quality improves)"
-    x-axis ["Wk 1", "Wk 2", "Wk 3", "Wk 4", "Wk 5", "Wk 6", "Wk 7", "Wk 8"]
+    x-axis ["D1", "D2", "D3", "D4", "D5", "D6", "D7", "D8", "D9", "D10", "D11", "D12", "D13", "D14"]
     y-axis "Avg Cycles" 0 --> 2
-    line [1.8, 1.5, 1.2, 0.8, 0.6, 0.4, 0.3, 0.3]
+    line [1.8, 1.6, 1.5, 1.3, 1.2, 1.0, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.3, 0.3]
 ```
 
-**What the human sees:** Items are passing review with fewer rounds of feedback. This means both builders (writing better code) and reviewers (giving clearer feedback) are adapting their behavior. By week 7-8, most items pass on the first attempt.
+**What the human sees:** Items are passing review with fewer rounds of feedback. This means both builders (writing better code) and reviewers (giving clearer feedback) are adapting their behavior. By day 12-14, most items pass on the first attempt.
+
+### Example 5: Fleet Responds to a Regression
+
+On day 8, a deployment introduced a regression — an authentication bypass that the security-reviewer missed during review. The CFR spiked from 5% to 12%, crossing back above the Walk threshold.
+
+The fleet's response is visible in the metrics:
+
+```mermaid
+xychart-beta
+    title "CFR Spike and Recovery (regression on day 8)"
+    x-axis ["D1", "D2", "D3", "D4", "D5", "D6", "D7", "D8", "D9", "D10", "D11", "D12", "D13", "D14"]
+    y-axis "CFR %" 0 --> 15
+    line [10, 8, 7, 6, 5, 5, 5, 12, 10, 8, 7, 6, 5, 5]
+```
+
+**What happened:**
+
+1. **Day 8:** Regression detected in test environment. `bug-found --severity critical --source regression` logged. MTTR clock starts.
+2. **Day 8:** RCA in test (read-only). Issue reproduced in dev. Backend-specialist (original author) fixes on the branch. MTTR: 0.15 sessions.
+3. **Day 9:** SM triggers an exception-driven knowledge distribution. The CKO directs knowledge-ops to distribute the learning: "authentication changes require explicit security-reviewer dispatch with auth-specific scope."
+4. **Day 9:** Security-reviewer's memory updated with the specific pattern to watch for. PO updates review dispatch criteria to always include security-reviewer for auth-touching changes.
+5. **Days 10-14:** CFR recovers to 5%. The same type of regression does not recur.
+
+**What the human sees:** A spike, a fast recovery, and a learning loop that prevents recurrence. The SM recommended remaining at Walk pace (not demoting to Crawl) because the recovery was fast and the root cause was addressed — one incident with a clear fix is not a systemic problem.
+
+### Example 6: Fleet Detects and Resolves a Bottleneck
+
+Around day 6, the pathway analysis reveals that the backend-specialist's handoff volume is growing disproportionately — it's on every critical path:
+
+```mermaid
+xychart-beta
+    title "Backend Specialist Handoff Volume (bottleneck emerging)"
+    x-axis ["D1", "D2", "D3", "D4", "D5", "D6", "D7", "D8", "D9", "D10", "D11", "D12", "D13", "D14"]
+    y-axis "Daily Handoffs" 0 --> 15
+    line [3, 4, 5, 6, 8, 10, 12, 13, 8, 7, 6, 6, 5, 5]
+```
+
+**What happened:**
+
+1. **Day 6:** SM flags in the retro that the backend-specialist is handling 70% of all handoffs. Lead time for backend items is rising.
+2. **Day 7:** COO reviews agent performance data. Recommends splitting the backend domain: one specialist for API/auth, another for data pipeline work.
+3. **Day 8:** User approves. PO creates the new specialist agent (`api-specialist`). The CTO publishes technology guidance for the domain split.
+4. **Days 9-14:** Handoff volume normalizes. The original backend-specialist handles data pipeline work; the new api-specialist handles API/auth. Lead time drops.
+
+**What the human sees:** The fleet detected its own bottleneck through metrics, the COO recommended a structural change, and the change was implemented within a day. The metrics confirm the fix worked — handoff volume is balanced and lead time recovered.
 
 ### What to Look For
 
