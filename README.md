@@ -140,8 +140,8 @@ flowchart LR
     B --> R["4. Review"]
     R -->|"rework"| F["5. Fix"]
     F -->|"re-validate"| B
-    R -->|"pass"| D["6. Deploy"]
-    D --> A["7. Accept"]
+    R -->|"pass"| D["6. Deploy\n(per env)"]
+    D -->|"all envs pass"| A["7. Accept"]
     A -->|"rejection"| F
     A --> RT["8. Retro"]
     RT --> C["9. Checkpoint"]

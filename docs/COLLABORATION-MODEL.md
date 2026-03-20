@@ -217,9 +217,11 @@ flowchart LR
     IP --> RV["4. Review\n(AC + specialists)"]
     RV -->|"rework"| FIX["5. Fix"]
     FIX -->|"re-validate"| IP
-    RV -->|"all pass"| DEP["6. Deploy"]
-    DEP -->|"validation fail"| FIX
-    DEP -->|"all green"| ACC["7. Accept"]
+    RV -->|"all pass"| DEP["6. Deploy\n(per environment)"]
+    DEP -->|"code problem"| FIX
+    DEP -->|"env problem"| ENVFIX["Env Fix\n(infra resolves)"]
+    ENVFIX -->|"resume"| DEP
+    DEP -->|"all envs pass"| ACC["7. Accept"]
     ACC -->|"rejection"| FIX
     ACC --> RET["8. Retro\n(team reflects)"]
     RET --> CHK["9. Checkpoint\n(process health)"]
@@ -230,6 +232,7 @@ flowchart LR
     style IP fill:#a5d6a7,stroke:#2e7d32,color:#1a1a1a
     style RV fill:#ffcc80,stroke:#e65100,color:#1a1a1a
     style FIX fill:#ef9a9a,stroke:#b71c1c,color:#1a1a1a
+    style ENVFIX fill:#ffcc80,stroke:#e65100,color:#1a1a1a
     style DEP fill:#a5d6a7,stroke:#2e7d32,color:#1a1a1a
     style ACC fill:#a5d6a7,stroke:#2e7d32,color:#1a1a1a
     style RET fill:#90caf9,stroke:#1565c0,color:#1a1a1a

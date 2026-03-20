@@ -462,25 +462,65 @@ Every work item flows through these phases:
 | **3. Build**      | **Re-evaluate first:** verify the item's premise still holds against current code, context, and needs. If no longer needed, log `item-rejected-at-build` with `--reason` (context-changed, flawed-suggestion, superseded, duplicate) and `--source` (originating agent). Then execute with TDD. Full validation cycle end-to-end. | PO orchestrates, specialists execute |
 | **4. Review**     | PO verifies AC. Dispatches reviewers who post findings as PR comments. DoD gate.                                                                                                                                                                                                                                                  | PO dispatches, specialists review    |
 | **5. Fix**        | Address review or acceptance findings. After fixing, return to Build (Phase 3) for full validation cycle -- the fix must pass TDD, typecheck, build, and deploy before re-review.                                                                                                                                                 | Domain owners                        |
-| **6. Deploy**     | PO merges approved PR to main. Platform-ops deploys through promotion order. Log `pr-merged`, `ext-deployed`.                                                                                                                                                                                                                     | PO merges, platform-ops deploys      |
-| **7. Accept**     | PO verifies DoD on deployed environment. If all criteria pass: log `item-accepted`, proceed to Retro. If criteria fail: log `item-rejected-at-acceptance`, item returns to Fix (Phase 5) -- see Acceptance Failure below.                                                                                                         | PO                                   |
+| **6. Deploy**     | PO merges approved PR to main. Platform-ops deploys through each environment in `promotion_order`. Validate at each environment before promoting to the next. Log `pr-merged`, `ext-deployed` per environment. See Deployment Progression below.                                                                                  | PO merges, platform-ops deploys      |
+| **7. Accept**     | PO verifies DoD on the final environment. If all criteria pass: log `item-accepted`, proceed to Retro. If criteria fail: log `item-rejected-at-acceptance`, item returns to Fix (Phase 5) -- see Acceptance Failure and Deployment Failures below.                                                                                | PO                                   |
 | **8. Retro**      | All participants reflect (keep/change/try). SM facilitates.                                                                                                                                                                                                                                                                       | SM facilitates, triad evaluates      |
 | **9. Checkpoint** | SM assesses process health. Pace evaluation. Apply retro outcomes.                                                                                                                                                                                                                                                                | SM                                   |
 
+### Deployment Progression (Phase 6)
+
+Deploy is not a single step -- it is a per-environment loop through the `promotion_order` defined in `fleet-config.json`:
+
+```
+for each environment in promotion_order:
+    Deploy to environment → Validate → if pass, promote to next; if fail, see Deployment Failures
+```
+
+1. **Merge PR to main.** PO merges the approved PR. Log `pr-merged`.
+2. **Deploy to first environment** (typically dev/test). Platform-ops runs `ops/deploy.sh`. Log `ext-deployed --env <env>`.
+3. **Validate in that environment.** Run tests, verify functionality, check for regressions.
+4. **If validation passes:** promote to the next environment in the order. Repeat steps 2-3.
+5. **If validation fails:** see Deployment Failures below.
+6. **Final environment passes:** proceed to Accept (Phase 7).
+
+The PO accepts after the **final** environment in the promotion order passes validation. Environments cannot be skipped.
+
+### Deployment Failures
+
+Two types of failures can occur during deployment. The response depends on what broke.
+
+**Code/logic problem** (the change itself has a bug):
+
+1. RCA in the environment where the problem was found (read-only diagnosis)
+2. Reproduce the issue in dev
+3. Fix in dev (fix ownership applies -- original author fixes)
+4. Fix returns to Build (Phase 3) for full validation cycle
+5. Follow the deployment chain from the beginning -- no shortcuts
+
+**Environment/infrastructure problem** (Docker down, missing config, network issues, resource limits):
+
+1. Infrastructure agent diagnoses and resolves the environment issue
+2. The code change is not at fault -- no return to Fix/Build
+3. Once the environment is healthy, resume the deployment where it left off
+4. Log a finding if the environment issue indicates a systemic problem
+
+The key distinction: code problems go back through the development chain. Environment problems are resolved in place and deployment resumes.
+
 ### Acceptance Failure (Phase 7 → Fix → Build → Review → Deploy → Accept)
 
-When the PO finds problems during acceptance:
+When the PO finds problems during acceptance on the final environment:
 
 1. **Log the rejection.** Run: `ops/metrics-log.sh item-rejected-at-acceptance <item> --reason <description>`
-2. **Item returns to Fix (Phase 5).** The issue is specific -- the specialist addresses the failed criteria.
-3. **Fix ownership applies.** The original author agent fixes the issue. Diagnosis is collaborative; the fix returns to the author so the learning stays with them.
-4. **Fix returns to Build (Phase 3).** The fix must pass the full validation cycle -- TDD, typecheck, build -- before proceeding. A fix can introduce new issues; skipping validation is not acceptable.
-5. **Re-review (Phase 4).** Reviewers re-review the fix on the PR. The existing branch and PR are reused.
-6. **Re-deploy (Phase 6).** The fix follows the full deployment chain. Environment discipline applies -- no direct patching.
-7. **PO re-accepts (Phase 7).** The PO verifies the specific failed criteria on the deployed environment.
-8. **This is a rework cycle.** The rejection feeds into first-pass yield metrics and is surfaced at retro.
+2. **RCA in the environment where the problem was found.** Diagnose read-only.
+3. **Reproduce in dev.** Confirm the issue exists in the dev environment.
+4. **Fix ownership applies.** The original author agent fixes the issue in dev. Diagnosis is collaborative; the fix returns to the author so the learning stays with them.
+5. **Fix returns to Build (Phase 3).** The fix must pass the full validation cycle -- TDD, typecheck, build. A fix can introduce new issues; skipping validation is not acceptable.
+6. **Re-review (Phase 4).** Reviewers re-review the fix on the PR. The existing branch and PR are reused.
+7. **Re-deploy (Phase 6).** The fix follows the full deployment chain through all environments. Environment discipline applies -- no direct patching.
+8. **PO re-accepts (Phase 7).** The PO verifies the specific failed criteria on the final environment.
+9. **This is a rework cycle.** The rejection feeds into first-pass yield metrics and is surfaced at retro.
 
-Acceptance failures are a signal, not a failure of the process. They indicate that the review phase (Phase 4) missed something -- the retro should examine why and propose refinements to the review dispatch criteria.
+Acceptance failures indicate that earlier phases (Review or validation in prior environments) missed something. The retro should examine why and propose refinements.
 
 ### Team Retrospective (Phase 8)
 
