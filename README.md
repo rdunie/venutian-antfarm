@@ -47,51 +47,59 @@ cp templates/fleet-config.json fleet-config.json
 ## Architecture
 
 ```mermaid
-flowchart TD
-    USER(["Human Operator"])
+block-beta
+    columns 7
 
-    subgraph Gov ["Governance Layer"]
-        direction LR
-        GOV(["CO  CISO  CEO  CTO  CFO  COO  CKO"])
+    space:2 USER(["Human Operator"]):3 space:2
+
+    space:7
+
+    block:Gov:7
+        columns 7
+        CO["CO"] CISO["CISO"] CEO["CEO"] CTO["CTO"] CFO["CFO"] COO["COO"] CKO["CKO"]
     end
 
-    subgraph Harness ["Harness Layer"]
-        direction LR
-        S(["PO  SA  SM"])
-        MM["Knowledge Ops"]
-        PO_OPS["Platform Ops"]
-        CA["Compliance Auditor"]
+    space:7
+
+    block:Harness:7
+        columns 4
+        S(["PO  SA  SM"]) MM["Knowledge\nOps"] POPS["Platform\nOps"] CA["Compliance\nAuditor"]
     end
 
-    subgraph AppLayer ["App Layer (you define)"]
-        direction LR
-        E(["Specialists"])
-        R(["Reviewers"])
-        O(["Output"])
+    space:7
+
+    block:App:7
+        columns 3
+        E(["Specialists"]) R(["Reviewers"]) O(["Output"])
     end
 
-    subgraph Floor ["▰▰▰  Compliance Floor (you define — all agents must comply)  ▰▰▰"]
-        direction LR
-        FLOOR_NOTE[" "]
-    end
+    space:7
 
-    USER -->|"oversight"| Gov
-    USER -->|"oversight"| Harness
-    Gov -->|"controls"| Harness
-    Harness -->|"coaching"| AppLayer
-    AppLayer -->|"findings"| Harness
+    FLOOR["━━━━━━━━━━━━  Compliance Floor (you define)  ━━━━━━━━━━━━"]:7
+
+    USER --> Gov
+    Gov --> Harness
+    Harness --> App
 
     style USER fill:#90caf9,stroke:#1565c0,color:#1a1a1a
-    style GOV fill:#ce93d8,stroke:#6a1b9a,color:#1a1a1a
+    style Gov fill:#ce93d8,stroke:#6a1b9a,color:#1a1a1a
+    style CO fill:#ce93d8,stroke:#6a1b9a,color:#1a1a1a
+    style CISO fill:#ce93d8,stroke:#6a1b9a,color:#1a1a1a
+    style CEO fill:#ce93d8,stroke:#6a1b9a,color:#1a1a1a
+    style CTO fill:#ce93d8,stroke:#6a1b9a,color:#1a1a1a
+    style CFO fill:#ce93d8,stroke:#6a1b9a,color:#1a1a1a
+    style COO fill:#ce93d8,stroke:#6a1b9a,color:#1a1a1a
+    style CKO fill:#ce93d8,stroke:#6a1b9a,color:#1a1a1a
+    style Harness fill:#90caf9,stroke:#1565c0,color:#1a1a1a
     style S fill:#90caf9,stroke:#1565c0,color:#1a1a1a
     style MM fill:#90caf9,stroke:#1565c0,color:#1a1a1a
-    style PO_OPS fill:#90caf9,stroke:#1565c0,color:#1a1a1a
+    style POPS fill:#90caf9,stroke:#1565c0,color:#1a1a1a
     style CA fill:#ef9a9a,stroke:#b71c1c,color:#1a1a1a
+    style App fill:#a5d6a7,stroke:#2e7d32,color:#1a1a1a
     style E fill:#a5d6a7,stroke:#2e7d32,color:#1a1a1a
     style R fill:#ef9a9a,stroke:#b71c1c,color:#1a1a1a
     style O fill:#ffcc80,stroke:#e65100,color:#1a1a1a
-    style FLOOR_NOTE fill:none,stroke:none
-    style Floor fill:#ef9a9a,stroke:#b71c1c,color:#1a1a1a
+    style FLOOR fill:#ef9a9a,stroke:#b71c1c,color:#1a1a1a
 ```
 
 The **compliance floor** is a set of non-negotiable rules (MUST ALWAYS / MUST NEVER) that you define for your domain. Every agent in every tier must follow it — it overrides all autonomy levels, pace settings, and process decisions. The governance layer guards the floor through change control; the compliance-auditor verifies conformance during review. No agent can modify, bypass, or deprioritize a floor rule.
