@@ -12,6 +12,13 @@
 
 An agent fleet harness framework for structured multi-agent software delivery with progressive autonomy, evidence-based governance, and measurable quality control. Clone it, define your compliance floor, add your specialist agents, and start delivering with a governed fleet.
 
+## Why Venutian Antfarm?
+
+- **Governance-first.** Compliance floor, change control, and audit trails are built in from day one — not bolted on after an incident. A 7-agent executive governance tier (CO, CISO, CEO, CTO, CFO, COO, CKO) sets policy independently of the operational chain.
+- **Progressive autonomy.** Fleets start at Crawl (propose everything) and earn autonomy through measurable performance. Pace goes both directions — complexity triggers slowdowns, not just promotions.
+- **Measurable delivery.** DORA metrics, flow quality, pathway analysis, and agent cost tracking out of the box. 26 event types, pluggable backends, and CLI dashboards. The fleet learns from its own data.
+- **Extensible by design.** Define your compliance floor, add your specialist agents, override any skill or agent definition. The harness provides structure; you provide the domain.
+
 ## Quick Start
 
 ```bash
@@ -33,10 +40,8 @@ cp templates/fleet-config.json fleet-config.json
 # Edit fleet-config.json (metrics backend, deploy command, etc.)
 
 # 5. Start working
-# Open Claude Code in your project directory. The 13 core agents
-# (compliance-officer, ciso, ceo, cto, cfo, coo, cko, product-owner,
-# solution-architect, scrum-master, knowledge-ops, platform-ops,
-# compliance-auditor) are ready. Your specialists extend them.
+# Open Claude Code in your project directory. The 13 core agents are ready.
+# Your specialists extend them.
 ```
 
 ## Architecture
@@ -69,9 +74,9 @@ flowchart LR
     end
 
     USER -->|"approvals +\noversight"| Gov
+    USER -->|"evidence-based\noversight"| S
     Gov -->|"controls +\ncompliance"| S
     Gov -.->|"dispatch"| CA
-    USER -->|"evidence-based\noversight"| S
     S -->|"context +\ncoaching"| E
     S -.->|"arch/process"| R
     E -->|"work"| R
@@ -99,23 +104,30 @@ flowchart LR
 
 ## What You Get
 
-**13 core agents** across governance and operational tiers (plus app-defined specialists):
+**13 core agents** across two tiers:
 
-| Agent                  | Tier        | Role                 | What It Does                                                        |
-| ---------------------- | ----------- | -------------------- | ------------------------------------------------------------------- |
-| **compliance-officer** | Governance  | Compliance program   | Floor guardianship, change control, conformance monitoring          |
-| **ciso**               | Governance  | Security authority   | Security benchmarks, security controls, threat assessment           |
-| **ceo**                | Governance  | Executive leadership | Strategic direction, autonomy grants, cross-cutting decisions       |
-| **cto**                | Governance  | Technology strategy  | Technology vision, platform standards, technical debt governance    |
-| **cfo**                | Governance  | Financial oversight  | Cost governance, budget controls, ROI assessment                    |
-| **coo**                | Governance  | Operations authority | Operational efficiency, process optimization, capacity planning     |
-| **cko**                | Governance  | Knowledge authority  | Knowledge strategy, learning programs, institutional memory         |
-| **product-owner**      | Operational | Business context     | Backlog management, prioritization (WSJF), acceptance, quality gate |
-| **solution-architect** | Operational | Technical context    | NFRs, architecture decisions, cross-system coherence                |
-| **scrum-master**       | Operational | Process facilitation | Pace control, findings reviews, conflict resolution, retros         |
-| **knowledge-ops**      | Operational | Knowledge quality    | Memory consistency, learning distribution, stale detection          |
-| **platform-ops**       | Operational | Dev platform         | DORA metrics, CI/CD, cross-environment visibility                   |
-| **compliance-auditor** | Operational | Compliance review    | Audits work output against compliance floor rules during Review     |
+**Governance (7)** — Executive leadership that sets policy, standards, and controls independently of the operational chain:
+
+| Agent                  | Role                   | What It Does                                                 |
+| ---------------------- | ---------------------- | ------------------------------------------------------------ |
+| **compliance-officer** | Compliance program     | Floor guardianship, change control, conformance monitoring   |
+| **ciso**               | Security authority     | Security benchmarks, security controls, threat assessment    |
+| **ceo**                | Strategic alignment    | Digital twin of implementer, mission/vision, executive brief |
+| **cto**                | Technology enablement  | Technology floor, tech standards, architecture direction     |
+| **cfo**                | Cost governance        | Token budget strategy, cost efficiency, resource allocation  |
+| **coo**                | Operational efficiency | Process standards, SLAs, agent performance, retraining       |
+| **cko**                | Knowledge quality      | Knowledge standards, distribution cadence, guidance registry |
+
+**Operational (6)** — Leadership triad + cross-cutting agents that orchestrate and execute delivery:
+
+| Agent                  | Role                 | What It Does                                                        |
+| ---------------------- | -------------------- | ------------------------------------------------------------------- |
+| **product-owner**      | Business context     | Backlog management, prioritization (WSJF), acceptance, quality gate |
+| **solution-architect** | Technical context    | NFRs, architecture decisions, cross-system coherence                |
+| **scrum-master**       | Process facilitation | Pace control, findings reviews, conflict resolution, retros         |
+| **knowledge-ops**      | Knowledge operations | Memory consistency, learning distribution (under CKO direction)     |
+| **platform-ops**       | Dev platform         | DORA metrics, CI/CD, cross-environment visibility                   |
+| **compliance-auditor** | Compliance review    | Audits work output against compliance floor rules during Review     |
 
 ### Progressive Autonomy
 
@@ -164,6 +176,8 @@ flowchart TD
 
 ### Metrics Pipeline
 
+DORA + flow quality metrics out of the box, with a pluggable backend (JSONL default, webhook/StatsD/OpenTelemetry configurable). 26 event types tracked across delivery, quality, agent cost, PR lifecycle, compliance, and governance categories.
+
 ```mermaid
 flowchart LR
     LOG["ops/metrics-log.sh"] --> JSONL["events.jsonl"]
@@ -179,134 +193,7 @@ flowchart LR
     style PACE fill:#ffcc80,stroke:#e65100,color:#1a1a1a
 ```
 
-DORA + flow quality metrics out of the box, with a pluggable backend (JSONL default, webhook/StatsD/OpenTelemetry configurable).
-
-#### Example: Log events
-
-```bash
-$ ops/metrics-log.sh item-promoted 42
-$ ops/metrics-log.sh handoff-sent 42 --from backend-specialist --to security-reviewer
-$ ops/metrics-log.sh bug-found 42 --severity high --source regression
-$ ops/metrics-log.sh agent-invoked product-owner --tokens 45800 --turns 10 --model opus --item 42
-```
-
-> **Note:** The following dashboard examples use simulated data for illustrative purposes. Real-world validation is underway. The data represents a realistic mature fleet to demonstrate what the output looks like and how to interpret it.
-
-#### Example: `ops/dora.sh` _(simulated)_
-
-```
-================================================================
-                     DORA METRICS
-================================================================
-
-  DEPLOYMENT FREQUENCY (since 2026-02-17)
-    deployments:   14
-    item-accepted: 23
-    total:         37
-
-  LEAD TIME (item-promoted -> item-accepted)
-    median: 1.75 sessions (25200s)
-
-  CHANGE FAILURE RATE
-    regressions: 2 / 23 items = 8%
-
-  DEPLOYMENT REWORK RATE
-    hotfix deploys: 3 / 14 = 21%
-
-  MTTR (high/critical bugs)
-    median: 0.38 sessions (5400s)
-
-================================================================
-                    FLOW QUALITY
-================================================================
-
-  FIRST-PASS YIELD (by handoff boundary)
-    backend-specialist        -> security-reviewer         87%
-    frontend-specialist       -> ux-reviewer               91%
-    backend-specialist        -> compliance-auditor        95%
-    infra-specialist          -> security-reviewer         100%
-    Fleet average                                         92%
-
-  REWORK CYCLES
-    Average  0.4 cycles/item
-
-  TASK OUTCOMES
-    Abandoned  1 of 23 promoted = 4%
-    Restarted  2 of 23 promoted = 8%
-
-  BLOCKED TIME
-    Average  0.25 sessions/item
-```
-
-#### Example: `ops/dora.sh --sm` _(simulated)_
-
-```
-================================================================
-                 PACE RECOMMENDATION
-================================================================
-
-  PACE RECOMMENDATION
-    Current pace: Walk
-
-  DORA signals
-    CFR: 8% (Walk threshold: <=10%)
-
-  Flow signals
-    FPY: 92%
-
-  Recommendation: Advance to Run
-```
-
-#### Example: `ops/dora.sh --cost` _(simulated)_
-
-```
-================================================================
-                 AGENT COST ANALYSIS
-================================================================
-
-  SUMMARY
-    Total invocations: 87
-    Total tokens:      1482300
-
-  MODEL SPLIT
-    opus: 34 calls, 892400 tokens
-    sonnet: 48 calls, 561200 tokens
-    haiku: 5 calls, 28700 tokens
-```
-
-#### Example: `ops/pathways.sh` _(simulated)_
-
-```
-╔══════════════════════════════════════════════════════════════╗
-║              COMMUNICATION PATHWAYS                        ║
-╚══════════════════════════════════════════════════════════════╝
-
-  ACTUAL PATHWAYS (inferred from handoff-sent events)
-
-  From                           To                           Count
-  ----                           --                           -----
-  backend-specialist             security-reviewer            18
-  frontend-specialist            ux-reviewer                  14
-  backend-specialist             compliance-auditor           11
-  infra-specialist               security-reviewer            7
-  frontend-specialist            compliance-auditor           4
-
-  FLEET DENSITY
-    Active agents in handoffs: 5
-    Unique communication paths: 5
-    Density: 25% of possible paths (5/20)
-
-  TOP COMMUNICATORS
-
-  Agent                          Sent       Received   Total
-  -----                          ----       --------   -----
-  backend-specialist             29         0          29
-  security-reviewer              0          25         25
-  frontend-specialist            18         0          18
-  compliance-auditor             0          15         15
-  ux-reviewer                    0          14         14
-  infra-specialist               7          0          7
-```
+See the [Metrics Guide](docs/METRICS-GUIDE.md) for all event types, dashboard examples, and how agents adapt their behavior based on metrics feedback.
 
 ### Agent Inheritance
 
@@ -334,8 +221,10 @@ App fields override harness fields. Unmentioned harness fields are preserved.
 
 ## Key Concepts
 
-- **Compliance Floor**: Non-negotiable rules that override all autonomy tiers and pace settings. You define yours.
-- **Findings Loop**: Structured learning where agents record notable events, the SM curates refinements, and the same finding type should decrease over time.
+- **Compliance Floor**: Non-negotiable rules (MUST ALWAYS / MUST NEVER) that override all autonomy tiers and pace settings. The compliance-officer guards the floor; changes require user approval. See the [three-tier compliance hierarchy](.claude/COLLABORATION.md) (floor/targets/guidance).
+- **Findings Loop**: Structured learning where agents record notable events, the SM curates refinements, and the CKO directs knowledge-ops to distribute learnings fleet-wide. The same finding type should decrease over time.
+- **Fix Ownership**: The agent that authored the code is responsible for fixing it, regardless of where the issue was discovered. Diagnosis is collaborative; the fix returns to the author so the learning stays with them.
+- **Environment Discipline**: All code changes happen in dev only. Agents may diagnose in any environment (read-only), but fixes flow through the deployment chain: branch, PR, merge, deploy through promotion order.
 
 ## Skills
 
@@ -345,11 +234,11 @@ App fields override harness fields. Unmentioned harness fields are preserved.
 | `/retro`      | Run a retrospective for a completed work item                  | scrum-master       |
 | `/onboard`    | Interactive project setup                                      | --                 |
 | `/handoff`    | Structured agent-to-agent handoff with metrics logging         | all agents         |
-| `/deploy`     | Deployment orchestration with pre/post validation              | platform-ops       |
+| `/deploy`     | Two-step merge + deploy through promotion order                | platform-ops       |
 | `/findings`   | Findings register: log, review, triage, patterns               | scrum-master       |
 | `/audit`      | Compliance audit against the compliance floor                  | compliance-auditor |
 | `/pace`       | Pace control: status, evaluation, transitions                  | scrum-master       |
-| `/memory`     | Memory management: audit, distribute, optimize, gaps           | knowledge-ops      |
+| `/memory`     | Knowledge management: audit, distribute, optimize, gaps        | knowledge-ops      |
 | `/compliance` | Compliance program: propose, review, apply, audit, log         | compliance-officer |
 | `/governance` | Executive governance: brief, decisions, guidance, CEO autonomy | ceo                |
 
