@@ -6,19 +6,52 @@ _Part of [Venutian Antfarm](../README.md) by [RD Digital Consulting Services, LL
 
 Visual guide to how the agent fleet collaborates. Source of truth for collaboration rules: `.claude/COLLABORATION.md`. Source of truth for documentation style: `.claude/DOCUMENTATION-STYLE.md`.
 
+## Table of Contents
+
+- [Fleet Structure](#fleet-structure)
+- [Governance Tier Detail](#governance-tier-detail)
+- [Leadership + Operational Tier Detail](#leadership--operational-tier-detail)
+- [Governance ↔ Operational Bridge](#governance--operational-bridge)
+- [Worktree Isolation](#worktree-isolation)
+- [Work Item Lifecycle](#work-item-lifecycle)
+- [Pace Control](#pace-control)
+- [Review Dispatch](#review-dispatch)
+- [Compliance Floor](#compliance-floor)
+- [Learning Loop](#learning-loop)
+- [Model Selection Decision Tree](#model-selection-decision-tree)
+- [Delivery Metrics (DORA + Flow Quality)](#delivery-metrics-dora--flow-quality)
+- [Leadership Triad](#leadership-triad)
+- [Agent Inheritance](#agent-inheritance)
+- [Memory Architecture](#memory-architecture)
+- [Handoff Protocol](#handoff-protocol)
+- [Coordination Layers](#coordination-layers)
+- [Enforcement Layers](#enforcement-layers)
+- [Conflict Resolution](#conflict-resolution)
+- [Regression Testing](#regression-testing)
+- [Budget & Resource Flow](#budget--resource-flow)
+- [Milestone Release](#milestone-release)
+
 ---
 
 ## Fleet Structure
 
-Four organizational layers with distinct responsibilities. Solid lines show primary work-product flow. Dotted lines show feedback and advisory flows.
+The fleet has three tiers: governance (sets policy), leadership (orchestrates delivery), and execution (builds and reviews). Authority flows down; data flows up.
 
 ```mermaid
 flowchart TD
+    USER(["User"])
+
+    subgraph Gov ["Governance Layer"]
+        GOV(["CO  CISO  CEO\nCTO  CFO  COO  CKO"])
+    end
+
     S(["Strategic\nPO  SA  SM"])
     E(["Execution\nSpecialist agents\n(you define)"])
-    R(["Reviewers\nsecurity  memory\n(you define)"])
+    R(["Reviewers\nsecurity\n(you define)"])
     O(["Output\ndoc  training\n(you define)"])
 
+    USER -->|"approvals +\noversight"| Gov
+    Gov -->|"controls +\ncompliance"| S
     S -->|"context"| E
     S -.->|"arch/process"| R
     E -->|"work"| R
@@ -28,13 +61,118 @@ flowchart TD
     R -.->|"corrections"| O
     O -.->|"content"| R
 
+    style USER fill:#90caf9,stroke:#1565c0,color:#1a1a1a
+    style GOV fill:#ce93d8,stroke:#6a1b9a,color:#1a1a1a
     style S fill:#90caf9,stroke:#1565c0,color:#1a1a1a
     style E fill:#a5d6a7,stroke:#2e7d32,color:#1a1a1a
     style R fill:#ef9a9a,stroke:#b71c1c,color:#1a1a1a
     style O fill:#ffcc80,stroke:#e65100,color:#1a1a1a
 ```
 
-**Diamond layout**: Strategic at top feeds both Execution (context) and Reviewers (architecture/process). Execution and Reviewers interact laterally (work and findings). Both feed down to Output (milestones and corrections). Feedback flows back up (risk signals, content for review).
+**Diamond layout**: Strategic at top feeds both Execution (context) and Reviewers (architecture/process). Execution and Reviewers interact laterally (work and findings). Both feed down to Output (milestones and corrections). Feedback flows back up (risk signals, content for review). The Governance layer sets policy above Strategic.
+
+---
+
+## Governance Tier Detail
+
+The governance tier sets policy and standards. The CO is the compliance floor guardian -- all floor changes require user approval. Each Cx role proposes controls to the CO and participates in consensus when consulted. The CEO is the user's proxy and operates on an independent trust-based pace.
+
+```mermaid
+flowchart TD
+    USER(["User"])
+    CO["CO"]
+    CISO["CISO"]
+    CEO["CEO"]
+    CTO["CTO"]
+    CFO["CFO"]
+    COO["COO"]
+    CKO["CKO"]
+
+    USER -.->|"floor approvals"| CO
+    USER <-->|"executive brief"| CEO
+    CISO -->|"security controls"| CO
+    CTO -->|"tech standards"| CO
+    CFO -->|"cost controls"| CO
+    COO -->|"operational controls"| CO
+    CKO -->|"knowledge controls"| CO
+    CO -.->|"monitors\nautonomy"| CEO
+
+    style USER fill:#90caf9,stroke:#1565c0,color:#1a1a1a
+    style CO fill:#ce93d8,stroke:#6a1b9a,color:#1a1a1a
+    style CISO fill:#ce93d8,stroke:#6a1b9a,color:#1a1a1a
+    style CEO fill:#ce93d8,stroke:#6a1b9a,color:#1a1a1a
+    style CTO fill:#ce93d8,stroke:#6a1b9a,color:#1a1a1a
+    style CFO fill:#ce93d8,stroke:#6a1b9a,color:#1a1a1a
+    style COO fill:#ce93d8,stroke:#6a1b9a,color:#1a1a1a
+    style CKO fill:#ce93d8,stroke:#6a1b9a,color:#1a1a1a
+```
+
+---
+
+## Leadership + Operational Tier Detail
+
+The leadership triad orchestrates day-to-day delivery. Operational agents execute within the standards set by governance. Specialists are defined per-project.
+
+```mermaid
+flowchart TD
+    PO["PO"]
+    SA["SA"]
+    SM["SM"]
+    KO["Knowledge Ops"]
+    POPS["Platform Ops"]
+    CA["Compliance\nAuditor"]
+    SPEC(["Specialists\n(you define)"])
+
+    PO -->|"orchestrates"| SPEC
+    SA -->|"architecture\nguidance"| SPEC
+    SM -->|"triggers\ndistribution"| KO
+    PO -->|"dispatches"| CA
+    POPS -->|"metrics +\nCI/CD"| SM
+
+    style PO fill:#90caf9,stroke:#1565c0,color:#1a1a1a
+    style SA fill:#90caf9,stroke:#1565c0,color:#1a1a1a
+    style SM fill:#90caf9,stroke:#1565c0,color:#1a1a1a
+    style KO fill:#90caf9,stroke:#1565c0,color:#1a1a1a
+    style POPS fill:#90caf9,stroke:#1565c0,color:#1a1a1a
+    style CA fill:#ef9a9a,stroke:#b71c1c,color:#1a1a1a
+    style SPEC fill:#a5d6a7,stroke:#2e7d32,color:#1a1a1a
+```
+
+---
+
+## Governance ↔ Operational Bridge
+
+Governance sets the rules; operations follows them. Data flows up to inform governance decisions. The CO and CKO are the primary bridges.
+
+```mermaid
+flowchart LR
+    subgraph Gov ["Governance"]
+        CX(["Cx Roles"])
+    end
+
+    subgraph Bridge ["Bridges"]
+        CO_B["CO\n(floor/targets)"]
+        CKO_B["CKO\n(knowledge)"]
+    end
+
+    subgraph Ops ["Operations"]
+        TRIAD(["PO  SA  SM"])
+        AGENTS(["Specialists +\nReviewers"])
+    end
+
+    CX -->|"floor rules\ntargets\nguidance"| CO_B
+    CX -->|"knowledge\nstandards"| CKO_B
+    CO_B -->|"controls"| TRIAD
+    CKO_B -->|"learnings"| AGENTS
+    AGENTS -->|"metrics\nfindings"| CX
+    TRIAD -->|"conformance\nreports"| CX
+
+    style CX fill:#ce93d8,stroke:#6a1b9a,color:#1a1a1a
+    style CO_B fill:#ce93d8,stroke:#6a1b9a,color:#1a1a1a
+    style CKO_B fill:#ce93d8,stroke:#6a1b9a,color:#1a1a1a
+    style TRIAD fill:#90caf9,stroke:#1565c0,color:#1a1a1a
+    style AGENTS fill:#a5d6a7,stroke:#2e7d32,color:#1a1a1a
+```
 
 ---
 
@@ -256,7 +394,7 @@ flowchart TD
     REG -->|"SM review"| CURATE["SM Curates\ngroups + proposes"]
     CURATE --> REVIEW["User Reviews\nAccept / Modify / Defer"]
     REVIEW -->|"accepted"| APPLY["Apply Refinement\nprompt, memory, or protocol"]
-    APPLY -->|"memory-manager\ndistributes"| DISTRIBUTE["Update Agent\nMemories"]
+    APPLY -->|"knowledge-ops\ndistributes"| DISTRIBUTE["Update Agent\nMemories"]
     DISTRIBUTE --> WORK
 
     REVIEW -->|"deferred"| REG
@@ -438,7 +576,7 @@ flowchart LR
 
 ## Memory Architecture
 
-Two memory layers with distinct ownership. The memory-manager curates both and bridges them.
+Two memory layers with distinct ownership. Knowledge-ops curates both (under CKO direction) and bridges them.
 
 ```mermaid
 flowchart TD
@@ -451,8 +589,8 @@ flowchart TD
     end
 
     AGENTS(["Any Agent"]) -->|"write during work"| AppLayer
-    MM(["Memory Manager"]) -->|"curate, dedupe,\nresolve conflicts"| AppLayer
-    MM -->|"curate on\nharness upgrade"| HarnessLayer
+    KO(["Knowledge Ops"]) -->|"curate, dedupe,\nresolve conflicts"| AppLayer
+    KO -->|"curate on\nharness upgrade"| HarnessLayer
 
     AppLayer -.->|"generic pattern?\nflag for promotion"| HarnessLayer
 
@@ -462,7 +600,7 @@ flowchart TD
     style HL fill:#90caf9,stroke:#1565c0,color:#1a1a1a
     style AL fill:#a5d6a7,stroke:#2e7d32,color:#1a1a1a
     style AGENTS fill:#bdbdbd,stroke:#424242,color:#1a1a1a
-    style MM fill:#ffcc80,stroke:#e65100,color:#1a1a1a
+    style KO fill:#90caf9,stroke:#1565c0,color:#1a1a1a
 ```
 
 **Key constraint:** harness/ is read-only during normal operation. Only updated on harness version changes. app/ is where active learning accumulates.
@@ -606,7 +744,7 @@ flowchart TD
     style SM fill:#90caf9,stroke:#1565c0,color:#1a1a1a
     style FLOOR fill:#ef9a9a,stroke:#b71c1c,color:#1a1a1a
     style JOINT fill:#90caf9,stroke:#1565c0,color:#1a1a1a
-    style USER fill:#bdbdbd,stroke:#424242,color:#1a1a1a
+    style USER fill:#90caf9,stroke:#1565c0,color:#1a1a1a
 ```
 
 No agent overrides another agent's domain authority. Compliance floor takes precedence over all other disagreements without escalation.
@@ -663,7 +801,7 @@ flowchart LR
     SM_B -->|"pause, shift\nmodels, extend"| ACTION["Adjustment"]
     USER_B(["User sets\nbudget envelope"]) -.->|"total\ninvestment"| SM_B
 
-    style PO_B fill:#a5d6a7,stroke:#2e7d32,color:#1a1a1a
+    style PO_B fill:#90caf9,stroke:#1565c0,color:#1a1a1a
     style SA_B fill:#90caf9,stroke:#1565c0,color:#1a1a1a
     style SM_B fill:#ffcc80,stroke:#e65100,color:#1a1a1a
     style ALERT fill:#ef9a9a,stroke:#b71c1c,color:#1a1a1a
