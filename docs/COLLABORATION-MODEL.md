@@ -38,7 +38,7 @@ Visual guide to how the agent fleet collaborates. Source of truth for collaborat
 The fleet has three tiers: governance (sets policy), leadership (orchestrates delivery), and execution (builds and reviews). Authority flows down; data flows up.
 
 ```mermaid
-flowchart TD
+flowchart LR
     USER(["User"])
 
     subgraph Gov ["Governance Layer"]

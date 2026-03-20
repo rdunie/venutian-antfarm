@@ -40,8 +40,8 @@ cp templates/fleet-config.json fleet-config.json
 ## Architecture
 
 ```mermaid
-flowchart TD
-    USER(["Human Operator"])
+flowchart LR
+    USER(["Human\nOperator"])
 
     subgraph Gov ["Governance Layer"]
         CO["CO"]

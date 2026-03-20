@@ -35,8 +35,8 @@ The pattern includes an executive governance layer with 7 Cx roles (CO, CISO, CE
 ## Pattern Overview
 
 ```mermaid
-flowchart TD
-    USER(["Human Operator"])
+flowchart LR
+    USER(["Human\nOperator"])
 
     subgraph Gov ["Governance Layer"]
         GOV_AGENTS(["CO  CISO  CEO\nCTO  CFO  COO  CKO"])
