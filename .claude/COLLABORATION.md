@@ -317,22 +317,23 @@ The fleet tracks two complementary metric groups as evidence that core principle
 
 **Who logs what (every agent must follow this):**
 
-| Event                    | Who logs it               | When                                            |
-| ------------------------ | ------------------------- | ----------------------------------------------- |
-| `item-promoted`          | PO                        | Item promoted to active work                    |
-| `item-accepted`          | PO                        | Item passes DoD                                 |
-| `ext-deployed`           | Building specialist       | After each deploy (include --type and --env)    |
-| `bug-found`              | Whoever discovers         | With --severity and --source                    |
-| `bug-fixed`              | Whoever fixes             | With --bug-id from bug-found stdout             |
-| `handoff-sent`           | Sending agent             | Before handing off to next agent                |
-| `handoff-rejected`       | Receiving agent           | When sending work back                          |
-| `item-rejected-at-build` | Building specialist or PO | When a promoted item is rejected at build start |
-| `task-restarted`         | Building specialist       | When scrapping approach mid-execution           |
-| `task-discarded`         | PO or specialist          | When item is dropped                            |
-| `task-blocked`           | Blocked agent             | When waiting on a decision/dependency           |
-| `task-unblocked`         | Same agent                | When the block is resolved                      |
-| `agent-invoked`          | Dispatching agent         | With --tokens, --turns, --model                 |
-| `regression-run`         | e2e-test-engineer         | After periodic regression run completes         |
+| Event                         | Who logs it               | When                                            |
+| ----------------------------- | ------------------------- | ----------------------------------------------- |
+| `item-promoted`               | PO                        | Item promoted to active work                    |
+| `item-accepted`               | PO                        | Item passes DoD                                 |
+| `item-rejected-at-acceptance` | PO                        | When deployed work fails DoD verification       |
+| `ext-deployed`                | Building specialist       | After each deploy (include --type and --env)    |
+| `bug-found`                   | Whoever discovers         | With --severity and --source                    |
+| `bug-fixed`                   | Whoever fixes             | With --bug-id from bug-found stdout             |
+| `handoff-sent`                | Sending agent             | Before handing off to next agent                |
+| `handoff-rejected`            | Receiving agent           | When sending work back                          |
+| `item-rejected-at-build`      | Building specialist or PO | When a promoted item is rejected at build start |
+| `task-restarted`              | Building specialist       | When scrapping approach mid-execution           |
+| `task-discarded`              | PO or specialist          | When item is dropped                            |
+| `task-blocked`                | Blocked agent             | When waiting on a decision/dependency           |
+| `task-unblocked`              | Same agent                | When the block is resolved                      |
+| `agent-invoked`               | Dispatching agent         | With --tokens, --turns, --model                 |
+| `regression-run`              | e2e-test-engineer         | After periodic regression run completes         |
 
 All events are logged via `ops/metrics-log.sh <event> [args]`. See CLAUDE.md for full command reference.
 
@@ -462,9 +463,23 @@ Every work item flows through these phases:
 | **4. Review**     | PO verifies AC. Dispatches reviewers who post findings as PR comments. DoD gate.                                                                                                                                                                                                                                                  | PO dispatches, specialists review    |
 | **5. Fix**        | Address review findings.                                                                                                                                                                                                                                                                                                          | Domain owners                        |
 | **6. Deploy**     | PO merges approved PR to main. Platform-ops deploys through promotion order. Log `pr-merged`, `ext-deployed`.                                                                                                                                                                                                                     | PO merges, platform-ops deploys      |
-| **7. Accept**     | All DoD criteria pass. Item moves to Done. Log `item-accepted`.                                                                                                                                                                                                                                                                   | PO                                   |
+| **7. Accept**     | PO verifies DoD on deployed environment. If all criteria pass: log `item-accepted`, proceed to Retro. If criteria fail: log `item-rejected-at-acceptance`, item returns to Fix (Phase 5) -- see Acceptance Failure below.                                                                                                         | PO                                   |
 | **8. Retro**      | All participants reflect (keep/change/try). SM facilitates.                                                                                                                                                                                                                                                                       | SM facilitates, triad evaluates      |
 | **9. Checkpoint** | SM assesses process health. Pace evaluation. Apply retro outcomes.                                                                                                                                                                                                                                                                | SM                                   |
+
+### Acceptance Failure (Phase 7 → Phase 5)
+
+When the PO finds problems during acceptance:
+
+1. **Log the rejection.** Run: `ops/metrics-log.sh item-rejected-at-acceptance <item> --reason <description>`
+2. **Item returns to Fix (Phase 5).** The work was built, reviewed, and deployed -- the issue is specific. The item does NOT return to Build.
+3. **Fix ownership applies.** The original author agent fixes the issue. Diagnosis is collaborative; the fix returns to the author so the learning stays with them.
+4. **The fix goes through the existing PR.** The branch is still alive until acceptance passes. The specialist pushes fixes to the branch, reviewers re-review the specific issue.
+5. **Re-deploy after fix.** The fix follows the deployment chain (branch → PR review → merge → deploy). Environment discipline applies -- no direct patching.
+6. **PO re-accepts.** The PO verifies the specific failed criteria on the deployed environment.
+7. **This is a rework cycle.** The rejection feeds into first-pass yield metrics and is surfaced at retro.
+
+Acceptance failures are a signal, not a failure of the process. They indicate that the review phase (Phase 4) missed something -- the retro should examine why and propose refinements to the review dispatch criteria.
 
 ### Team Retrospective (Phase 8)
 
