@@ -219,7 +219,8 @@ flowchart LR
     FIX --> RV
     RV -->|"all pass"| DEP["6. Deploy"]
     DEP -->|"validation fail"| FIX
-    DEP -->|"all green"| ACC["7. Accept\n(Done)"]
+    DEP -->|"all green"| ACC["7. Accept"]
+    ACC -->|"rejection"| FIX
     ACC --> RET["8. Retro\n(team reflects)"]
     RET --> CHK["9. Checkpoint\n(process health)"]
     CHK -->|"next item"| B
