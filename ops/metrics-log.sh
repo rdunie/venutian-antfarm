@@ -296,10 +296,19 @@ case "$EVENT_TYPE" in
        '{"ts":$ts,"event":$event,"trigger":$trigger,"items":$items,"agent":$agent}')"
     ;;
 
+  item-rejected-at-acceptance)
+    if [[ -z "$REASON" ]]; then
+      echo "ERROR: item-rejected-at-acceptance requires --reason" >&2
+      exit 1
+    fi
+    emit_event "$(jq -cn --arg ts "$TS" --arg item "$ITEM" --arg reason "$REASON" --arg agent "$AGENT" \
+       '{"ts":$ts,"event":"item-rejected-at-acceptance","item":$item,"reason":$reason,"agent":$agent} | with_entries(select(.value != ""))')"
+    ;;
+
   *)
     echo "ERROR: unknown event type '$EVENT_TYPE'" >&2
     echo "Valid types: item-promoted item-accepted ext-deployed bug-found bug-fixed" >&2
-    echo "             handoff-sent handoff-rejected item-rejected-at-build" >&2
+    echo "             handoff-sent handoff-rejected item-rejected-at-build item-rejected-at-acceptance" >&2
     echo "             task-restarted task-discarded task-blocked task-unblocked" >&2
     echo "             agent-invoked regression-run" >&2
     echo "             compliance-proposed compliance-approved compliance-rejected" >&2
