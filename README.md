@@ -95,6 +95,8 @@ flowchart LR
     style O fill:#ffcc80,stroke:#e65100,color:#1a1a1a
 ```
 
+The **compliance floor** is a set of non-negotiable rules (MUST ALWAYS / MUST NEVER) that you define for your domain. Every agent in every tier must follow it — it overrides all autonomy levels, pace settings, and process decisions. The governance layer guards the floor through change control; the compliance-auditor verifies conformance during review. No agent can modify, bypass, or deprioritize a floor rule.
+
 ## What You Get
 
 **13 core agents** across two tiers:
