@@ -65,7 +65,7 @@
 
 - [ ] **Step 1: Create directories**
 
-Run: `mkdir -p .claude/governance/guidance .claude/governance/decisions`
+Run: `mkdir -p .claude/governance/guidance/{ciso,cto,cfo,coo,cko,ceo} .claude/governance/decisions`
 
 - [ ] **Step 2: Create the executive brief**
 
@@ -502,7 +502,11 @@ After the Governance Collaboration Pattern section, add a "### CEO Independent P
 
 After the executive memory architecture section, add a "### Pace-Based Knowledge Distribution" section with the cadence table (Crawl/Walk/Run/Fly), triggers (scheduled/exception/on-demand), SM/CKO/knowledge-ops dispatch chain, and guard against thrashing. Note implementer override via `fleet-config.json` `knowledge.cadence`.
 
-- [ ] **Step 8: Verify**
+- [ ] **Step 8: Add governance-triad interaction clarification**
+
+In the governance tier intro text (near the top of the section), add a clarification that governance agents set direction but do not direct day-to-day work. When a Cx role evaluates a triad member's proposal (CTO evaluates SA, COO evaluates SM, CFO recommends to SM), this is governance oversight — setting and enforcing standards — not operational direction. The triad retains full operational authority within the standards set by governance.
+
+- [ ] **Step 9: Verify**
 
 Run: `grep -c 'knowledge-ops' .claude/COLLABORATION.md` — expected: 5+
 Run: `grep -c 'memory-manager' .claude/COLLABORATION.md` — expected: 0
@@ -578,7 +582,7 @@ Add purple styling for all governance nodes.
 
 - [ ] **Step 2: Update agent table**
 
-Update the heading from "**8 agents**" to "**14 agents**" (7 governance + 7 operational). Add 5 new governance rows and rename memory-manager → knowledge-ops. The table should have:
+Update the heading from "**8 agents**" to "**13 core agents**" (7 governance + 7 operational). Add 5 new governance rows and rename memory-manager → knowledge-ops. The table should have:
 
 - 7 Governance rows: CO, CISO, CEO, CTO, CFO, COO, CKO
 - 7 Operational rows: PO, SA, SM, knowledge-ops, platform-ops, compliance-auditor (+ app-defined note)
@@ -595,11 +599,15 @@ Add: `| /governance | Executive governance: brief, decisions, guidance, CEO auto
 
 Change primary agent from `memory-manager` to `knowledge-ops`.
 
+- [ ] **Step 6: Update the Quick Start overview**
+
+Find the opening description (around line 33-37) that mentions agents and "memory-manager". Update the agent count and rename memory-manager to knowledge-ops.
+
 - [ ] **Step 6: Commit**
 
 ```bash
 git add README.md
-git commit -m "docs: update README for 14 agents, 7 Cx governance roles, /governance skill"
+git commit -m "docs: update README for 13 core agents, 7 Cx governance roles, /governance skill"
 ```
 
 ---
@@ -612,21 +620,25 @@ git commit -m "docs: update README for 14 agents, 7 Cx governance roles, /govern
 
 - [ ] **Step 1: Update project overview**
 
-Change "8 agents across 2 tiers: governance (compliance-officer, CISO) and operational" to "14 agents across 2 tiers: governance (CO, CISO, CEO, CTO, CFO, COO, CKO) and operational (PO, SA, SM, knowledge-ops, platform-ops, compliance-auditor)".
+Change "8 agents across 2 tiers: governance (compliance-officer, CISO) and operational" to "13 core agents across 2 tiers: governance (CO, CISO, CEO, CTO, CFO, COO, CKO) and operational (PO, SA, SM, knowledge-ops, platform-ops, compliance-auditor)".
 
 - [ ] **Step 2: Update key files agent description**
 
-Update the `.claude/agents/*.md` description to reflect 14 agents (7 governance + 7 operational) and rename memory-manager → knowledge-ops.
+Update the `.claude/agents/*.md` description to reflect 13 core agents (7 governance + 7 operational) and rename memory-manager → knowledge-ops.
 
 - [ ] **Step 3: Add `.claude/governance/` to directory structure**
 
 If not already present, add with description: "Governance infrastructure (executive brief, guidance registry, decisions)".
 
+- [ ] **Step 4: Update Key Files agent description**
+
+Update the `.claude/agents/*.md` description to reflect 13 core agents (7 governance + 6 operational) and rename memory-manager → knowledge-ops.
+
 - [ ] **Step 4: Commit**
 
 ```bash
 git add CLAUDE.md
-git commit -m "docs: update CLAUDE.md for 14 agents, governance directory"
+git commit -m "docs: update CLAUDE.md for 13 core agents, governance directory"
 ```
 
 ---
@@ -728,7 +740,7 @@ Read `templates/agents/cx-role.md`. Change `model: opus` to `model: opus  # adju
 
 ```bash
 git add .claude/settings.json templates/agents/cx-role.md
-git commit -m "feat: update PreCompact for 14 agents, make cx-role template model-agnostic"
+git commit -m "feat: update PreCompact for 13 core agents, make cx-role template model-agnostic"
 ```
 
 ---
@@ -747,7 +759,7 @@ Expected: "No such file or directory"
 
 - [ ] **Step 3: Verify no memory-manager references remain (except spec/plan docs)**
 
-Run: `grep -r 'memory-manager' .claude/ templates/ CLAUDE.md README.md ops/ --include='*.md' --include='*.json' --include='*.sh' | grep -v 'superpowers/' | grep -v 'plans/'`
+Run: `grep -r 'memory-manager' .claude/ templates/ CLAUDE.md README.md ops/ example/ --include='*.md' --include='*.json' --include='*.sh' | grep -v 'superpowers/' | grep -v 'plans/'`
 Expected: No matches
 
 - [ ] **Step 4: Verify governance skill frontmatter**
@@ -791,7 +803,12 @@ Expected: No errors
 Run: `git diff HEAD -- .claude/agents/product-owner.md .claude/agents/scrum-master.md .claude/agents/solution-architect.md .claude/agents/platform-ops.md .claude/agents/ciso.md`
 Expected: No changes
 
-- [ ] **Step 12: Verify README references 14 agents**
+- [ ] **Step 12: Verify README references 13 core agents**
 
-Run: `grep -c '14 agents' README.md`
+Run: `grep -c '13 core agents' README.md`
+Expected: At least 1
+
+- [ ] **Step 13: Verify /memory skill references knowledge-ops**
+
+Run: `grep -c 'knowledge-ops' .claude/skills/memory/SKILL.md`
 Expected: At least 1
