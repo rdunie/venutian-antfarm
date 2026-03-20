@@ -88,6 +88,42 @@ flowchart LR
 
 The **compliance floor** is a set of non-negotiable rules (MUST ALWAYS / MUST NEVER) that you define for your domain. Every agent in every tier must follow it — it overrides all autonomy levels, pace settings, and process decisions. The governance layer guards the floor through change control; the compliance-auditor verifies conformance during review. No agent can modify, bypass, or deprioritize a floor rule.
 
+### Compliance Floor Change Management
+
+All changes to the compliance floor go through a governed process. The Compliance Officer (CO) is the sole gatekeeper — no other agent can modify `compliance-floor.md`.
+
+```mermaid
+flowchart TD
+    PROPOSE["Any agent or Cx role\nproposes a change"]
+    CO_REVIEW["CO receives and\nclassifies the change"]
+    CONSULT["CO consults Cx roles\nfor domain impact"]
+    CONSENSUS{"Consensus?"}
+    USER_APPROVE{"User\napproves?"}
+    APPLY["CO applies change\nvia /compliance apply"]
+    LOG["Change logged\nwith full audit trail"]
+    REJECT["Change rejected\nwith rationale"]
+
+    PROPOSE --> CO_REVIEW
+    CO_REVIEW --> CONSULT
+    CONSULT --> CONSENSUS
+    CONSENSUS -->|"yes + risk-reducing"| APPLY
+    CONSENSUS -->|"no consensus or\nfloor change"| USER_APPROVE
+    USER_APPROVE -->|"approved"| APPLY
+    USER_APPROVE -->|"rejected"| REJECT
+    APPLY --> LOG
+
+    style PROPOSE fill:#90caf9,stroke:#1565c0,color:#1a1a1a
+    style CO_REVIEW fill:#ce93d8,stroke:#6a1b9a,color:#1a1a1a
+    style CONSULT fill:#ce93d8,stroke:#6a1b9a,color:#1a1a1a
+    style CONSENSUS fill:#ffcc80,stroke:#e65100,color:#1a1a1a
+    style USER_APPROVE fill:#90caf9,stroke:#1565c0,color:#1a1a1a
+    style APPLY fill:#a5d6a7,stroke:#2e7d32,color:#1a1a1a
+    style LOG fill:#bdbdbd,stroke:#424242,color:#1a1a1a
+    style REJECT fill:#ef9a9a,stroke:#b71c1c,color:#1a1a1a
+```
+
+Risk-reducing target changes can be approved by the CO autonomously (with user notification). All floor changes require explicit user approval — no exceptions. Every change is logged with who requested, who approved, Cx consultation results, and rationale.
+
 ## What You Get
 
 **13 core agents** across two tiers:
