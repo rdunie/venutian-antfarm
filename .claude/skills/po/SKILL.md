@@ -39,6 +39,14 @@ Route PO commands to the `product-owner` agent.
 4. Review the agent's output and present the summary to the user.
 5. If the agent proposes changes, summarize what will be modified and confirm before applying.
 
+## Review and Acceptance Workflow
+
+When the subcommand is `review`, the PO verifies work against acceptance criteria on the deployed environment:
+
+1. **Verify each AC.** Check every acceptance criterion against the deployed result. Document pass/fail for each.
+2. **If all pass:** Log `ops/metrics-log.sh item-accepted <item-id>`. Item moves to Done. Proceed to Retro (Phase 8).
+3. **If any fail:** Log `ops/metrics-log.sh item-rejected-at-acceptance <item-id> --reason "<description>"`. Item returns to Fix (Phase 5). The original author agent fixes the issue on the existing branch. See `.claude/COLLABORATION.md` § Acceptance Failure for the full process.
+
 ## Promote Branching Workflow
 
 When the subcommand is `promote`, after the PO agent expands the item into a full work item:

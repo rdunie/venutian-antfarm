@@ -142,6 +142,7 @@ flowchart LR
     F --> R
     R -->|"pass"| D["6. Deploy"]
     D --> A["7. Accept"]
+    A -->|"rejection"| F
     A --> RT["8. Retro"]
     RT --> C["9. Checkpoint"]
     C -->|"next"| G
