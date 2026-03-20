@@ -51,16 +51,10 @@ flowchart LR
     USER(["Human\nOperator"])
 
     subgraph Gov ["Governance Layer"]
-        CO["CO"]
-        CISO_A["CISO"]
-        CEO_A["CEO"]
-        CTO_A["CTO"]
-        CFO_A["CFO"]
-        COO_A["COO"]
-        CKO_A["CKO"]
+        GOV(["CO  CISO  CEO\nCTO  CFO  COO  CKO"])
     end
 
-    subgraph Harness ["Harness Layer (this framework)"]
+    subgraph Harness ["Harness Layer"]
         S(["Strategic\nPO  SA  SM"])
         MM["Knowledge Ops"]
         PO_OPS["Platform Ops"]
@@ -86,13 +80,7 @@ flowchart LR
     R -.->|"corrections"| O
 
     style USER fill:#90caf9,stroke:#1565c0,color:#1a1a1a
-    style CO fill:#ce93d8,stroke:#6a1b9a,color:#1a1a1a
-    style CISO_A fill:#ce93d8,stroke:#6a1b9a,color:#1a1a1a
-    style CEO_A fill:#ce93d8,stroke:#6a1b9a,color:#1a1a1a
-    style CTO_A fill:#ce93d8,stroke:#6a1b9a,color:#1a1a1a
-    style CFO_A fill:#ce93d8,stroke:#6a1b9a,color:#1a1a1a
-    style COO_A fill:#ce93d8,stroke:#6a1b9a,color:#1a1a1a
-    style CKO_A fill:#ce93d8,stroke:#6a1b9a,color:#1a1a1a
+    style GOV fill:#ce93d8,stroke:#6a1b9a,color:#1a1a1a
     style S fill:#90caf9,stroke:#1565c0,color:#1a1a1a
     style MM fill:#90caf9,stroke:#1565c0,color:#1a1a1a
     style PO_OPS fill:#90caf9,stroke:#1565c0,color:#1a1a1a
