@@ -47,14 +47,19 @@ Every agent manages resources responsibly. Tokens, thinking time, context window
 
 ### Governance Agents (Executive Leadership)
 
-Two agents provide independent compliance and security oversight, above the operational chain:
+Seven agents provide independent governance across compliance, security, strategy, technology, cost, operations, and knowledge:
 
-| Agent                  | Role               | Responsibility                                             |
-| ---------------------- | ------------------ | ---------------------------------------------------------- |
-| **compliance-officer** | Compliance program | Floor guardianship, change control, conformance monitoring |
-| **ciso**               | Security authority | Security benchmarks, security controls, threat assessment  |
+| Agent                  | Role                   | Responsibility                                               |
+| ---------------------- | ---------------------- | ------------------------------------------------------------ |
+| **compliance-officer** | Compliance program     | Floor guardianship, change control, conformance monitoring   |
+| **ciso**               | Security authority     | Security benchmarks, security controls, threat assessment    |
+| **ceo**                | Strategic alignment    | Digital twin of implementer, mission/vision, executive brief |
+| **cto**                | Technology enablement  | Technology floor, tech standards, architecture direction     |
+| **cfo**                | Cost governance        | Token budget strategy, cost efficiency, resource allocation  |
+| **coo**                | Operational efficiency | Process standards, SLAs, agent performance, retraining       |
+| **cko**                | Knowledge quality      | Knowledge standards, distribution cadence, guidance registry |
 
-The governance tier is independent of the triad. The triad does not direct governance agents, and governance agents do not direct day-to-day work. See `docs/superpowers/specs/2026-03-19-governance-layer-design.md` for the full governance design.
+The governance tier is independent of the triad. The triad does not direct governance agents, and governance agents do not direct day-to-day work. Governance agents set direction but do not direct day-to-day work. When a Cx role evaluates a triad member's proposal (CTO evaluates SA, COO evaluates SM, CFO recommends to SM), this is governance oversight -- not operational direction. The triad retains full operational authority within the standards set by governance. See `docs/superpowers/specs/2026-03-19-governance-layer-design.md` for the full governance design.
 
 ### Strategic Agents (Mentors + Process)
 
@@ -96,12 +101,12 @@ Example specialists (see `templates/agents/` for starting points):
 
 These agents review any specialist's output or manage cross-cutting concerns:
 
-| Agent                  | Domain            | Responsibility                                              |
-| ---------------------- | ----------------- | ----------------------------------------------------------- |
-| **platform-ops**       | Dev platform      | DORA metrics, CI/CD pipelines, cross-environment visibility |
-| **memory-manager**     | Knowledge quality | Memory consistency, learning distribution, stale detection  |
-| **compliance-auditor** | Compliance review | Audits work output against compliance floor during Review   |
-| **security-reviewer**  | Security posture  | Auth, secrets, access control, data protection (template)   |
+| Agent                  | Domain            | Responsibility                                                                        |
+| ---------------------- | ----------------- | ------------------------------------------------------------------------------------- |
+| **platform-ops**       | Dev platform      | DORA metrics, CI/CD pipelines, cross-environment visibility                           |
+| **knowledge-ops**      | Knowledge quality | Knowledge operations (under CKO direction), memory consistency, learning distribution |
+| **compliance-auditor** | Compliance review | Audits work output against compliance floor during Review                             |
+| **security-reviewer**  | Security posture  | Auth, secrets, access control, data protection (template)                             |
 
 ### Output Agents (Content Producers)
 
@@ -586,6 +591,15 @@ Three tiers of controls with distinct authority and enforcement. See `docs/super
 
 Targets must be above or in addition to the floor -- never weaker.
 
+### Guidance Mechanism (Tier 3)
+
+Fleet-wide guidance is published to `.claude/governance/guidance-registry.md` -- a registry loaded into agent context with summaries and relevance statements. Detail docs live in `.claude/governance/guidance/<cx-role>/<topic>.md` and are read on demand.
+
+- Small guidance is inlined in the registry entry; large guidance gets summary + reference
+- Each Cx role publishes autonomously (Tier 3, no approval needed)
+- The CKO maintains the registry index
+- The triad operationalizes guidance into agent workflows
+
 ### Governance Collaboration Pattern
 
 When a change is proposed to the floor or targets:
@@ -608,7 +622,35 @@ Each Cx role maintains three-tier memory for governance decisions:
 
 Per change, each Cx role records: the proposal, their domain impact assessment, their recommendation, their opinion about the consensus, and any calibration learning.
 
-**Memory hygiene:** Memory-manager includes Cx memories in consistency audits. Active entries unreferenced for 5+ items → candidates for linked archive. Linked entries unreferenced for 10+ items → candidates for retirement. Cx role approves migrations; memory-manager proposes only.
+**Memory hygiene:** Knowledge-ops includes Cx memories in consistency audits. Active entries unreferenced for 5+ items → candidates for linked archive. Linked entries unreferenced for 10+ items → candidates for retirement. Cx role approves migrations; knowledge-ops proposes only.
+
+### CEO Independent Pace
+
+The CEO operates on an independent pace, separate from fleet pace:
+
+- **Starts at Crawl** -- all decisions escalated to user
+- **Cannot self-promote** -- only the user can grant autonomy, via `/governance grant`
+- **Can self-slow** -- CEO slows down when it recognizes complexity or uncertainty
+- **Autonomy is scoped, not tiered** -- each grant is specific (e.g., "may autonomously prioritize ready backlog items"), not a pace promotion
+- **CO monitors** -- compliance-officer audits CEO actions against granted autonomy. Violations stop work immediately.
+- **Grants tracked** in `.claude/governance/executive-brief.md`
+
+### Pace-Based Knowledge Distribution
+
+Learning distribution frequency is inversely proportional to delivery pace. Implementers override defaults via `knowledge.cadence` in `fleet-config.json`.
+
+| Pace  | Default Cadence       | Rationale                            |
+| ----- | --------------------- | ------------------------------------ |
+| Crawl | Every item            | Fleet is actively calibrating        |
+| Walk  | Every 2-3 items       | Process is stabilizing               |
+| Run   | Every 3-5 items       | Don't change what works for outliers |
+| Fly   | On-demand/retros only | Stability earned; preserve it        |
+
+**Triggers:** Scheduled (SM triggers at cadence during Checkpoint), exception-driven (SM detects spike in findings/rework -- overrides cadence), on-demand (`/memory distribute`).
+
+**Dispatch chain:** SM decides to trigger → dispatches CKO → CKO evaluates what to distribute → CKO dispatches knowledge-ops → knowledge-ops executes.
+
+**Guard against thrashing:** At Run/Fly, CKO requires a pattern (multiple instances) before fleet-wide distribution. Single outliers are findings, not fleet-wide learnings.
 
 ## Learning Collective
 
@@ -643,17 +685,17 @@ Any agent may suggest improvements. Use this format:
 
 The memory system has two layers with distinct ownership and lifecycle:
 
-| Layer        | Path              | Contains                                                                                   | Updated By                          | When                         |
-| ------------ | ----------------- | ------------------------------------------------------------------------------------------ | ----------------------------------- | ---------------------------- |
-| **harness/** | `memory/harness/` | Framework learnings: collaboration protocol patterns, tool usage, generic process insights | memory-manager (on harness upgrade) | Harness version changes only |
-| **app/**     | `memory/app/`     | Domain learnings: project-specific patterns, decisions, gotchas, environment quirks        | Any agent during work               | Continuously during sessions |
+| Layer        | Path              | Contains                                                                                   | Updated By                         | When                         |
+| ------------ | ----------------- | ------------------------------------------------------------------------------------------ | ---------------------------------- | ---------------------------- |
+| **harness/** | `memory/harness/` | Framework learnings: collaboration protocol patterns, tool usage, generic process insights | knowledge-ops (on harness upgrade) | Harness version changes only |
+| **app/**     | `memory/app/`     | Domain learnings: project-specific patterns, decisions, gotchas, environment quirks        | Any agent during work              | Continuously during sessions |
 
 ### Rules
 
 - **Agents write to app/ during work.** When an agent discovers a domain-specific pattern, gotcha, or decision worth preserving, it writes to `app/` memory.
 - **harness/ is read-only during normal operation.** Implementers do not modify harness memories. These are updated only when the harness itself is upgraded.
-- **memory-manager curates both layers.** It flags stale entries, resolves contradictions, distributes learnings across agents, and ensures memories stay accurate and useful.
-- **Cross-pollination.** When an app/ learning reveals a generic pattern that would benefit any project using this harness, the memory-manager flags it for potential promotion to harness/ in the next harness upgrade cycle.
+- **knowledge-ops curates both layers.** It flags stale entries, resolves contradictions, distributes learnings across agents, and ensures memories stay accurate and useful.
+- **Cross-pollination.** When an app/ learning reveals a generic pattern that would benefit any project using this harness, the knowledge-ops flags it for potential promotion to harness/ in the next harness upgrade cycle.
 
 ## Escalation Rules
 
