@@ -39,6 +39,8 @@ EVENT_TYPE="$1"; shift
 ITEM="" FROM="" TO="" REASON="" SEVERITY="" SOURCE="" BUG_ID_ARG="" EXT="" DEPLOY_TYPE="" DEPLOY_ENV=""
 TOKENS="" TURNS="" DURATION="" MODEL="" TASK=""
 PROPOSAL="" SCOPE="" METHOD="" CHANGE_TYPE=""
+BRANCH="" PR=""
+TOPIC="" BY="" TRIGGER="" ACTION="" ITEMS=""
 POSITIONAL=()
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -60,6 +62,13 @@ while [[ $# -gt 0 ]]; do
     --scope)    SCOPE="$2";    shift 2 ;;
     --method)   METHOD="$2";   shift 2 ;;
     --change-type) CHANGE_TYPE="$2"; shift 2 ;;
+    --branch) BRANCH="$2"; shift 2 ;;
+    --pr)     PR="$2";     shift 2 ;;
+    --topic) TOPIC="$2"; shift 2 ;;
+    --by)    BY="$2";    shift 2 ;;
+    --trigger) TRIGGER="$2"; shift 2 ;;
+    --action) ACTION="$2"; shift 2 ;;
+    --items) ITEMS="$2"; shift 2 ;;
     *) POSITIONAL+=("$1"); shift ;;
   esac
 done
@@ -251,14 +260,61 @@ case "$EVENT_TYPE" in
        '{"ts":$ts,"event":$event,"method":$method,"agent":$agent}')"
     ;;
 
+  branch-created)
+    emit_event "$(jq -cn --arg ts "$TS" --arg event "$EVENT_TYPE" \
+       --arg item "$ITEM" --arg branch "$BRANCH" --arg agent "$AGENT" \
+       '{"ts":$ts,"event":$event,"item":$item,"branch":$branch,"agent":$agent}')"
+    ;;
+
+  pr-opened|pr-merged)
+    emit_event "$(jq -cn --arg ts "$TS" --arg event "$EVENT_TYPE" \
+       --arg item "$ITEM" --arg pr "$PR" --arg agent "$AGENT" \
+       '{"ts":$ts,"event":$event,"item":$item,"pr":$pr,"agent":$agent}')"
+    ;;
+
+  guidance-published)
+    emit_event "$(jq -cn --arg ts "$TS" --arg event "$EVENT_TYPE" \
+       --arg by "$BY" --arg topic "$TOPIC" --arg agent "$AGENT" \
+       '{"ts":$ts,"event":$event,"by":$by,"topic":$topic,"agent":$agent}')"
+    ;;
+
+  ceo-autonomy-granted)
+    emit_event "$(jq -cn --arg ts "$TS" --arg event "$EVENT_TYPE" \
+       --arg scope "$SCOPE" --arg agent "$AGENT" \
+       '{"ts":$ts,"event":$event,"scope":$scope,"agent":$agent}')"
+    ;;
+
+  ceo-autonomy-violation)
+    emit_event "$(jq -cn --arg ts "$TS" --arg event "$EVENT_TYPE" \
+       --arg action "$ACTION" --arg agent "$AGENT" \
+       '{"ts":$ts,"event":$event,"action":$action,"agent":$agent}')"
+    ;;
+
+  knowledge-distributed)
+    emit_event "$(jq -cn --arg ts "$TS" --arg event "$EVENT_TYPE" \
+       --arg trigger "$TRIGGER" --arg items "$ITEMS" --arg agent "$AGENT" \
+       '{"ts":$ts,"event":$event,"trigger":$trigger,"items":$items,"agent":$agent}')"
+    ;;
+
+  item-rejected-at-acceptance)
+    if [[ -z "$REASON" ]]; then
+      echo "ERROR: item-rejected-at-acceptance requires --reason" >&2
+      exit 1
+    fi
+    emit_event "$(jq -cn --arg ts "$TS" --arg item "$ITEM" --arg reason "$REASON" --arg agent "$AGENT" \
+       '{"ts":$ts,"event":"item-rejected-at-acceptance","item":$item,"reason":$reason,"agent":$agent} | with_entries(select(.value != ""))')"
+    ;;
+
   *)
     echo "ERROR: unknown event type '$EVENT_TYPE'" >&2
     echo "Valid types: item-promoted item-accepted ext-deployed bug-found bug-fixed" >&2
-    echo "             handoff-sent handoff-rejected item-rejected-at-build" >&2
+    echo "             handoff-sent handoff-rejected item-rejected-at-build item-rejected-at-acceptance" >&2
     echo "             task-restarted task-discarded task-blocked task-unblocked" >&2
     echo "             agent-invoked regression-run" >&2
     echo "             compliance-proposed compliance-approved compliance-rejected" >&2
     echo "             compliance-applied compliance-violation compliance-reverted" >&2
+    echo "             branch-created pr-opened pr-merged" >&2
+    echo "             guidance-published ceo-autonomy-granted ceo-autonomy-violation knowledge-distributed" >&2
     exit 1
     ;;
 esac

@@ -101,7 +101,23 @@ Edit `fleet-config.json`:
 
 ## Step 5: Run Your First Iteration
 
-Open Claude Code in your project directory. The 6 core agents are ready:
+Open Claude Code in your project directory. The 13 core agents are ready (7 governance + 6 operational):
+
+Available slash commands:
+
+| Command       | Purpose                                               |
+| ------------- | ----------------------------------------------------- |
+| `/po`         | Product owner status and backlog                      |
+| `/retro`      | Sprint retrospective                                  |
+| `/onboard`    | Fleet onboarding (activates CO and CISO during setup) |
+| `/compliance` | Compliance program management                         |
+| `/governance` | Executive governance                                  |
+| `/pace`       | Pace control                                          |
+| `/audit`      | Compliance audit                                      |
+| `/memory`     | Knowledge management                                  |
+| `/deploy`     | Deployment orchestration                              |
+| `/findings`   | Findings register                                     |
+| `/handoff`    | Structured handoffs                                   |
 
 1. **Start with `/po`** to see the status overview
 2. **Add a work item** to `docs/plans/` -- even a simple one like "Set up project structure"
@@ -125,7 +141,7 @@ The dashboard shows deployment frequency, lead time, change failure rate, first-
 
 As the fleet works through items, you will notice:
 
-- **Findings decrease.** The same type of mistake stops recurring because the SM curates refinements into agent memories.
+- **Findings decrease.** The same type of mistake stops recurring because the SM triggers knowledge distribution, and knowledge-ops executes under CKO direction.
 - **Handoffs get cleaner.** Agents learn what their counterparts need. FPY improves.
 - **Pace naturally accelerates.** When CFR drops below 10% and FPY exceeds 80%, the SM recommends advancing from Crawl to Walk.
 - **Specialists make good decisions autonomously.** The PO and SA invest in context enrichment, and it pays off -- specialists stop asking for every judgment call.
@@ -137,4 +153,4 @@ This is the fleet learning autonomy. Not because you told it to, but because the
 - Read the [Agent Fleet Pattern](AGENT-FLEET-PATTERN.md) for the full specification
 - Review the [Collaboration Protocol](../.claude/COLLABORATION.md) for all 11 core principles
 - Check the [Example App](../example/) for a working 2-specialist setup
-- Add review agents (security-reviewer, etc.) as your compliance needs crystallize
+- Add review agents (security-reviewer, etc.) as your compliance needs crystallize. Note: governance tier agents (CO, CISO at minimum) are active from the first session via `/onboard` and don't need to be added separately.

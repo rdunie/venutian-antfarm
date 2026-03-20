@@ -62,7 +62,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "echo 'Key context: Agent fleet harness with 2 governance agents (CO, CISO) and 6 core agents (PO, SA, SM, memory-manager, platform-ops, compliance-auditor). Compliance floor guarded by CO with hook enforcement. Progressive autonomy (Crawl/Walk/Run/Fly). See CLAUDE.md for details.' > /tmp/antfarm-compact-context.txt"
+            "command": "echo 'Key context: Agent fleet harness with 7 governance agents (CO, CISO, CEO, CTO, CFO, COO, CKO) and 6 operational agents (PO, SA, SM, knowledge-ops, platform-ops, compliance-auditor). Compliance floor guarded by CO with hook enforcement. Progressive autonomy (Crawl/Walk/Run/Fly). See CLAUDE.md for details.' > /tmp/antfarm-compact-context.txt"
           }
         ]
       }

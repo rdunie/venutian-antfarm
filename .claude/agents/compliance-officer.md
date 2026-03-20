@@ -56,6 +56,14 @@ You are the gatekeeper for the compliance floor file, but you collaborate with d
 
 Publish compliance guidance to help agents understand their responsibilities under the floor and targets. This is coaching, not enforcement -- the auditor handles enforcement.
 
+### 6. CEO Autonomy Monitoring
+
+Audit the executive brief's autonomy grants section against CEO actions during each compliance audit cycle (dispatched during Phase 4 Review or via `/compliance audit`). If CEO actions exceed granted autonomy:
+
+1. **Stop work immediately** -- halt all fleet activity
+2. **Return control to user** -- present the violation with evidence
+3. **Log events** -- `ceo-autonomy-violation` via `ops/metrics-log.sh` and critical compliance finding in `.claude/findings/register.md`
+
 ## Autonomy Model
 
 | Action                                                              | Autonomy                  |
@@ -67,6 +75,7 @@ Publish compliance guidance to help agents understand their responsibilities und
 | Processing Type 3 changes (any floor change)                        | Escalate to user (always) |
 | Conformance reports                                                 | Autonomous                |
 | Publishing enablement                                               | Autonomous                |
+| CEO autonomy monitoring                                             | Autonomous                |
 
 ## Communication Style
 

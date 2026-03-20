@@ -31,9 +31,10 @@ cp templates/fleet-config.json fleet-config.json
 # Edit fleet-config.json (metrics backend, deploy command, etc.)
 
 # 5. Start working
-# Open Claude Code in your project directory. The 6 core agents
-# (product-owner, solution-architect, scrum-master, memory-manager,
-# platform-ops, compliance-auditor) are ready. Your specialists extend them.
+# Open Claude Code in your project directory. The 13 core agents
+# (compliance-officer, ciso, ceo, cto, cfo, coo, cko, product-owner,
+# solution-architect, scrum-master, knowledge-ops, platform-ops,
+# compliance-auditor) are ready. Your specialists extend them.
 ```
 
 ## Architecture
@@ -43,13 +44,18 @@ flowchart TD
     USER(["Human Operator"])
 
     subgraph Gov ["Governance Layer"]
-        CO["Compliance Officer"]
+        CO["CO"]
         CISO_A["CISO"]
+        CEO_A["CEO"]
+        CTO_A["CTO"]
+        CFO_A["CFO"]
+        COO_A["COO"]
+        CKO_A["CKO"]
     end
 
     subgraph Harness ["Harness Layer (this framework)"]
         S(["Strategic\nPO  SA  SM"])
-        MM["Memory Manager"]
+        MM["Knowledge Ops"]
         PO_OPS["Platform Ops"]
         CA["Compliance Auditor"]
     end
@@ -75,6 +81,11 @@ flowchart TD
     style USER fill:#90caf9,stroke:#1565c0,color:#1a1a1a
     style CO fill:#ce93d8,stroke:#6a1b9a,color:#1a1a1a
     style CISO_A fill:#ce93d8,stroke:#6a1b9a,color:#1a1a1a
+    style CEO_A fill:#ce93d8,stroke:#6a1b9a,color:#1a1a1a
+    style CTO_A fill:#ce93d8,stroke:#6a1b9a,color:#1a1a1a
+    style CFO_A fill:#ce93d8,stroke:#6a1b9a,color:#1a1a1a
+    style COO_A fill:#ce93d8,stroke:#6a1b9a,color:#1a1a1a
+    style CKO_A fill:#ce93d8,stroke:#6a1b9a,color:#1a1a1a
     style S fill:#90caf9,stroke:#1565c0,color:#1a1a1a
     style MM fill:#90caf9,stroke:#1565c0,color:#1a1a1a
     style PO_OPS fill:#90caf9,stroke:#1565c0,color:#1a1a1a
@@ -86,16 +97,21 @@ flowchart TD
 
 ## What You Get
 
-**8 agents** across governance and operational tiers:
+**13 core agents** across governance and operational tiers (plus app-defined specialists):
 
 | Agent                  | Tier        | Role                 | What It Does                                                        |
 | ---------------------- | ----------- | -------------------- | ------------------------------------------------------------------- |
 | **compliance-officer** | Governance  | Compliance program   | Floor guardianship, change control, conformance monitoring          |
 | **ciso**               | Governance  | Security authority   | Security benchmarks, security controls, threat assessment           |
-| **product-owner**      | Strategic   | Business context     | Backlog management, prioritization (WSJF), acceptance, quality gate |
-| **solution-architect** | Strategic   | Technical context    | NFRs, architecture decisions, cross-system coherence                |
-| **scrum-master**       | Strategic   | Process facilitation | Pace control, findings reviews, conflict resolution, retros         |
-| **memory-manager**     | Operational | Knowledge quality    | Memory consistency, learning distribution, stale detection          |
+| **ceo**                | Governance  | Executive leadership | Strategic direction, autonomy grants, cross-cutting decisions       |
+| **cto**                | Governance  | Technology strategy  | Technology vision, platform standards, technical debt governance    |
+| **cfo**                | Governance  | Financial oversight  | Cost governance, budget controls, ROI assessment                    |
+| **coo**                | Governance  | Operations authority | Operational efficiency, process optimization, capacity planning     |
+| **cko**                | Governance  | Knowledge authority  | Knowledge strategy, learning programs, institutional memory         |
+| **product-owner**      | Operational | Business context     | Backlog management, prioritization (WSJF), acceptance, quality gate |
+| **solution-architect** | Operational | Technical context    | NFRs, architecture decisions, cross-system coherence                |
+| **scrum-master**       | Operational | Process facilitation | Pace control, findings reviews, conflict resolution, retros         |
+| **knowledge-ops**      | Operational | Knowledge quality    | Memory consistency, learning distribution, stale detection          |
 | **platform-ops**       | Operational | Dev platform         | DORA metrics, CI/CD, cross-environment visibility                   |
 | **compliance-auditor** | Operational | Compliance review    | Audits work output against compliance floor rules during Review     |
 
@@ -118,17 +134,20 @@ Every fleet starts at Crawl. Evidence-based transitions only. Pace goes both dir
 ### Work Item Lifecycle
 
 ```mermaid
-flowchart LR
+flowchart TD
     G["1. Groom"] --> P["2. Promote"]
     P --> B["3. Build"]
     B --> R["4. Review"]
-    R -->|"rework"| F["5. Fix"]
-    F --> R
-    R -->|"pass"| D["6. Deploy"]
-    D --> A["7. Accept"]
+    R -->|"pass"| D["6. Deploy\n(per env)"]
+    D -->|"all envs pass"| A["7. Accept"]
     A --> RT["8. Retro"]
     RT --> C["9. Checkpoint"]
     C -->|"next"| G
+
+    R -->|"rework"| F["5. Fix"]
+    D -->|"code problem"| F
+    A -->|"rejection"| F
+    F -->|"re-validate"| B
 
     style G fill:#90caf9,stroke:#1565c0,color:#1a1a1a
     style P fill:#90caf9,stroke:#1565c0,color:#1a1a1a
@@ -316,18 +335,19 @@ App fields override harness fields. Unmentioned harness fields are preserved.
 
 ## Skills
 
-| Skill         | What It Does                                           | Primary Agent      |
-| ------------- | ------------------------------------------------------ | ------------------ |
-| `/po`         | Backlog management, prioritization, grooming, review   | product-owner      |
-| `/retro`      | Run a retrospective for a completed work item          | scrum-master       |
-| `/onboard`    | Interactive project setup                              | --                 |
-| `/handoff`    | Structured agent-to-agent handoff with metrics logging | all agents         |
-| `/deploy`     | Deployment orchestration with pre/post validation      | platform-ops       |
-| `/findings`   | Findings register: log, review, triage, patterns       | scrum-master       |
-| `/audit`      | Compliance audit against the compliance floor          | compliance-auditor |
-| `/pace`       | Pace control: status, evaluation, transitions          | scrum-master       |
-| `/memory`     | Memory management: audit, distribute, optimize, gaps   | memory-manager     |
-| `/compliance` | Compliance program: propose, review, apply, audit, log | compliance-officer |
+| Skill         | What It Does                                                   | Primary Agent      |
+| ------------- | -------------------------------------------------------------- | ------------------ |
+| `/po`         | Backlog management, prioritization, grooming, review           | product-owner      |
+| `/retro`      | Run a retrospective for a completed work item                  | scrum-master       |
+| `/onboard`    | Interactive project setup                                      | --                 |
+| `/handoff`    | Structured agent-to-agent handoff with metrics logging         | all agents         |
+| `/deploy`     | Deployment orchestration with pre/post validation              | platform-ops       |
+| `/findings`   | Findings register: log, review, triage, patterns               | scrum-master       |
+| `/audit`      | Compliance audit against the compliance floor                  | compliance-auditor |
+| `/pace`       | Pace control: status, evaluation, transitions                  | scrum-master       |
+| `/memory`     | Memory management: audit, distribute, optimize, gaps           | knowledge-ops      |
+| `/compliance` | Compliance program: propose, review, apply, audit, log         | compliance-officer |
+| `/governance` | Executive governance: brief, decisions, guidance, CEO autonomy | ceo                |
 
 All skills can be overridden by implementers. Create `.claude/skills/<name>/SKILL.md` in your project to replace the harness default.
 
@@ -338,6 +358,8 @@ All skills can be overridden by implementers. Create `.claude/skills/<name>/SKIL
 - **[Agent Fleet Pattern](docs/AGENT-FLEET-PATTERN.md)** -- The full pattern specification
 - **[Collaboration Protocol](.claude/COLLABORATION.md)** -- How agents work together
 - **[Collaboration Model](docs/COLLABORATION-MODEL.md)** -- Visual diagrams
+- **[Metrics Guide](docs/METRICS-GUIDE.md)** -- Event types, dashboards, extending metrics, example output
+- **[Pathway Analysis](docs/PATHWAY-ANALYSIS.md)** -- Agent communication pathway analysis: declaring, interpreting, governance
 - **[Example App](example/)** -- Working example with 2 specialist agents
 
 ## License

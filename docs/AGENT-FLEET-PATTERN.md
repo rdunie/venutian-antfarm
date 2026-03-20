@@ -26,15 +26,25 @@ This pattern is overkill for simple automation tasks, single-agent workflows, or
 
 ---
 
+## Governance Tier
+
+The pattern includes an executive governance layer with 7 Cx roles (CO, CISO, CEO, CTO, CFO, COO, CKO) that set policy, standards, and controls independently of the operational chain. Each Cx role proposes floor rules (MUST) and targets (SHOULD) through the Compliance Officer's change control process. See `docs/superpowers/specs/2026-03-19-governance-layer-design.md` and `docs/superpowers/specs/2026-03-19-cx-governance-framework-design.md` for the full governance design.
+
+---
+
 ## Pattern Overview
 
 ```mermaid
 flowchart TD
     USER(["Human Operator"])
 
+    subgraph Gov ["Governance Layer"]
+        GOV_AGENTS(["CO  CISO  CEO\nCTO  CFO  COO  CKO"])
+    end
+
     subgraph Harness ["Harness Layer (this framework)"]
         S(["Strategic\nPO  SA  SM"])
-        MM["Memory Manager"]
+        MM["Knowledge Ops"]
         PO_OPS["Platform Ops"]
         CA["Compliance Auditor"]
     end
@@ -45,6 +55,8 @@ flowchart TD
         O(["Output\nAgents"])
     end
 
+    USER -->|"approvals +\noversight"| Gov
+    Gov -->|"controls +\ncompliance"| S
     USER -->|"evidence-based\noversight"| S
     S -->|"context +\ncoaching"| E
     S -.->|"arch/process"| R
@@ -56,6 +68,7 @@ flowchart TD
     O -.->|"content for review"| R
 
     style USER fill:#90caf9,stroke:#1565c0,color:#1a1a1a
+    style GOV_AGENTS fill:#ce93d8,stroke:#6a1b9a,color:#1a1a1a
     style S fill:#90caf9,stroke:#1565c0,color:#1a1a1a
     style MM fill:#90caf9,stroke:#1565c0,color:#1a1a1a
     style PO_OPS fill:#90caf9,stroke:#1565c0,color:#1a1a1a
@@ -315,7 +328,7 @@ Key domain-specific elements from the original deployment:
 | --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Compliance floor      | Data isolation (operational and identity databases separated), row-level access control, content filtering on free-text fields, secrets managed via vault                                       |
 | Execution agents (6)  | Backend specialist, pipeline engineer, frontend specialist, E2E test engineer, infrastructure ops, platform/CI ops                                                                              |
-| Review agents (4)     | Security reviewer, data compliance auditor, governance/audit compliance, knowledge/memory manager                                                                                               |
+| Review agents (4)     | Security reviewer, data compliance auditor, governance/audit compliance, knowledge-ops                                                                                                          |
 | Output agents (3)     | Documentation quality validator, training content producer, stakeholder video producer                                                                                                          |
 | Enforcement hooks (8) | Sensitive data blocker, secrets file blocker, auto-formatter, collaboration doc drift detector, commit-type detector, compact context injector, agent completion logger, session status display |
 | Metrics               | 15 event types via CLI helper, DORA + flow quality dashboard                                                                                                                                    |
@@ -347,7 +360,7 @@ The pattern sacrifices portability for governance depth. This is the right trade
 
 - `.claude/COLLABORATION.md` -- Full collaboration protocol (source of truth)
 - `docs/COLLABORATION-MODEL.md` -- Visual collaboration model with Mermaid diagrams
-- `.claude/agents/` -- Core agent definitions (6 files)
+- `.claude/agents/` -- Core agent definitions (13 files)
 - `.claude/settings.json` -- Hook configuration
 - `.mcp.json` -- Team-shared MCP server configuration
 - `ops/metrics-log.sh` -- Event logging CLI (pluggable backend)

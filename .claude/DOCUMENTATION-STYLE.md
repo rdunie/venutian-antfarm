@@ -22,17 +22,26 @@ Standards for all project documentation. Every agent that creates or updates doc
 
 All diagrams must follow the shared color palette.
 
-**Color palette:**
+**Tier-based color palette:**
 
-| Semantic | Background | Border    | Use for                              |
-| -------- | ---------- | --------- | ------------------------------------ |
-| Green    | `#a5d6a7`  | `#2e7d32` | Completed, success, active processes |
-| Blue     | `#90caf9`  | `#1565c0` | User-facing, actors, strategic       |
-| Orange   | `#ffcc80`  | `#e65100` | Decisions, warnings, external        |
-| Red      | `#ef9a9a`  | `#b71c1c` | Blocked, compliance, critical        |
-| Grey     | `#bdbdbd`  | `#424242` | Infrastructure, neutral              |
+| Color  | Tier              | Used For                                      | Fill      | Stroke    |
+| ------ | ----------------- | --------------------------------------------- | --------- | --------- |
+| Purple | Governance        | CO, CISO, CEO, CTO, CFO, COO, CKO             | `#ce93d8` | `#6a1b9a` |
+| Blue   | Harness (core)    | PO, SA, SM, knowledge-ops, platform-ops, User | `#90caf9` | `#1565c0` |
+| Red    | Review/Compliance | Compliance-auditor, security-reviewer         | `#ef9a9a` | `#b71c1c` |
+| Green  | Execution/Build   | App-defined specialists                       | `#a5d6a7` | `#2e7d32` |
+| Orange | Output            | Output agents, deploy artifacts               | `#ffcc80` | `#e65100` |
+| Gray   | Infrastructure    | Config files, metrics, governance files       | `#bdbdbd` | `#424242` |
 
 Colors are Material Design 300-level tones. Always include `color:#1a1a1a` in every style directive to force dark text, ensuring readability on both light and dark backgrounds.
+
+### Tier Colors vs Agent Identity Colors
+
+Diagrams use **tier colors** to show architecture (which tier does this agent belong to?). Agent frontmatter uses **identity colors** (unique per agent, for UI differentiation). These are separate systems -- all governance agents are purple in diagrams regardless of their individual frontmatter color.
+
+### Orienting Text
+
+Each diagram should have a 1-2 sentence introduction that tells the reader: what this diagram shows, how it connects to adjacent diagrams, and what to look for.
 
 **Node shapes:**
 

@@ -47,14 +47,19 @@ Every agent manages resources responsibly. Tokens, thinking time, context window
 
 ### Governance Agents (Executive Leadership)
 
-Two agents provide independent compliance and security oversight, above the operational chain:
+Seven agents provide independent governance across compliance, security, strategy, technology, cost, operations, and knowledge:
 
-| Agent                  | Role               | Responsibility                                             |
-| ---------------------- | ------------------ | ---------------------------------------------------------- |
-| **compliance-officer** | Compliance program | Floor guardianship, change control, conformance monitoring |
-| **ciso**               | Security authority | Security benchmarks, security controls, threat assessment  |
+| Agent                  | Role                   | Responsibility                                               |
+| ---------------------- | ---------------------- | ------------------------------------------------------------ |
+| **compliance-officer** | Compliance program     | Floor guardianship, change control, conformance monitoring   |
+| **ciso**               | Security authority     | Security benchmarks, security controls, threat assessment    |
+| **ceo**                | Strategic alignment    | Digital twin of implementer, mission/vision, executive brief |
+| **cto**                | Technology enablement  | Technology floor, tech standards, architecture direction     |
+| **cfo**                | Cost governance        | Token budget strategy, cost efficiency, resource allocation  |
+| **coo**                | Operational efficiency | Process standards, SLAs, agent performance, retraining       |
+| **cko**                | Knowledge quality      | Knowledge standards, distribution cadence, guidance registry |
 
-The governance tier is independent of the triad. The triad does not direct governance agents, and governance agents do not direct day-to-day work. See `docs/superpowers/specs/2026-03-19-governance-layer-design.md` for the full governance design.
+The governance tier is independent of the triad. The triad does not direct governance agents, and governance agents do not direct day-to-day work. Governance agents set direction but do not direct day-to-day work. When a Cx role evaluates a triad member's proposal (CTO evaluates SA, COO evaluates SM, CFO recommends to SM), this is governance oversight -- not operational direction. The triad retains full operational authority within the standards set by governance. See `docs/superpowers/specs/2026-03-19-governance-layer-design.md` for the full governance design.
 
 ### Strategic Agents (Mentors + Process)
 
@@ -96,12 +101,12 @@ Example specialists (see `templates/agents/` for starting points):
 
 These agents review any specialist's output or manage cross-cutting concerns:
 
-| Agent                  | Domain            | Responsibility                                              |
-| ---------------------- | ----------------- | ----------------------------------------------------------- |
-| **platform-ops**       | Dev platform      | DORA metrics, CI/CD pipelines, cross-environment visibility |
-| **memory-manager**     | Knowledge quality | Memory consistency, learning distribution, stale detection  |
-| **compliance-auditor** | Compliance review | Audits work output against compliance floor during Review   |
-| **security-reviewer**  | Security posture  | Auth, secrets, access control, data protection (template)   |
+| Agent                  | Domain            | Responsibility                                                                        |
+| ---------------------- | ----------------- | ------------------------------------------------------------------------------------- |
+| **platform-ops**       | Dev platform      | DORA metrics, CI/CD pipelines, cross-environment visibility                           |
+| **knowledge-ops**      | Knowledge quality | Knowledge operations (under CKO direction), memory consistency, learning distribution |
+| **compliance-auditor** | Compliance review | Audits work output against compliance floor during Review                             |
+| **security-reviewer**  | Security posture  | Auth, secrets, access control, data protection (template)                             |
 
 ### Output Agents (Content Producers)
 
@@ -312,22 +317,23 @@ The fleet tracks two complementary metric groups as evidence that core principle
 
 **Who logs what (every agent must follow this):**
 
-| Event                    | Who logs it               | When                                            |
-| ------------------------ | ------------------------- | ----------------------------------------------- |
-| `item-promoted`          | PO                        | Item promoted to active work                    |
-| `item-accepted`          | PO                        | Item passes DoD                                 |
-| `ext-deployed`           | Building specialist       | After each deploy (include --type and --env)    |
-| `bug-found`              | Whoever discovers         | With --severity and --source                    |
-| `bug-fixed`              | Whoever fixes             | With --bug-id from bug-found stdout             |
-| `handoff-sent`           | Sending agent             | Before handing off to next agent                |
-| `handoff-rejected`       | Receiving agent           | When sending work back                          |
-| `item-rejected-at-build` | Building specialist or PO | When a promoted item is rejected at build start |
-| `task-restarted`         | Building specialist       | When scrapping approach mid-execution           |
-| `task-discarded`         | PO or specialist          | When item is dropped                            |
-| `task-blocked`           | Blocked agent             | When waiting on a decision/dependency           |
-| `task-unblocked`         | Same agent                | When the block is resolved                      |
-| `agent-invoked`          | Dispatching agent         | With --tokens, --turns, --model                 |
-| `regression-run`         | e2e-test-engineer         | After periodic regression run completes         |
+| Event                         | Who logs it               | When                                            |
+| ----------------------------- | ------------------------- | ----------------------------------------------- |
+| `item-promoted`               | PO                        | Item promoted to active work                    |
+| `item-accepted`               | PO                        | Item passes DoD                                 |
+| `item-rejected-at-acceptance` | PO                        | When deployed work fails DoD verification       |
+| `ext-deployed`                | Building specialist       | After each deploy (include --type and --env)    |
+| `bug-found`                   | Whoever discovers         | With --severity and --source                    |
+| `bug-fixed`                   | Whoever fixes             | With --bug-id from bug-found stdout             |
+| `handoff-sent`                | Sending agent             | Before handing off to next agent                |
+| `handoff-rejected`            | Receiving agent           | When sending work back                          |
+| `item-rejected-at-build`      | Building specialist or PO | When a promoted item is rejected at build start |
+| `task-restarted`              | Building specialist       | When scrapping approach mid-execution           |
+| `task-discarded`              | PO or specialist          | When item is dropped                            |
+| `task-blocked`                | Blocked agent             | When waiting on a decision/dependency           |
+| `task-unblocked`              | Same agent                | When the block is resolved                      |
+| `agent-invoked`               | Dispatching agent         | With --tokens, --turns, --model                 |
+| `regression-run`              | e2e-test-engineer         | After periodic regression run completes         |
 
 All events are logged via `ops/metrics-log.sh <event> [args]`. See CLAUDE.md for full command reference.
 
@@ -402,6 +408,47 @@ The receiving agent should be able to act on the handoff without asking for clar
 - Identify merge risk before starting parallel work
 - Each agent commits independently. Merge conflicts are a finding.
 
+## Branching and Pull Requests
+
+### Branch Lifecycle
+
+Each work item gets a feature branch and draft PR at Promote (Phase 2). The PR is the canonical work item artifact -- it tracks progress, collects review feedback, and gates deployment.
+
+- **Branch naming:** `<type>/<item-id>-<slug>` (feat, fix, chore, docs)
+- **PR title:** `<type>: <description> (#<item-id>)`
+- **Draft PR** created at Promote, converted to "ready for review" when specialist signals build complete via handoff to PO
+- **Branch operations** use local git; **PR operations** use GitHub MCP
+
+### PR-Native Code Review
+
+During Review (Phase 4), reviewers post findings directly to the PR:
+
+- **Line-level comments** via `pull_request_review_write` for specific code issues
+- **General comments** via `add_issue_comment` for overall assessment
+- **Approve** via `pull_request_review_write` with `event: "APPROVE"`
+- **Request changes** via `pull_request_review_write` with `event: "REQUEST_CHANGES"`
+- Compliance-auditor is always dispatched; other reviewers per `pathways.declared.review`
+
+Code feedback lives on the PR. Process feedback lives in the findings register.
+
+### Environment Discipline
+
+All code changes happen on feature branches in the dev environment only. Agents may diagnose in any environment (read-only), but fixes must flow through the deployment chain: branch → PR → merge to main → deploy through promotion order.
+
+- No hotfix shortcuts -- even urgent fixes follow the chain (PO may skip non-blocking review steps)
+- No direct environment patching -- direct modifications are a critical finding
+- Promotion order is defined in `fleet-config.json` under `deploy.promotion_order`
+
+### Fix Ownership and Learning
+
+The agent that authored the code is responsible for fixing issues, regardless of where discovered. Diagnosis is collaborative (any agent, any environment, read-only). The fix returns to the author so the learning stays with the agent that needs it.
+
+When ownership is ambiguous: triad reaches consensus → if weak alignment, escalate to Cx stakeholders → if unresolved, user decides.
+
+### Branch Health
+
+Branches existing for more than 2 accepted items without merging are flagged by SM during Checkpoint (Phase 9) as a "process" finding using `git branch -r --no-merged main`.
+
 ## Work Item Lifecycle
 
 **Ad-hoc requests become backlog items.** When the user requests work that is not currently tracked in a tier file, the PO (or the agent receiving the request) adds an item to the appropriate tier file before or alongside execution. This ensures every piece of work is traceable, measurable, and reviewable. The item can be lightweight (one-line description + size estimate) for small requests, or fully groomed for larger ones. The key rule: no untracked work.
@@ -411,14 +458,69 @@ Every work item flows through these phases:
 | Phase             | What Happens                                                                                                                                                                                                                                                                                                                      | Who Leads                            |
 | ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------ |
 | **1. Groom**      | Triad collaborates: AC, WSJF, NFRs, dependencies                                                                                                                                                                                                                                                                                  | PO leads, SA + SM contribute         |
-| **2. Promote**    | Expand to full work item with story, AC, NFRs. Log `item-promoted`.                                                                                                                                                                                                                                                               | PO                                   |
+| **2. Promote**    | Expand to full work item with story, AC, NFRs. Create feature branch + draft PR. Log `item-promoted`, `branch-created`, `pr-opened`.                                                                                                                                                                                              | PO                                   |
 | **3. Build**      | **Re-evaluate first:** verify the item's premise still holds against current code, context, and needs. If no longer needed, log `item-rejected-at-build` with `--reason` (context-changed, flawed-suggestion, superseded, duplicate) and `--source` (originating agent). Then execute with TDD. Full validation cycle end-to-end. | PO orchestrates, specialists execute |
-| **4. Review**     | PO verifies AC. Selective specialist reviews dispatched. DoD gate.                                                                                                                                                                                                                                                                | PO dispatches, specialists review    |
-| **5. Fix**        | Address review findings.                                                                                                                                                                                                                                                                                                          | Domain owners                        |
-| **6. Deploy**     | Deploy to target environment. Run validation suite.                                                                                                                                                                                                                                                                               | Platform-ops orchestrates            |
-| **7. Accept**     | All DoD criteria pass. Item moves to Done. Log `item-accepted`.                                                                                                                                                                                                                                                                   | PO                                   |
+| **4. Review**     | PO verifies AC. Dispatches reviewers who post findings as PR comments. DoD gate.                                                                                                                                                                                                                                                  | PO dispatches, specialists review    |
+| **5. Fix**        | Address review or acceptance findings. After fixing, return to Build (Phase 3) for full validation cycle -- the fix must pass TDD, typecheck, build, and deploy before re-review.                                                                                                                                                 | Domain owners                        |
+| **6. Deploy**     | PO merges approved PR to main. Platform-ops deploys through each environment in `promotion_order`. Validate at each environment before promoting to the next. Log `pr-merged`, `ext-deployed` per environment. See Deployment Progression below.                                                                                  | PO merges, platform-ops deploys      |
+| **7. Accept**     | PO verifies DoD on the final environment. If all criteria pass: log `item-accepted`, proceed to Retro. If criteria fail: log `item-rejected-at-acceptance`, item returns to Fix (Phase 5) -- see Acceptance Failure and Deployment Failures below.                                                                                | PO                                   |
 | **8. Retro**      | All participants reflect (keep/change/try). SM facilitates.                                                                                                                                                                                                                                                                       | SM facilitates, triad evaluates      |
 | **9. Checkpoint** | SM assesses process health. Pace evaluation. Apply retro outcomes.                                                                                                                                                                                                                                                                | SM                                   |
+
+### Deployment Progression (Phase 6)
+
+Deploy is not a single step -- it is a per-environment loop through the `promotion_order` defined in `fleet-config.json`:
+
+```
+for each environment in promotion_order:
+    Deploy to environment → Validate → if pass, promote to next; if fail, see Deployment Failures
+```
+
+1. **Merge PR to main.** PO merges the approved PR. Log `pr-merged`.
+2. **Deploy to first environment** (typically dev/test). Platform-ops runs `ops/deploy.sh`. Log `ext-deployed --env <env>`.
+3. **Validate in that environment.** Run tests, verify functionality, check for regressions.
+4. **If validation passes:** promote to the next environment in the order. Repeat steps 2-3.
+5. **If validation fails:** see Deployment Failures below.
+6. **Final environment passes:** proceed to Accept (Phase 7).
+
+The PO accepts after the **final** environment in the promotion order passes validation. Environments cannot be skipped.
+
+### Deployment Failures
+
+Two types of failures can occur during deployment. The response depends on what broke.
+
+**Code/logic problem** (the change itself has a bug):
+
+1. RCA in the environment where the problem was found (read-only diagnosis)
+2. Reproduce the issue in dev
+3. Fix in dev (fix ownership applies -- original author fixes)
+4. Fix returns to Build (Phase 3) for full validation cycle
+5. Follow the deployment chain from the beginning -- no shortcuts
+
+**Environment/infrastructure problem** (Docker down, missing config, network issues, resource limits):
+
+1. Infrastructure agent diagnoses and resolves the environment issue
+2. The code change is not at fault -- no return to Fix/Build
+3. Once the environment is healthy, resume the deployment where it left off
+4. Log a finding if the environment issue indicates a systemic problem
+
+The key distinction: code problems go back through the development chain. Environment problems are resolved in place and deployment resumes.
+
+### Acceptance Failure (Phase 7 → Fix → Build → Review → Deploy → Accept)
+
+When the PO finds problems during acceptance on the final environment:
+
+1. **Log the rejection.** Run: `ops/metrics-log.sh item-rejected-at-acceptance <item> --reason <description>`
+2. **RCA in the environment where the problem was found.** Diagnose read-only.
+3. **Reproduce in dev.** Confirm the issue exists in the dev environment.
+4. **Fix ownership applies.** The original author agent fixes the issue in dev. Diagnosis is collaborative; the fix returns to the author so the learning stays with them.
+5. **Fix returns to Build (Phase 3).** The fix must pass the full validation cycle -- TDD, typecheck, build. A fix can introduce new issues; skipping validation is not acceptable.
+6. **Re-review (Phase 4).** Reviewers re-review the fix on the PR. The existing branch and PR are reused.
+7. **Re-deploy (Phase 6).** The fix follows the full deployment chain through all environments. Environment discipline applies -- no direct patching.
+8. **PO re-accepts (Phase 7).** The PO verifies the specific failed criteria on the final environment.
+9. **This is a rework cycle.** The rejection feeds into first-pass yield metrics and is surfaced at retro.
+
+Acceptance failures indicate that earlier phases (Review or validation in prior environments) missed something. The retro should examine why and propose refinements.
 
 ### Team Retrospective (Phase 8)
 
@@ -545,6 +647,15 @@ Three tiers of controls with distinct authority and enforcement. See `docs/super
 
 Targets must be above or in addition to the floor -- never weaker.
 
+### Guidance Mechanism (Tier 3)
+
+Fleet-wide guidance is published to `.claude/governance/guidance-registry.md` -- a registry loaded into agent context with summaries and relevance statements. Detail docs live in `.claude/governance/guidance/<cx-role>/<topic>.md` and are read on demand.
+
+- Small guidance is inlined in the registry entry; large guidance gets summary + reference
+- Each Cx role publishes autonomously (Tier 3, no approval needed)
+- The CKO maintains the registry index
+- The triad operationalizes guidance into agent workflows
+
 ### Governance Collaboration Pattern
 
 When a change is proposed to the floor or targets:
@@ -567,7 +678,35 @@ Each Cx role maintains three-tier memory for governance decisions:
 
 Per change, each Cx role records: the proposal, their domain impact assessment, their recommendation, their opinion about the consensus, and any calibration learning.
 
-**Memory hygiene:** Memory-manager includes Cx memories in consistency audits. Active entries unreferenced for 5+ items → candidates for linked archive. Linked entries unreferenced for 10+ items → candidates for retirement. Cx role approves migrations; memory-manager proposes only.
+**Memory hygiene:** Knowledge-ops includes Cx memories in consistency audits. Active entries unreferenced for 5+ items → candidates for linked archive. Linked entries unreferenced for 10+ items → candidates for retirement. Cx role approves migrations; knowledge-ops proposes only.
+
+### CEO Independent Pace
+
+The CEO operates on an independent pace, separate from fleet pace:
+
+- **Starts at Crawl** -- all decisions escalated to user
+- **Cannot self-promote** -- only the user can grant autonomy, via `/governance grant`
+- **Can self-slow** -- CEO slows down when it recognizes complexity or uncertainty
+- **Autonomy is scoped, not tiered** -- each grant is specific (e.g., "may autonomously prioritize ready backlog items"), not a pace promotion
+- **CO monitors** -- compliance-officer audits CEO actions against granted autonomy. Violations stop work immediately.
+- **Grants tracked** in `.claude/governance/executive-brief.md`
+
+### Pace-Based Knowledge Distribution
+
+Learning distribution frequency is inversely proportional to delivery pace. Implementers override defaults via `knowledge.cadence` in `fleet-config.json`.
+
+| Pace  | Default Cadence       | Rationale                            |
+| ----- | --------------------- | ------------------------------------ |
+| Crawl | Every item            | Fleet is actively calibrating        |
+| Walk  | Every 2-3 items       | Process is stabilizing               |
+| Run   | Every 3-5 items       | Don't change what works for outliers |
+| Fly   | On-demand/retros only | Stability earned; preserve it        |
+
+**Triggers:** Scheduled (SM triggers at cadence during Checkpoint), exception-driven (SM detects spike in findings/rework -- overrides cadence), on-demand (`/memory distribute`).
+
+**Dispatch chain:** SM decides to trigger → dispatches CKO → CKO evaluates what to distribute → CKO dispatches knowledge-ops → knowledge-ops executes.
+
+**Guard against thrashing:** At Run/Fly, CKO requires a pattern (multiple instances) before fleet-wide distribution. Single outliers are findings, not fleet-wide learnings.
 
 ## Learning Collective
 
@@ -602,17 +741,17 @@ Any agent may suggest improvements. Use this format:
 
 The memory system has two layers with distinct ownership and lifecycle:
 
-| Layer        | Path              | Contains                                                                                   | Updated By                          | When                         |
-| ------------ | ----------------- | ------------------------------------------------------------------------------------------ | ----------------------------------- | ---------------------------- |
-| **harness/** | `memory/harness/` | Framework learnings: collaboration protocol patterns, tool usage, generic process insights | memory-manager (on harness upgrade) | Harness version changes only |
-| **app/**     | `memory/app/`     | Domain learnings: project-specific patterns, decisions, gotchas, environment quirks        | Any agent during work               | Continuously during sessions |
+| Layer        | Path              | Contains                                                                                   | Updated By                         | When                         |
+| ------------ | ----------------- | ------------------------------------------------------------------------------------------ | ---------------------------------- | ---------------------------- |
+| **harness/** | `memory/harness/` | Framework learnings: collaboration protocol patterns, tool usage, generic process insights | knowledge-ops (on harness upgrade) | Harness version changes only |
+| **app/**     | `memory/app/`     | Domain learnings: project-specific patterns, decisions, gotchas, environment quirks        | Any agent during work              | Continuously during sessions |
 
 ### Rules
 
 - **Agents write to app/ during work.** When an agent discovers a domain-specific pattern, gotcha, or decision worth preserving, it writes to `app/` memory.
 - **harness/ is read-only during normal operation.** Implementers do not modify harness memories. These are updated only when the harness itself is upgraded.
-- **memory-manager curates both layers.** It flags stale entries, resolves contradictions, distributes learnings across agents, and ensures memories stay accurate and useful.
-- **Cross-pollination.** When an app/ learning reveals a generic pattern that would benefit any project using this harness, the memory-manager flags it for potential promotion to harness/ in the next harness upgrade cycle.
+- **knowledge-ops curates both layers.** It flags stale entries, resolves contradictions, distributes learnings across agents, and ensures memories stay accurate and useful.
+- **Cross-pollination.** When an app/ learning reveals a generic pattern that would benefit any project using this harness, the knowledge-ops flags it for potential promotion to harness/ in the next harness upgrade cycle.
 
 ## Escalation Rules
 

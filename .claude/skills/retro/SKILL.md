@@ -23,6 +23,7 @@ Run a team retrospective as defined in `.claude/COLLABORATION.md` § Team Retros
    - First-pass yield at each handoff boundary
    - Any findings logged during the item's lifecycle
    - Bugs found and fixed (count, severity)
+   - PR metrics: review rounds, time-to-merge (branch created → PR merged), PR comment count
 
 3. **Collect reflections.** For each agent that participated in the item, generate a reflection:
    - **Keep:** What worked well and should continue
@@ -55,6 +56,9 @@ Run a team retrospective as defined in `.claude/COLLABORATION.md` § Team Retros
 - First-pass yield: X%
 - Bugs: X found, X fixed
 - Rework loops: X
+- PR review rounds: X
+- Time-to-merge: X
+- PR comments: X
 
 ### Agent Reflections
 #### <agent-name>

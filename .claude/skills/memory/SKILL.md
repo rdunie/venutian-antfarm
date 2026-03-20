@@ -6,7 +6,7 @@ argument-hint: "[audit|distribute|optimize|gaps]"
 
 # Memory
 
-Dispatch memory management operations to the memory-manager agent. See `.claude/agents/memory-manager.md` for the agent's full responsibilities.
+Dispatch memory management operations to the knowledge-ops agent. See `.claude/agents/knowledge-ops.md` for the agent's full responsibilities. Knowledge-ops operates under CKO direction.
 
 ## Usage
 
@@ -17,7 +17,7 @@ Dispatch memory management operations to the memory-manager agent. See `.claude/
 
 ## Workflow: Audit
 
-1. **Dispatch memory-manager agent.** The agent performs a consistency audit:
+1. **Dispatch knowledge-ops agent.** The agent performs a consistency audit:
    - Cross-agent consistency: contradictions between agent memories
    - Memory-vs-docs consistency: memories that contradict CLAUDE.md or docs/
    - Memory-vs-code consistency: memories about patterns the code no longer follows
@@ -31,7 +31,7 @@ Dispatch memory management operations to the memory-manager agent. See `.claude/
 
 1. **Gather recent learnings.** Read the findings register for recently accepted findings with refinements.
 
-2. **Dispatch memory-manager agent.** The agent:
+2. **Dispatch knowledge-ops agent.** The agent:
    - Identifies which learnings are cross-cutting (benefit multiple agents)
    - Translates each learning for the relevant agent's domain context
    - Proposes memory writes for each target agent
@@ -42,7 +42,7 @@ Dispatch memory management operations to the memory-manager agent. See `.claude/
 
 ## Workflow: Optimize
 
-1. **Dispatch memory-manager agent.** The agent scans all memory files:
+1. **Dispatch knowledge-ops agent.** The agent scans all memory files:
    - Identify oversized entries that should be references instead of inline content
    - Identify stale entries no longer relevant to active work
    - Identify duplicate or near-duplicate entries
@@ -54,7 +54,7 @@ Dispatch memory management operations to the memory-manager agent. See `.claude/
 
 ## Workflow: Gaps
 
-1. **Dispatch memory-manager agent.** The agent identifies missing knowledge:
+1. **Dispatch knowledge-ops agent.** The agent identifies missing knowledge:
    - New agents without critical project knowledge
    - Existing agents with outdated memories after significant changes
    - Missing cross-references between related memories
