@@ -358,6 +358,7 @@ All skills can be overridden by implementers. Create `.claude/skills/<name>/SKIL
 - **[Agent Fleet Pattern](docs/AGENT-FLEET-PATTERN.md)** -- The full pattern specification
 - **[Collaboration Protocol](.claude/COLLABORATION.md)** -- How agents work together
 - **[Collaboration Model](docs/COLLABORATION-MODEL.md)** -- Visual diagrams
+- **[Metrics Guide](docs/METRICS-GUIDE.md)** -- Event types, dashboards, extending metrics, example output
 - **[Example App](example/)** -- Working example with 2 specialist agents
 
 ## License
