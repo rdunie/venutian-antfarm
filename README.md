@@ -137,13 +137,17 @@ flowchart LR
     WALK -->|"low rework,\ngood judgment"| RUN["Run\nExpanded autonomy"]
     RUN -->|"proven record,\nmature memories"| FLY["Fly\nFull autonomy"]
 
+    FLY -.->|"regression or\ncomplexity"| RUN
+    RUN -.->|"rising rework\nor findings"| WALK
+    WALK -.->|"significant\nmistake"| CRAWL
+
     style CRAWL fill:#ef9a9a,stroke:#b71c1c,color:#1a1a1a
     style WALK fill:#ffcc80,stroke:#e65100,color:#1a1a1a
     style RUN fill:#90caf9,stroke:#1565c0,color:#1a1a1a
     style FLY fill:#a5d6a7,stroke:#2e7d32,color:#1a1a1a
 ```
 
-Every fleet starts at Crawl. Evidence-based transitions only. Pace goes both directions.
+Every fleet starts at Crawl. Evidence-based transitions only. Pace goes both directions — complexity or quality issues trigger fallback to a lower pace.
 
 ### Work Item Lifecycle
 
