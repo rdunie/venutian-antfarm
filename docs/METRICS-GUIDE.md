@@ -197,6 +197,57 @@ The following examples show realistic output from a fleet that has delivered 47 
     Average  0.15 sessions/item
 ```
 
+#### Interpreting DORA Metrics
+
+**Deployment Frequency** measures throughput. 85 total deployments+acceptances over 8 weeks (~10.6/week) indicates a healthy delivery cadence. Declining frequency may signal blockers or scope creep.
+
+**Lead Time** (1.5 sessions median) measures how long work takes from promotion to acceptance. Lower is better but not at the cost of quality. A rising lead time trend suggests items are growing in complexity or rework is increasing.
+
+**Change Failure Rate** (6%) measures quality. This fleet is below the 10% Walk threshold and approaching the 5% Run threshold. CFR is the primary pace promotion signal.
+
+**MTTR** (0.25 sessions) measures recovery speed. Fast MTTR means the fleet catches and fixes critical bugs quickly. Slow MTTR may indicate diagnosis difficulty or fix ownership confusion.
+
+```mermaid
+xychart-beta
+    title "DORA Metrics Over 8 Weeks"
+    x-axis ["Wk 1", "Wk 2", "Wk 3", "Wk 4", "Wk 5", "Wk 6", "Wk 7", "Wk 8"]
+    y-axis "Items Accepted" 0 --> 10
+    bar [3, 4, 5, 6, 7, 6, 8, 8]
+```
+
+```mermaid
+xychart-beta
+    title "Change Failure Rate Trend"
+    x-axis ["Wk 1", "Wk 2", "Wk 3", "Wk 4", "Wk 5", "Wk 6", "Wk 7", "Wk 8"]
+    y-axis "CFR %" 0 --> 25
+    line [20, 15, 12, 8, 7, 6, 5, 6]
+```
+
+The CFR trend shows the fleet improving from 20% (early Crawl) to 6% (ready for Run). This is the signature of a learning fleet -- structured feedback loops compound over time.
+
+#### Interpreting Flow Quality
+
+**First-Pass Yield** measures handoff quality per boundary pair. The `e2e-test-engineer → product-owner` boundary at 85% is the weakest link -- the retro should investigate why test handoffs get rejected more than others.
+
+**Rework Cycles** (0.3/item) means most items pass on the first attempt. Values above 1.0 indicate systemic review problems.
+
+**Task Outcomes** show that 90% of promoted items complete successfully (4% abandoned, 6% restarted). High abandonment suggests grooming quality issues; high restart rate suggests poor initial approach choices.
+
+```mermaid
+xychart-beta
+    title "First-Pass Yield by Handoff Boundary"
+    x-axis ["BE→Sec", "FE→UX", "BE→Comp", "Infra→Sec", "FE→Comp", "E2E→PO"]
+    y-axis "FPY %" 70 --> 100
+    bar [91, 88, 96, 100, 93, 85]
+```
+
+```mermaid
+pie title Task Outcomes (47 items)
+    "Completed" : 42
+    "Abandoned" : 2
+    "Restarted" : 3
+```
+
 ### `ops/dora.sh --sm`
 
 ```
@@ -231,6 +282,26 @@ The following examples show realistic output from a fleet that has delivered 47 
     opus: 89 calls, 2,847,400 tokens
     sonnet: 198 calls, 2,815,200 tokens
     haiku: 25 calls, 179,100 tokens
+```
+
+#### Interpreting Cost Analysis
+
+The **model split** shows how token budget is distributed across model tiers. This fleet uses Opus for 29% of calls but 49% of tokens -- expected since judgment-heavy tasks (grooming, review, architecture) use Opus and consume more tokens per call. Sonnet handles 63% of calls efficiently. Haiku is used sparingly for routine checks.
+
+The CFO evaluates whether this split is appropriate for the current pace. At Crawl pace, higher Opus usage is expected (more judgment needed). At Fly pace, Opus should be under 40% of dispatches.
+
+```mermaid
+pie title Token Distribution by Model
+    "Opus (2.85M)" : 2847400
+    "Sonnet (2.82M)" : 2815200
+    "Haiku (179K)" : 179100
+```
+
+```mermaid
+pie title Invocations by Model
+    "Opus (89)" : 89
+    "Sonnet (198)" : 198
+    "Haiku (25)" : 25
 ```
 
 ### `ops/dora.sh --item 42`
@@ -300,6 +371,28 @@ The following examples show realistic output from a fleet that has delivered 47 
   e2e-test-engineer              15         0          15
   infra-specialist               18         0          18
   product-owner                  0          15         15
+```
+
+#### Interpreting Pathway Analysis
+
+**Handoff volume** shows which communication channels are most active. The backend-specialist dominates because it has the most review boundaries (security + compliance). An undeclared path (`backend → frontend`, 8x) signals cross-domain coordination that should be evaluated.
+
+**Fleet density** at 17% is healthy -- agents communicate through structured channels without excessive coordination overhead. See the [Pathway Analysis Guide](PATHWAY-ANALYSIS.md) for detailed interpretation guidance.
+
+```mermaid
+xychart-beta
+    title "Handoff Volume by Boundary"
+    x-axis ["BE→Sec", "FE→UX", "BE→Comp", "FE→Comp", "Infra→Sec", "E2E→PO", "BE→FE"]
+    y-axis "Handoffs" 0 --> 50
+    bar [42, 35, 28, 22, 18, 15, 8]
+```
+
+```mermaid
+xychart-beta
+    title "Agent Communication Volume"
+    x-axis ["BE", "Sec", "FE", "Comp", "UX", "Infra", "E2E", "PO"]
+    y-axis "Total Handoffs" 0 --> 80
+    bar [78, 60, 65, 50, 35, 18, 15, 15]
 ```
 
 ## Extending with Custom Metrics
