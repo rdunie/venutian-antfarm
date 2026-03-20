@@ -8,6 +8,8 @@
 
 # Venutian Antfarm
 
+> **Read the blog post:** [Governing the Ant Farm — A Governance-First Framework for Multi-Agent Software Delivery](https://medium.com/@robdunie/governing-the-ant-farm-a-governance-first-framework-for-multi-agent-software-delivery-29245fc14bd9)
+
 An agent fleet harness framework for structured multi-agent software delivery with progressive autonomy, evidence-based governance, and measurable quality control. Clone it, define your compliance floor, add your specialist agents, and start delivering with a governed fleet.
 
 ## Quick Start
