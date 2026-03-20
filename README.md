@@ -47,44 +47,41 @@ cp templates/fleet-config.json fleet-config.json
 ## Architecture
 
 ```mermaid
-flowchart LR
-    USER(["Human\nOperator"])
+flowchart TD
+    USER(["Human Operator"])
 
     subgraph Gov ["Governance Layer"]
-        GOV(["CO  CISO  CEO\nCTO  CFO  COO  CKO"])
+        direction LR
+        GOV(["CO  CISO  CEO  CTO  CFO  COO  CKO"])
     end
 
     subgraph Harness ["Harness Layer"]
-        S(["Strategic\nPO  SA  SM"])
+        direction LR
+        S(["PO  SA  SM"])
         MM["Knowledge Ops"]
         PO_OPS["Platform Ops"]
         CA["Compliance Auditor"]
     end
 
     subgraph AppLayer ["App Layer (you define)"]
-        E(["Execution\nSpecialists"])
-        R(["Review\nAgents"])
-        O(["Output\nAgents"])
+        direction LR
+        E(["Specialists"])
+        R(["Reviewers"])
+        O(["Output"])
     end
 
-    FLOOR[/"Compliance Floor\n(you define)"/]
+    subgraph Floor ["▰▰▰  Compliance Floor (you define — all agents must comply)  ▰▰▰"]
+        direction LR
+        FLOOR_NOTE[" "]
+    end
 
-    USER -->|"approvals +\noversight"| Gov
-    USER -->|"evidence-based\noversight"| S
-    USER -.->|"defines"| FLOOR
-    Gov -->|"guards +\nchange control"| FLOOR
-    Gov -->|"controls +\ncompliance"| S
-    Gov -.->|"dispatch"| CA
-    S -->|"context +\ncoaching"| E
-    S -.->|"arch/process"| R
-    E -->|"work"| R
-    R -.->|"findings"| E
-    R -.->|"risk signals"| S
-    E -->|"milestone"| O
-    R -.->|"corrections"| O
+    USER -->|"oversight"| Gov
+    USER -->|"oversight"| Harness
+    Gov -->|"controls"| Harness
+    Harness -->|"coaching"| AppLayer
+    AppLayer -->|"findings"| Harness
 
     style USER fill:#90caf9,stroke:#1565c0,color:#1a1a1a
-    style FLOOR fill:#bdbdbd,stroke:#424242,color:#1a1a1a
     style GOV fill:#ce93d8,stroke:#6a1b9a,color:#1a1a1a
     style S fill:#90caf9,stroke:#1565c0,color:#1a1a1a
     style MM fill:#90caf9,stroke:#1565c0,color:#1a1a1a
@@ -93,6 +90,8 @@ flowchart LR
     style E fill:#a5d6a7,stroke:#2e7d32,color:#1a1a1a
     style R fill:#ef9a9a,stroke:#b71c1c,color:#1a1a1a
     style O fill:#ffcc80,stroke:#e65100,color:#1a1a1a
+    style FLOOR_NOTE fill:none,stroke:none
+    style Floor fill:#ef9a9a,stroke:#b71c1c,color:#1a1a1a
 ```
 
 The **compliance floor** is a set of non-negotiable rules (MUST ALWAYS / MUST NEVER) that you define for your domain. Every agent in every tier must follow it — it overrides all autonomy levels, pace settings, and process decisions. The governance layer guards the floor through change control; the compliance-auditor verifies conformance during review. No agent can modify, bypass, or deprioritize a floor rule.
