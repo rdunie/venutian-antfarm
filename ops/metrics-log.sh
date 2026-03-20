@@ -40,6 +40,7 @@ ITEM="" FROM="" TO="" REASON="" SEVERITY="" SOURCE="" BUG_ID_ARG="" EXT="" DEPLO
 TOKENS="" TURNS="" DURATION="" MODEL="" TASK=""
 PROPOSAL="" SCOPE="" METHOD="" CHANGE_TYPE=""
 BRANCH="" PR=""
+TOPIC="" BY="" TRIGGER="" ACTION="" ITEMS=""
 POSITIONAL=()
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -63,6 +64,11 @@ while [[ $# -gt 0 ]]; do
     --change-type) CHANGE_TYPE="$2"; shift 2 ;;
     --branch) BRANCH="$2"; shift 2 ;;
     --pr)     PR="$2";     shift 2 ;;
+    --topic) TOPIC="$2"; shift 2 ;;
+    --by)    BY="$2";    shift 2 ;;
+    --trigger) TRIGGER="$2"; shift 2 ;;
+    --action) ACTION="$2"; shift 2 ;;
+    --items) ITEMS="$2"; shift 2 ;;
     *) POSITIONAL+=("$1"); shift ;;
   esac
 done
@@ -266,6 +272,30 @@ case "$EVENT_TYPE" in
        '{"ts":$ts,"event":$event,"item":$item,"pr":$pr,"agent":$agent}')"
     ;;
 
+  guidance-published)
+    emit_event "$(jq -cn --arg ts "$TS" --arg event "$EVENT_TYPE" \
+       --arg by "$BY" --arg topic "$TOPIC" --arg agent "$AGENT" \
+       '{"ts":$ts,"event":$event,"by":$by,"topic":$topic,"agent":$agent}')"
+    ;;
+
+  ceo-autonomy-granted)
+    emit_event "$(jq -cn --arg ts "$TS" --arg event "$EVENT_TYPE" \
+       --arg scope "$SCOPE" --arg agent "$AGENT" \
+       '{"ts":$ts,"event":$event,"scope":$scope,"agent":$agent}')"
+    ;;
+
+  ceo-autonomy-violation)
+    emit_event "$(jq -cn --arg ts "$TS" --arg event "$EVENT_TYPE" \
+       --arg action "$ACTION" --arg agent "$AGENT" \
+       '{"ts":$ts,"event":$event,"action":$action,"agent":$agent}')"
+    ;;
+
+  knowledge-distributed)
+    emit_event "$(jq -cn --arg ts "$TS" --arg event "$EVENT_TYPE" \
+       --arg trigger "$TRIGGER" --arg items "$ITEMS" --arg agent "$AGENT" \
+       '{"ts":$ts,"event":$event,"trigger":$trigger,"items":$items,"agent":$agent}')"
+    ;;
+
   *)
     echo "ERROR: unknown event type '$EVENT_TYPE'" >&2
     echo "Valid types: item-promoted item-accepted ext-deployed bug-found bug-fixed" >&2
@@ -275,6 +305,7 @@ case "$EVENT_TYPE" in
     echo "             compliance-proposed compliance-approved compliance-rejected" >&2
     echo "             compliance-applied compliance-violation compliance-reverted" >&2
     echo "             branch-created pr-opened pr-merged" >&2
+    echo "             guidance-published ceo-autonomy-granted ceo-autonomy-violation knowledge-distributed" >&2
     exit 1
     ;;
 esac
