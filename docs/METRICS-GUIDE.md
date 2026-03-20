@@ -395,6 +395,86 @@ xychart-beta
     bar [78, 60, 65, 50, 35, 18, 15, 15]
 ```
 
+## Observing Agent Adaptation
+
+The most valuable use of metrics is not measuring what happened — it is observing agents **changing their behavior** over time. The structured learning loop (findings → curation → refinement → distribution) compounds, and the metrics show you where and how.
+
+### Example 1: Backend Specialist Learns Input Validation
+
+In weeks 1-3, the security-reviewer repeatedly rejected the backend-specialist's handoffs for missing input validation. The FPY for this boundary was 72%.
+
+After the retro at week 3, the SM distributed a finding: "backend-specialist should validate all user input before handoff." The knowledge-ops agent wrote this to the backend-specialist's memory.
+
+In weeks 4-8, the same boundary's FPY rose to 96%. The backend-specialist stopped making the same mistake — not because it was told to in each task, but because the learning was embedded in its memory.
+
+```mermaid
+xychart-beta
+    title "Backend → Security Reviewer FPY (adaptation visible at week 4)"
+    x-axis ["Wk 1", "Wk 2", "Wk 3", "Wk 4", "Wk 5", "Wk 6", "Wk 7", "Wk 8"]
+    y-axis "FPY %" 60 --> 100
+    line [70, 72, 75, 88, 90, 94, 95, 96]
+```
+
+**What the human sees:** A clear inflection point at week 4 — the retro finding landed. If the FPY had not improved, the retro would flag that the refinement didn't work and propose a different approach.
+
+### Example 2: Fleet Learns to Estimate Better
+
+In early weeks, 15% of promoted items were abandoned or restarted — the fleet was over-committing to items that turned out larger or less valuable than expected. The grooming phase wasn't catching these issues.
+
+After repeated findings, the PO refined its grooming process: tighter acceptance criteria, better WSJF calibration, and a "re-evaluate at build start" gate (Phase 3). The task outcome metrics show the improvement:
+
+```mermaid
+xychart-beta
+    title "Task Abandonment + Restart Rate (fleet learns to estimate)"
+    x-axis ["Wk 1", "Wk 2", "Wk 3", "Wk 4", "Wk 5", "Wk 6", "Wk 7", "Wk 8"]
+    y-axis "% of Promoted Items" 0 --> 25
+    line [22, 18, 15, 12, 10, 8, 7, 6]
+```
+
+**What the human sees:** The fleet is wasting less effort over time. Items that get promoted are more likely to complete. This is the PO learning to groom better — a behavioral change driven by metrics feedback.
+
+### Example 3: Cost Efficiency Improves with Pace
+
+As the fleet progresses from Crawl to Walk, agent cost per item should decrease — agents need less guidance, make fewer mistakes, and use cheaper models for routine tasks. The CFO monitors this:
+
+```mermaid
+xychart-beta
+    title "Tokens Per Accepted Item (cost efficiency improves with pace)"
+    x-axis ["Wk 1", "Wk 2", "Wk 3", "Wk 4", "Wk 5", "Wk 6", "Wk 7", "Wk 8"]
+    y-axis "Tokens (thousands)" 80 --> 200
+    line [185, 170, 155, 140, 130, 125, 120, 118]
+```
+
+**What the human sees:** Early items cost ~185K tokens each (Crawl pace — lots of judgment calls, context enrichment, rework). By week 8, items cost ~118K tokens (Walk pace — agents have learned the patterns). The fleet is delivering more value per token.
+
+### Example 4: Rework Cycles Decrease After Refinement
+
+The rework cycle metric (average fix passes before acceptance) shows whether review feedback is getting cleaner:
+
+```mermaid
+xychart-beta
+    title "Rework Cycles Per Item (review quality improves)"
+    x-axis ["Wk 1", "Wk 2", "Wk 3", "Wk 4", "Wk 5", "Wk 6", "Wk 7", "Wk 8"]
+    y-axis "Avg Cycles" 0 --> 2
+    line [1.8, 1.5, 1.2, 0.8, 0.6, 0.4, 0.3, 0.3]
+```
+
+**What the human sees:** Items are passing review with fewer rounds of feedback. This means both builders (writing better code) and reviewers (giving clearer feedback) are adapting their behavior. By week 7-8, most items pass on the first attempt.
+
+### What to Look For
+
+When reviewing metrics for adaptation signals:
+
+| Signal          | Healthy Adaptation                 | Stalled Adaptation                                 |
+| --------------- | ---------------------------------- | -------------------------------------------------- |
+| FPY by boundary | Rising trend after retro findings  | Flat or declining after findings were distributed  |
+| Task outcomes   | Abandonment/restart rate declining | Persistent high rate despite grooming refinements  |
+| Cost per item   | Declining as pace increases        | Flat or rising — agents aren't learning efficiency |
+| Rework cycles   | Declining over time                | Persistent high rework despite review refinements  |
+| CFR             | Declining toward pace thresholds   | Oscillating without a clear downward trend         |
+
+**If adaptation stalls**, the retro should ask: Did the learning land in the right agent's memory? Was the refinement specific enough? Does the agent need retraining (COO assessment)? Is the finding recurrent because the root cause wasn't addressed?
+
 ## Extending with Custom Metrics
 
 ### Adding a New Event Type
