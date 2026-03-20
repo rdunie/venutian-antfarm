@@ -67,8 +67,12 @@ flowchart LR
         O(["Output\nAgents"])
     end
 
+    FLOOR[/"Compliance Floor\n(you define)"/]
+
     USER -->|"approvals +\noversight"| Gov
     USER -->|"evidence-based\noversight"| S
+    USER -.->|"defines"| FLOOR
+    Gov -->|"guards +\nchange control"| FLOOR
     Gov -->|"controls +\ncompliance"| S
     Gov -.->|"dispatch"| CA
     S -->|"context +\ncoaching"| E
@@ -80,6 +84,7 @@ flowchart LR
     R -.->|"corrections"| O
 
     style USER fill:#90caf9,stroke:#1565c0,color:#1a1a1a
+    style FLOOR fill:#bdbdbd,stroke:#424242,color:#1a1a1a
     style GOV fill:#ce93d8,stroke:#6a1b9a,color:#1a1a1a
     style S fill:#90caf9,stroke:#1565c0,color:#1a1a1a
     style MM fill:#90caf9,stroke:#1565c0,color:#1a1a1a
