@@ -212,6 +212,10 @@ Resolved decision records stored in `.claude/governance/decisions/<date>-<slug>.
 
 Learning distribution frequency is inversely proportional to delivery pace. Stability earns less disruption; complexity demands faster feedback.
 
+### Default Cadence
+
+These are the harness defaults. Implementers override by setting `knowledge.cadence` in `fleet-config.json`.
+
 | Pace  | Knowledge-Ops Cadence                                      | Rationale                                             |
 | ----- | ---------------------------------------------------------- | ----------------------------------------------------- |
 | Crawl | Every item — distribute learnings after each accepted item | Fleet is actively calibrating                         |
@@ -219,10 +223,28 @@ Learning distribution frequency is inversely proportional to delivery pace. Stab
 | Run   | Every 3-5 items — distribute only significant learnings    | Fleet is proven; don't change what works for outliers |
 | Fly   | On-demand or at retros only — minimal intervention         | High autonomy earned through stability                |
 
+### Implementer Override
+
+Add to `fleet-config.json`:
+
+```json
+"knowledge": {
+  "cadence": {
+    "crawl": 1,
+    "walk": 2,
+    "run": 4,
+    "fly": 0
+  },
+  "note": "Items between knowledge distributions per pace. 0 = on-demand/retro only. Harness defaults shown."
+}
+```
+
+Implementers adjust based on their domain. A high-risk compliance domain might use `{"crawl": 1, "walk": 1, "run": 2, "fly": 3}` (more frequent distribution at all paces). A stable maintenance project might use `{"crawl": 1, "walk": 3, "run": 5, "fly": 0}` (less frequent).
+
 ### Triggers
 
 - **Scheduled:** SM triggers knowledge distribution at the cadence above during Checkpoint (Phase 9)
-- **Exception-driven:** If SM detects a spike in findings, rework, or handoff rejections (regardless of pace), knowledge-ops is triggered immediately
+- **Exception-driven:** If SM detects a spike in findings, rework, or handoff rejections (regardless of pace), knowledge-ops is triggered immediately — cadence override does not suppress exception-driven distribution
 - **On-demand:** Any agent or user can request `/memory distribute` at any time
 
 The SM owns the trigger decision. Knowledge-ops executes under CKO direction.
