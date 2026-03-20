@@ -22,12 +22,20 @@
     "run_threshold_fpy": 80
   },
   "agents": {
-    "governance": ["compliance-officer", "ciso"],
+    "governance": [
+      "compliance-officer",
+      "ciso",
+      "ceo",
+      "cto",
+      "cfo",
+      "coo",
+      "cko"
+    ],
     "core": [
       "product-owner",
       "solution-architect",
       "scrum-master",
-      "memory-manager",
+      "knowledge-ops",
       "platform-ops"
     ],
     "specialists": [],
@@ -37,6 +45,15 @@
   "retro": {
     "cadence": 1,
     "note": "Number of items between retros. 1 = retro after every item."
+  },
+  "knowledge": {
+    "cadence": {
+      "crawl": 1,
+      "walk": 2,
+      "run": 4,
+      "fly": 0
+    },
+    "note": "Items between knowledge distributions per pace. 0 = on-demand/retro only."
   },
   "pathways": {
     "declared": {
@@ -60,7 +77,12 @@
       "governance": [
         "ciso -> compliance-officer",
         "compliance-officer -> compliance-auditor",
-        "* -> compliance-officer"
+        "* -> compliance-officer",
+        "cko -> knowledge-ops",
+        "cto -> solution-architect",
+        "cfo -> platform-ops",
+        "coo -> scrum-master",
+        "* -> ceo"
       ]
     },
     "note": "Declared pathways define expected agent-to-agent communication routes. Actual pathways are inferred from handoff events. The delta between declared and actual is the signal: undeclared paths may indicate innovation or governance bypass."
