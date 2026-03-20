@@ -2,17 +2,17 @@
 
 ## Overview
 
-Update all framework documentation and diagrams to reflect the current state: 13 core agents (7 governance + 6 operational), knowledge-ops (renamed from memory-manager), governance tier, PR branching strategy, compliance hierarchy, and all new skills. Introduce a layered diagram approach with consistent tier-based color coding.
+Update all framework documentation and diagrams to reflect the current state: 13 core agents (7 governance + 6 operational), knowledge-ops (renamed from memory-manager), governance tier, compliance hierarchy, and all new skills. Introduce a layered diagram approach with consistent tier-based color coding.
 
 ## Stale Files
 
-| File                          | What's Stale                                                           | Severity |
-| ----------------------------- | ---------------------------------------------------------------------- | -------- |
-| `docs/GETTING-STARTED.md`     | "6 core agents"                                                        | HIGH     |
-| `docs/COLLABORATION-MODEL.md` | "memory-manager" in Mermaid diagrams + text, missing governance tier   | HIGH     |
-| `docs/AGENT-FLEET-PATTERN.md` | No mention of governance tier or Cx model                              | MEDIUM   |
-| `example/README.md`           | "6 core agents"                                                        | HIGH     |
-| `example/fleet-config.json`   | "memory-manager", missing governance roster/pathways/knowledge cadence | HIGH     |
+| File                          | What's Stale                                                                              | Severity |
+| ----------------------------- | ----------------------------------------------------------------------------------------- | -------- |
+| `docs/GETTING-STARTED.md`     | "6 core agents"                                                                           | HIGH     |
+| `docs/COLLABORATION-MODEL.md` | "memory-manager" in Mermaid diagrams + text, missing governance tier                      | HIGH     |
+| `docs/AGENT-FLEET-PATTERN.md` | "Memory Manager" in diagrams + worked example, missing governance tier, stale agent count | HIGH     |
+| `example/README.md`           | "6 core agents"                                                                           | HIGH     |
+| `example/fleet-config.json`   | "memory-manager", missing governance roster/pathways/knowledge cadence                    | HIGH     |
 
 ## What We Leave Alone
 
@@ -22,14 +22,16 @@ Update all framework documentation and diagrams to reflect the current state: 13
 
 Every diagram across the framework uses tier-based colors for architecture visualization:
 
-| Color  | Meaning              | Used For                                 | Fill      | Stroke    |
-| ------ | -------------------- | ---------------------------------------- | --------- | --------- |
-| Purple | Governance           | CO, CISO, CEO, CTO, CFO, COO, CKO        | `#ce93d8` | `#6a1b9a` |
-| Blue   | Strategic/Leadership | PO, SA, SM, User                         | `#90caf9` | `#1565c0` |
-| Green  | Execution/Build      | Specialists, knowledge-ops, platform-ops | `#a5d6a7` | `#2e7d32` |
-| Red    | Review/Compliance    | Compliance-auditor, security-reviewer    | `#ef9a9a` | `#b71c1c` |
-| Orange | Output               | Output agents, deploy artifacts          | `#ffcc80` | `#e65100` |
-| Gray   | Infrastructure       | Config files, metrics, governance files  | `#bdbdbd` | `#424242` |
+This replaces the existing 5-color semantic palette in `.claude/DOCUMENTATION-STYLE.md` with a 6-color tier-based system:
+
+| Color  | Tier              | Used For                                      | Fill      | Stroke    |
+| ------ | ----------------- | --------------------------------------------- | --------- | --------- |
+| Purple | Governance        | CO, CISO, CEO, CTO, CFO, COO, CKO             | `#ce93d8` | `#6a1b9a` |
+| Blue   | Harness (core)    | PO, SA, SM, knowledge-ops, platform-ops, User | `#90caf9` | `#1565c0` |
+| Red    | Review/Compliance | Compliance-auditor, security-reviewer         | `#ef9a9a` | `#b71c1c` |
+| Green  | Execution/Build   | App-defined specialists                       | `#a5d6a7` | `#2e7d32` |
+| Orange | Output            | Output agents, deploy artifacts               | `#ffcc80` | `#e65100` |
+| Gray   | Infrastructure    | Config files, metrics, governance files       | `#bdbdbd` | `#424242` |
 
 ### Color System vs Agent Identity Colors
 
@@ -116,18 +118,21 @@ Update existing flow diagrams:
 
 ### docs/COLLABORATION-MODEL.md
 
-- Replace all "memory-manager" references with "knowledge-ops"
+- Replace all "memory-manager" references with "knowledge-ops" (diagrams and text)
 - Redesign the overview diagram using the layered approach
-- Add the three tier detail diagrams
+- Add the three tier detail diagrams (governance, leadership+operational, bridge)
 - Update existing flow diagrams for knowledge-ops rename
 - Add orienting text before each diagram
 - Apply consistent tier color coding
+- Add a table of contents at the top of the file for navigation (the file will have 17+ diagrams)
 
 ### docs/AGENT-FLEET-PATTERN.md
 
+- Rename "Memory Manager" → "Knowledge Ops" in all Mermaid diagrams and the worked example table
 - Add a "Governance Tier" section describing the Cx model
 - Reference the governance layer design for full detail
-- Update agent counts in the pattern description
+- Update agent counts throughout (e.g., "Core agent definitions (6 files)" → 13)
+- Update diagram color coding to match the tier color system
 
 ### example/README.md
 
@@ -143,6 +148,6 @@ Update existing flow diagrams:
 
 ### .claude/DOCUMENTATION-STYLE.md
 
-- Add the color system table
+- Replace the existing 5-color semantic palette with the 6-color tier-based system
 - Document the distinction between tier colors (diagrams) and identity colors (agent frontmatter)
 - Add the orienting text pattern guidance
