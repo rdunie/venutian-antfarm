@@ -18,6 +18,43 @@ Every time an agent hands work to another agent, a `handoff-sent` event is logge
 
 This is analogous to network flow analysis in security: you declare expected traffic patterns and flag deviations.
 
+The following diagram illustrates the concept. The left side shows what you designed (declared pathways). The right side shows what actually happened. The delta -- the undeclared path from Backend to Frontend -- is the signal.
+
+```mermaid
+flowchart LR
+    subgraph Declared ["Declared (designed)"]
+        direction TB
+        D_PO(["PO"]) -->|"dispatch"| D_BE["Backend"]
+        D_PO -->|"dispatch"| D_FE["Frontend"]
+        D_BE -->|"review"| D_SR["Security\nReviewer"]
+        D_FE -->|"review"| D_UX["UX\nReviewer"]
+        D_SR -->|"accept"| D_PO
+        D_UX -->|"accept"| D_PO
+    end
+
+    subgraph Actual ["Actual (observed)"]
+        direction TB
+        A_PO(["PO"]) -->|"dispatch"| A_BE["Backend"]
+        A_PO -->|"dispatch"| A_FE["Frontend"]
+        A_BE -->|"review"| A_SR["Security\nReviewer"]
+        A_FE -->|"review"| A_UX["UX\nReviewer"]
+        A_SR -->|"accept"| A_PO
+        A_UX -->|"accept"| A_PO
+        A_BE -.->|"undeclared!"| A_FE
+    end
+
+    style D_PO fill:#90caf9,stroke:#1565c0,color:#1a1a1a
+    style D_BE fill:#a5d6a7,stroke:#2e7d32,color:#1a1a1a
+    style D_FE fill:#a5d6a7,stroke:#2e7d32,color:#1a1a1a
+    style D_SR fill:#ef9a9a,stroke:#b71c1c,color:#1a1a1a
+    style D_UX fill:#ef9a9a,stroke:#b71c1c,color:#1a1a1a
+    style A_PO fill:#90caf9,stroke:#1565c0,color:#1a1a1a
+    style A_BE fill:#a5d6a7,stroke:#2e7d32,color:#1a1a1a
+    style A_FE fill:#a5d6a7,stroke:#2e7d32,color:#1a1a1a
+    style A_SR fill:#ef9a9a,stroke:#b71c1c,color:#1a1a1a
+    style A_UX fill:#ef9a9a,stroke:#b71c1c,color:#1a1a1a
+```
+
 ## Why It Matters
 
 Without pathway analysis, you have no visibility into how the fleet's communication topology is evolving. Over time:
@@ -28,6 +65,53 @@ Without pathway analysis, you have no visibility into how the fleet's communicat
 - The fleet may silently reorganize itself in ways that undermine governance
 
 Pathway analysis makes the invisible visible. It turns agent-to-agent communication into an observable, measurable, and governable system property.
+
+A healthy fleet has structured communication channels where specialists send to reviewers, reviewers flow back to the PO, and governance sits above setting standards:
+
+```mermaid
+flowchart TD
+    subgraph Gov ["Governance"]
+        CO["CO"]
+        CISO["CISO"]
+    end
+
+    PO(["PO"])
+
+    subgraph Build ["Build"]
+        BE["Backend"]
+        FE["Frontend"]
+        INFRA["Infra"]
+    end
+
+    subgraph Review ["Review"]
+        SR["Security"]
+        CA["Compliance"]
+        UX["UX"]
+    end
+
+    Gov -.->|"standards"| PO
+    PO -->|"dispatch"| BE
+    PO -->|"dispatch"| FE
+    PO -->|"dispatch"| INFRA
+    BE --> SR
+    BE --> CA
+    FE --> UX
+    FE --> CA
+    INFRA --> SR
+    SR -->|"findings"| PO
+    CA -->|"findings"| PO
+    UX -->|"findings"| PO
+
+    style CO fill:#ce93d8,stroke:#6a1b9a,color:#1a1a1a
+    style CISO fill:#ce93d8,stroke:#6a1b9a,color:#1a1a1a
+    style PO fill:#90caf9,stroke:#1565c0,color:#1a1a1a
+    style BE fill:#a5d6a7,stroke:#2e7d32,color:#1a1a1a
+    style FE fill:#a5d6a7,stroke:#2e7d32,color:#1a1a1a
+    style INFRA fill:#a5d6a7,stroke:#2e7d32,color:#1a1a1a
+    style SR fill:#ef9a9a,stroke:#b71c1c,color:#1a1a1a
+    style CA fill:#ef9a9a,stroke:#b71c1c,color:#1a1a1a
+    style UX fill:#ef9a9a,stroke:#b71c1c,color:#1a1a1a
+```
 
 ## Declaring Pathways
 
@@ -213,6 +297,27 @@ Unused paths mean the designed workflow hasn't been triggered. Ask:
 - Has this workflow been superseded? (Maybe the CTO coaches the SA directly without a formal handoff.)
 - Is the fleet too young? (New agents may not have had opportunities to use all pathways yet.)
 
+The following diagram illustrates a governance bypass -- the specialist hands directly to another specialist, skipping the security reviewer. The dashed red line is the undeclared path that pathway analysis would flag.
+
+```mermaid
+flowchart TD
+    PO(["PO"])
+    BE["Backend"]
+    FE["Frontend"]
+    SR["Security\nReviewer"]
+
+    PO -->|"dispatch"| BE
+    PO -->|"dispatch"| FE
+    BE -->|"declared"| SR
+    SR -->|"findings"| PO
+    BE -.->|"⚠ undeclared\nbypasses review!"| FE
+
+    style PO fill:#90caf9,stroke:#1565c0,color:#1a1a1a
+    style BE fill:#a5d6a7,stroke:#2e7d32,color:#1a1a1a
+    style FE fill:#a5d6a7,stroke:#2e7d32,color:#1a1a1a
+    style SR fill:#ef9a9a,stroke:#b71c1c,color:#1a1a1a
+```
+
 ### Section 4: Fleet Density
 
 ```
@@ -234,6 +339,44 @@ Unused paths mean the designed workflow hasn't been triggered. Ask:
 | > 70%                  | **Warning: coordination overhead.** Almost every agent talks to every other agent. This suggests weak boundaries or agents reaching outside their domain too often. |
 
 Density should **decrease** as the fleet matures. Mature fleets have well-established pathways and don't need ad-hoc communication. Rising density at high pace is a process smell.
+
+The following diagrams compare low density (structured, clean) vs high density (everything talks to everything):
+
+```mermaid
+flowchart LR
+    subgraph Low ["Low Density (healthy)"]
+        direction TB
+        L_A["A"] --> L_B["B"]
+        L_A --> L_C["C"]
+        L_B --> L_D["D"]
+        L_C --> L_D
+    end
+
+    subgraph High ["High Density (warning)"]
+        direction TB
+        H_A["A"] --> H_B["B"]
+        H_A --> H_C["C"]
+        H_A --> H_D["D"]
+        H_B --> H_A
+        H_B --> H_C
+        H_B --> H_D
+        H_C --> H_A
+        H_C --> H_B
+        H_C --> H_D
+        H_D --> H_A
+        H_D --> H_B
+        H_D --> H_C
+    end
+
+    style L_A fill:#a5d6a7,stroke:#2e7d32,color:#1a1a1a
+    style L_B fill:#a5d6a7,stroke:#2e7d32,color:#1a1a1a
+    style L_C fill:#a5d6a7,stroke:#2e7d32,color:#1a1a1a
+    style L_D fill:#a5d6a7,stroke:#2e7d32,color:#1a1a1a
+    style H_A fill:#ef9a9a,stroke:#b71c1c,color:#1a1a1a
+    style H_B fill:#ef9a9a,stroke:#b71c1c,color:#1a1a1a
+    style H_C fill:#ef9a9a,stroke:#b71c1c,color:#1a1a1a
+    style H_D fill:#ef9a9a,stroke:#b71c1c,color:#1a1a1a
+```
 
 ### Section 5: Top Communicators
 
@@ -267,6 +410,36 @@ Density should **decrease** as the fleet matures. Mature fleets have well-establ
 - **An agent with high sent AND high received** — may be a bottleneck or coordination hub. This is expected for the PO but concerning for a specialist.
 - **An agent with 0 sent and 0 received** — not participating in handoffs. Either the agent isn't being dispatched or it's working in isolation (which violates the handoff protocol).
 - **Extreme imbalance** (one agent has 80% of total) — the fleet may be over-relying on one agent. Consider whether work distribution is healthy.
+
+The following diagram illustrates a bottleneck pattern -- one agent (the backend-specialist) is on every critical path. All arrows converge through it, making it a single point of failure for fleet throughput.
+
+```mermaid
+flowchart TD
+    PO(["PO"])
+    BE["⚠ Backend\n(bottleneck)"]
+    FE["Frontend"]
+    INFRA["Infra"]
+    SR["Security"]
+    CA["Compliance"]
+
+    PO --> BE
+    FE -->|"API questions"| BE
+    INFRA -->|"config"| BE
+    BE --> SR
+    BE --> CA
+    BE -->|"contracts"| FE
+    SR --> PO
+    CA --> PO
+
+    style PO fill:#90caf9,stroke:#1565c0,color:#1a1a1a
+    style BE fill:#ffcc80,stroke:#e65100,color:#1a1a1a
+    style FE fill:#a5d6a7,stroke:#2e7d32,color:#1a1a1a
+    style INFRA fill:#a5d6a7,stroke:#2e7d32,color:#1a1a1a
+    style SR fill:#ef9a9a,stroke:#b71c1c,color:#1a1a1a
+    style CA fill:#ef9a9a,stroke:#b71c1c,color:#1a1a1a
+```
+
+In the Top Communicators table, this bottleneck would show as the backend-specialist having both the highest "Sent" and significant "Received" counts -- every path goes through it. The fix is to distribute responsibilities: split the backend domain into sub-domains, add a second specialist, or reduce cross-domain dependencies.
 
 ## Using Pathway Analysis in Retros
 
