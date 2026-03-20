@@ -188,7 +188,9 @@ $ ops/metrics-log.sh bug-found 42 --severity high --source regression
 $ ops/metrics-log.sh agent-invoked product-owner --tokens 45800 --turns 10 --model opus --item 42
 ```
 
-#### Example: `ops/dora.sh`
+> **Note:** The following dashboard examples use simulated data for illustrative purposes. Real-world validation is underway. The data represents a realistic mature fleet to demonstrate what the output looks like and how to interpret it.
+
+#### Example: `ops/dora.sh` _(simulated)_
 
 ```
 ================================================================
@@ -234,7 +236,7 @@ $ ops/metrics-log.sh agent-invoked product-owner --tokens 45800 --turns 10 --mod
     Average  0.25 sessions/item
 ```
 
-#### Example: `ops/dora.sh --sm`
+#### Example: `ops/dora.sh --sm` _(simulated)_
 
 ```
 ================================================================
@@ -253,7 +255,7 @@ $ ops/metrics-log.sh agent-invoked product-owner --tokens 45800 --turns 10 --mod
   Recommendation: Advance to Run
 ```
 
-#### Example: `ops/dora.sh --cost`
+#### Example: `ops/dora.sh --cost` _(simulated)_
 
 ```
 ================================================================
@@ -270,7 +272,7 @@ $ ops/metrics-log.sh agent-invoked product-owner --tokens 45800 --turns 10 --mod
     haiku: 5 calls, 28700 tokens
 ```
 
-#### Example: `ops/pathways.sh`
+#### Example: `ops/pathways.sh` _(simulated)_
 
 ```
 ╔══════════════════════════════════════════════════════════════╗

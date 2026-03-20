@@ -460,7 +460,9 @@ The CO and COO use pathway analysis to verify governance integrity:
 - **COO checks** that operational patterns match the designed process. If agents are finding shortcuts around the standard lifecycle, the COO evaluates whether the process needs adjustment or the agents need coaching.
 - **SM checks** that escalation paths are used appropriately — escalations should be rare at high pace. Frequent escalation at Run/Fly pace suggests the fleet isn't as autonomous as the pace implies.
 
-## Example: Reading a Pathway Report
+## Example: Reading a Pathway Report _(simulated)_
+
+> **Note:** This example uses simulated data for illustrative purposes. Real-world validation is underway.
 
 Here is a complete pathway report with analysis annotations:
 

@@ -147,9 +147,11 @@ ops/pathways.sh --since 7d   # Scoped to recent window
 
 ## Example Output: Mature Application
 
+> **Note:** All examples in this section use simulated data for illustrative purposes. Real-world validation is underway. The data represents realistic fleet behavior to demonstrate what the output looks like, how to interpret it, and how agent adaptation manifests in the metrics.
+
 The following examples show realistic output from a fleet that has delivered 47 items over 14 days with 5 specialist agents.
 
-### `ops/dora.sh`
+### `ops/dora.sh` _(simulated)_
 
 ```
 ================================================================
@@ -248,7 +250,7 @@ pie title Task Outcomes (47 items)
     "Restarted" : 3
 ```
 
-### `ops/dora.sh --sm`
+### `ops/dora.sh --sm` _(simulated)_
 
 ```
 ================================================================
@@ -267,7 +269,7 @@ pie title Task Outcomes (47 items)
   Recommendation: Advance to Run
 ```
 
-### `ops/dora.sh --cost`
+### `ops/dora.sh --cost` _(simulated)_
 
 ```
 ================================================================
@@ -304,7 +306,7 @@ pie title Invocations by Model
     "Haiku (25)" : 25
 ```
 
-### `ops/dora.sh --item 42`
+### `ops/dora.sh --item 42` _(simulated)_
 
 ```
 ================================================================
@@ -323,7 +325,7 @@ pie title Invocations by Model
     security-reviewer rejected backend-specialist (missing CSRF token)
 ```
 
-### `ops/pathways.sh`
+### `ops/pathways.sh` _(simulated)_
 
 ```
 ╔══════════════════════════════════════════════════════════════╗
@@ -399,7 +401,7 @@ xychart-beta
 
 The most valuable use of metrics is not measuring what happened — it is observing agents **changing their behavior** over time. The structured learning loop (findings → curation → refinement → distribution) compounds, and the metrics show you where and how.
 
-### Example 1: Backend Specialist Learns Input Validation
+### Example 1: Backend Specialist Learns Input Validation _(simulated)_
 
 In days 1-5, the security-reviewer repeatedly rejected the backend-specialist's handoffs for missing input validation. The FPY for this boundary was 72%.
 
@@ -417,7 +419,7 @@ xychart-beta
 
 **What the human sees:** A clear inflection point at day 6 — the retro finding landed. If the FPY had not improved, the next retro would flag that the refinement didn't work and propose a different approach.
 
-### Example 2: Fleet Learns to Estimate Better
+### Example 2: Fleet Learns to Estimate Better _(simulated)_
 
 In the first few days, 15% of promoted items were abandoned or restarted — the fleet was over-committing to items that turned out larger or less valuable than expected. The grooming phase wasn't catching these issues.
 
@@ -433,7 +435,7 @@ xychart-beta
 
 **What the human sees:** The fleet is wasting less effort over time. Items that get promoted are more likely to complete. This is the PO learning to groom better — a behavioral change driven by metrics feedback.
 
-### Example 3: Cost Efficiency Improves with Pace
+### Example 3: Cost Efficiency Improves with Pace _(simulated)_
 
 As the fleet progresses from Crawl to Walk, agent cost per item should decrease — agents need less guidance, make fewer mistakes, and use cheaper models for routine tasks. The CFO monitors this:
 
@@ -447,7 +449,7 @@ xychart-beta
 
 **What the human sees:** Early items cost ~185K tokens each (Crawl pace — lots of judgment calls, context enrichment, rework). By day 14, items cost ~118K tokens (Walk pace — agents have learned the patterns). The fleet is delivering more value per token.
 
-### Example 4: Rework Cycles Decrease After Refinement
+### Example 4: Rework Cycles Decrease After Refinement _(simulated)_
 
 The rework cycle metric (average fix passes before acceptance) shows whether review feedback is getting cleaner:
 
@@ -461,7 +463,7 @@ xychart-beta
 
 **What the human sees:** Items are passing review with fewer rounds of feedback. This means both builders (writing better code) and reviewers (giving clearer feedback) are adapting their behavior. By day 12-14, most items pass on the first attempt.
 
-### Example 5: Fleet Responds to a Regression
+### Example 5: Fleet Responds to a Regression _(simulated)_
 
 On day 8, a deployment introduced a regression — an authentication bypass that the security-reviewer missed during review. The CFR spiked from 5% to 12%, crossing back above the Walk threshold.
 
@@ -485,7 +487,7 @@ xychart-beta
 
 **What the human sees:** A spike, a fast recovery, and a learning loop that prevents recurrence. The SM recommended remaining at Walk pace (not demoting to Crawl) because the recovery was fast and the root cause was addressed — one incident with a clear fix is not a systemic problem.
 
-### Example 6: Fleet Detects and Resolves a Bottleneck
+### Example 6: Fleet Detects and Resolves a Bottleneck _(simulated)_
 
 Around day 6, the pathway analysis reveals that the backend-specialist's handoff volume is growing disproportionately — it's on every critical path:
 
