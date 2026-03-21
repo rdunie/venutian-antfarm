@@ -14,6 +14,17 @@ Keep it to 3-5 rules. Each rule should be:
 
 1. **No hardcoded secrets.** All credentials, API keys, and tokens must be managed through environment variables or a secrets manager. Never committed to version control.
 
+```enforcement
+version: 1
+id: no-hardcoded-secrets
+severity: blocking
+enforce:
+  pre-tool-use:
+    type: file-pattern
+    patterns: ['\.env$', 'secrets?\.yaml$', '\.pem$', '\.key$']
+    action: block
+```
+
 2. **Authentication on every endpoint.** No API endpoint is accessible without authentication. No anonymous access to data-modifying operations.
 
 3. **All data changes are auditable.** Every create, update, and delete operation must produce an audit trail (who, what, when, from where).
@@ -24,24 +35,18 @@ Keep it to 3-5 rules. Each rule should be:
 
 ## Enforcement
 
-Where possible, enforce compliance floor rules through hooks in `.claude/settings.json`:
+Rules with an `enforcement` block are processed by the compliance floor compiler (`ops/compile-floor.sh`). The compiler:
 
-```json
-{
-  "hooks": {
-    "PreToolUse": [
-      {
-        "matcher": "Edit|Write",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "echo \"$CLAUDE_FILE_PATH\" | grep -qE '(\\.env|secrets?\\.yaml)$' && echo 'BLOCKED: Cannot edit sensitive file' && exit 2 || exit 0"
-          }
-        ]
-      }
-    ]
-  }
-}
+1. **Extracts** each `enforcement` block and validates its schema (version, id, severity, enforce points).
+2. **Generates** `enforce.sh` — a standalone hook script with deterministic file-pattern checks for all rules that declare `pre-tool-use` or `post-tool-use` enforcement.
+3. **Writes** a `manifest.sha256` linking the source floor to generated artifacts (tamper-evident).
+4. **Reports** coverage — which rules are enforced mechanically vs. judgment-only.
+
+Run the compiler after every compliance change:
+
+```bash
+ops/compile-floor.sh --dry-run compliance-floor.md     # preview, no writes
+ops/compile-floor.sh --proposal <id> compliance-floor.md .claude/compliance/artifacts/
 ```
 
-Hook enforcement is deterministic and zero-cost (no LLM tokens). Use it for rules that can be checked with simple file/pattern matching. Use agent memory and review processes for rules that require judgment.
+Rules without an `enforcement` block are judgment-only: agents and reviewers are responsible for verifying conformance. Add enforcement blocks incrementally as your rules mature.
