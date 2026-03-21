@@ -104,9 +104,10 @@ The minimum useful setup. One generalist specialist (`developer`), three complia
 
 **developer.md:**
 
-- Extends `harness/backend-specialist`
+- Fully self-contained (no `extends:`) — this is the first example, so we avoid teaching inheritance before the adopter understands what they'd inherit
 - General-purpose: handles all implementation, tests, build, deploy
 - Compliance awareness mirrors the floor
+- Example 02 introduces `extends:` as a new concept
 
 **ops/deploy.sh:**
 
@@ -136,11 +137,34 @@ No content changes from the existing `example/` — this is a relocation.
 
 A SaaS platform with frontend, backend, and a security reviewer who gates deployments. Introduces the review tier, cross-specialist pathways, and compliance rules that mandate agent involvement.
 
-**fleet-config.json differences from 02:**
+**fleet-config.json** (key sections showing new structures):
 
-- Agents: adds `security-reviewer` to reviewers
-- Pathways: cross-specialist (`frontend <-> backend`), review tier (`specialists -> security-reviewer -> specialists`)
-- Deploy: three environments (`dev`, `staging`, `prod`)
+```json
+{
+  "agents": {
+    "specialists": ["frontend-specialist", "backend-specialist"],
+    "reviewers": ["security-reviewer"]
+  },
+  "pathways": {
+    "declared": {
+      "build": [
+        "product-owner -> frontend-specialist",
+        "product-owner -> backend-specialist",
+        "frontend-specialist -> backend-specialist",
+        "backend-specialist -> frontend-specialist"
+      ],
+      "review": [
+        "frontend-specialist -> security-reviewer",
+        "backend-specialist -> security-reviewer",
+        "security-reviewer -> frontend-specialist",
+        "security-reviewer -> backend-specialist"
+      ]
+    }
+  }
+}
+```
+
+The `reviewers` array is a peer to `specialists` in the agents block. Review pathways are declared separately from build pathways, making the gating relationship explicit. Deploy: three environments (`dev`, `staging`, `prod`).
 
 **compliance-floor.md** (4 rules):
 
@@ -189,7 +213,8 @@ A healthcare data platform under HIPAA. The thickest compliance floor in the ser
 
 **setup.sh:**
 
-- Seeds a sample compliance proposal (`001-add-analytics.md`) showing a backend-specialist proposing PostHog integration with compliance impact analysis
+- Seeds a sample compliance proposal at `.claude/compliance/proposals/001-add-analytics.md` following the existing proposal format (proposed by, status, change description, compliance impact, recommendation)
+- Shows a backend-specialist proposing PostHog integration with compliance impact analysis
 - Gives the user an in-flight proposal to interact with immediately
 
 **What this teaches beyond 03:**
@@ -265,10 +290,13 @@ ops/test-example.sh --cleanup <example-name> # Remove test environment
 4. Copies harness infrastructure into the worktree:
    - `.claude/agents/*.md` (core agent definitions)
    - `.claude/COLLABORATION.md`, `.claude/DOCUMENTATION-STYLE.md`
+   - `.claude/settings.json` (hook configuration — needed for compliance enforcement)
    - `.claude/skills/`, `.claude/governance/`, `.claude/compliance/`, `.claude/findings/`
+   - `.mcp.json` (MCP server configuration)
    - `ops/` (then overwritten by example's `ops/deploy.sh` if present)
    - `templates/`
-5. Applies overrides: copies `.claude/overrides/*.md` into `.claude/agents/`
+   - `memory/` is **not** copied — worktrees start with a clean slate so testing is not influenced by framework-level memories
+5. Applies overrides: copies `.claude/overrides/*.md` into `.claude/agents/`, replacing the harness file. This is intentional — override files contain `extends:` frontmatter, so the framework's runtime inheritance mechanism handles merging at agent load time. The file copy is the delivery mechanism; the frontmatter is the merge mechanism.
 6. Runs `setup.sh` if present in the example
 7. Prints instructions with path, first command to try, and cleanup command
 
@@ -278,11 +306,34 @@ ops/test-example.sh --cleanup <example-name> # Remove test environment
 2. Removes the worktree and deletes the temporary branch
 3. Confirms cleanup
 
+### Validation
+
+The test script succeeds when:
+
+- Worktree directory exists at the expected path
+- `fleet-config.json` is at the worktree root
+- `.claude/agents/` contains both core and example specialist agents
+- `ops/dora.sh` runs without error (exit 0)
+- If `setup.sh` ran, its seeded artifacts exist (e.g., metrics events, compliance proposals)
+
 ### Edge Cases
 
 - Existing worktree for same example: warns, offers cleanup first
 - `setup.sh` failure: warns but does not abort — example is usable without seeded state
 - Framework repo working tree: never modified
+
+## `examples/README.md` Content
+
+The index file contains:
+
+- **Which example should I start with?** Decision guide: "If this is your first time, start with 01. If you're setting up a regulated project, look at 04 first for compliance patterns."
+- **Progression table** (same as the one in this spec)
+- **How to test any example:** `ops/test-example.sh <name>`, what to try, how to clean up
+- **One-line description** of each example linking to its README
+
+## Prerequisites
+
+Before implementing, fix the existing bug in `templates/agents/frontend-specialist.md` where line 3 has `extends: harness/platform-ops` — this should not be there (a frontend specialist template should not extend platform-ops). This affects examples 02, 03, and 05 which all include frontend specialists extending this template.
 
 ## Migration
 
