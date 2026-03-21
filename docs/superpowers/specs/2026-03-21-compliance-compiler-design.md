@@ -33,46 +33,80 @@ Each rule in `compliance-floor.md` retains its human-readable prose and gains a 
    managed through environment variables or a secrets manager.
 
 ```enforcement
+version: 1
 id: no-hardcoded-secrets
 severity: blocking
 enforce:
-  pre-tool:
+  pre-tool-use:
     type: file-pattern
     patterns: ['\.env$', '\.pem$', '\.key$', 'secrets?\.yaml$']
     action: block
-  post-commit:
+  post-tool-use:
     type: semgrep
     rule-id: no-hardcoded-secrets
+    rule-path: .claude/compliance/semgrep/no-hardcoded-secrets.yaml
 ```
 ````
 
+Each enforcement block MUST appear immediately after its parent rule's prose paragraph. The compiler associates blocks to rules by document order — the Nth enforcement block belongs to the Nth rule. Only one enforcement block per rule.
+
 ### Field Definitions
 
-| Field                      | Required    | Description                                                                     |
-| -------------------------- | ----------- | ------------------------------------------------------------------------------- |
-| `id`                       | Yes         | Unique identifier, used to correlate across compiled artifacts                  |
-| `severity`                 | Yes         | `blocking` (stops work) or `warning` (flags for review)                         |
-| `enforce`                  | Yes         | Map of enforcement points, each declaring its check type                        |
-| `enforce.<point>.type`     | Yes         | One of: `file-pattern`, `content-pattern`, `semgrep`, `eslint`, `custom-script` |
-| `enforce.<point>.action`   | No          | `block` (exit 2, default) or `warn` (print warning, exit 0)                     |
-| `enforce.<point>.patterns` | Conditional | Required for `file-pattern` and `content-pattern` types                         |
-| `enforce.<point>.rule-id`  | Conditional | Required for `semgrep` and `eslint` types — references an existing rule file    |
-| `enforce.<point>.script`   | Conditional | Required for `custom-script` type — path to validation script                   |
+| Field                       | Required    | Description                                                                                                                                                                                               |
+| --------------------------- | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `version`                   | Yes         | DSL version (currently `1`). Enables future migration.                                                                                                                                                    |
+| `id`                        | Yes         | Unique identifier, used to correlate across compiled artifacts                                                                                                                                            |
+| `severity`                  | Yes         | `blocking` (stops work) or `warning` (flags for review)                                                                                                                                                   |
+| `enforce`                   | Yes         | Map of enforcement points, each declaring its check type                                                                                                                                                  |
+| `enforce.<point>.type`      | Yes         | One of: `file-pattern`, `content-pattern`, `semgrep`, `eslint`, `custom-script`                                                                                                                           |
+| `enforce.<point>.action`    | No          | Defaults to match `severity`: blocking → `block` (exit 2), warning → `warn` (exit 0). Can be overridden, but `warn` + `blocking` severity and `block` + `warning` severity are rejected as contradictory. |
+| `enforce.<point>.patterns`  | Conditional | Required for `file-pattern` and `content-pattern` types                                                                                                                                                   |
+| `enforce.<point>.rule-id`   | Conditional | Required for `semgrep` and `eslint` types — unique rule identifier                                                                                                                                        |
+| `enforce.<point>.rule-path` | Conditional | Required for `semgrep` and `eslint` types — path to existing rule file. Compiler validates path exists.                                                                                                   |
+| `enforce.<point>.script`    | Conditional | Required for `custom-script` type — path to validation script. See Custom Script Constraints.                                                                                                             |
+
+### Enforcement Points
+
+Enforcement points map to specific mechanisms. The names are explicit to avoid ambiguity:
+
+| Enforcement point | Mechanism                    | When it fires                           |
+| ----------------- | ---------------------------- | --------------------------------------- |
+| `pre-tool-use`    | Claude Code PreToolUse hook  | Before an Edit/Write tool call executes |
+| `post-tool-use`   | Claude Code PostToolUse hook | After an Edit/Write tool call completes |
+| `ci`              | CI pipeline job              | On every PR, outside Claude Code        |
+
+Note: There are no git-level hooks (pre-commit, post-commit). All real-time enforcement uses Claude Code's hook system. CI is the only enforcement that runs outside Claude Code.
 
 ### Check Types
 
-| Type              | What it does                | Valid enforcement points  |
-| ----------------- | --------------------------- | ------------------------- |
-| `file-pattern`    | Regex match on file path    | `pre-tool`                |
-| `content-pattern` | Regex match on file content | `pre-tool`, `post-commit` |
-| `semgrep`         | AST-level code analysis     | `post-commit`, `ci`       |
-| `eslint`          | JS/TS linting rule          | `post-commit`, `ci`       |
-| `custom-script`   | Runs a user-provided script | any                       |
+| Type              | What it does                | Valid enforcement points        |
+| ----------------- | --------------------------- | ------------------------------- |
+| `file-pattern`    | Regex match on file path    | `pre-tool-use`                  |
+| `content-pattern` | Regex match on file content | `pre-tool-use`, `post-tool-use` |
+| `semgrep`         | AST-level code analysis     | `post-tool-use`, `ci`           |
+| `eslint`          | JS/TS linting rule          | `post-tool-use`, `ci`           |
+| `custom-script`   | Runs a user-provided script | any                             |
+
+### Custom Script Constraints
+
+Custom scripts referenced by `enforce.<point>.script` must:
+
+- Exit 0 (pass), 1 (warn — prompt user), or 2 (block)
+- Complete within 10 seconds (compiler generates a `timeout 10` wrapper)
+- Not access the network (the compiler wraps with `unshare --net` where available, falls back to documentation warning)
+- Live within the repository (no absolute paths outside the repo root)
+- Be listed in the compliance surface area (Section 6) so edits to them trigger intent declaration
+
+The compiler validates that referenced script paths exist and are executable.
 
 ### Validation Constraints
 
-- Every rule MUST have at least one real-time enforcement point (`pre-tool` or `post-commit`). Rules that only declare `ci` are rejected by the compiler.
+- Every rule MUST have at least one real-time enforcement point (`pre-tool-use` or `post-tool-use`). Rules that only declare `ci` are rejected by the compiler.
 - The compiler rejects enforcement blocks containing `bypass`, `skip`, or `override` fields.
+- The compiler rejects enforcement blocks where `action` contradicts `severity` (e.g., `severity: warning` with `action: block`).
+- The compiler rejects enforcement blocks missing `version`.
+- The compiler validates that `rule-path` references exist on disk.
+- The compiler warns if semgrep/eslint rule files exist in the repository that are not referenced by any enforcement block (potential duplication).
 
 ---
 
@@ -86,22 +120,22 @@ A shell script `ops/compile-floor.sh` reads `compliance-floor.md`, extracts enfo
 
 ### Outputs
 
-| Artifact           | Path                                                    | Purpose                                             |
-| ------------------ | ------------------------------------------------------- | --------------------------------------------------- |
-| Prose-only floor   | `.claude/compliance/compiled/compliance-floor.prose.md` | What most agents load — enforcement blocks stripped |
-| Hook commands      | `.claude/compliance/compiled/hooks.json`                | Pre-tool and post-commit hook commands              |
-| Semgrep ruleset    | `.claude/compliance/compiled/semgrep-rules.yaml`        | All semgrep rules batched into one file             |
-| ESLint config      | `.claude/compliance/compiled/eslint-rules.json`         | All eslint rules batched                            |
-| Coverage report    | `.claude/compliance/compiled/coverage-report.md`        | Per-rule enforcement breakdown + trust summary      |
-| Staleness manifest | `.claude/compliance/compiled/manifest.sha256`           | Source checksum + artifact checksums                |
+| Artifact           | Path                                                    | Purpose                                                            |
+| ------------------ | ------------------------------------------------------- | ------------------------------------------------------------------ |
+| Prose-only floor   | `.claude/compliance/compiled/compliance-floor.prose.md` | What most agents load — enforcement blocks stripped                |
+| Hook script        | `.claude/compliance/compiled/enforce.sh`                | Single script sourced by `settings.json` hooks (see Hook Delivery) |
+| Semgrep ruleset    | `.claude/compliance/compiled/semgrep-rules.yaml`        | All semgrep rules batched into one file                            |
+| ESLint config      | `.claude/compliance/compiled/eslint-rules.json`         | All eslint rules batched                                           |
+| Coverage report    | `docs/compliance-coverage.md`                           | Per-rule enforcement breakdown + trust summary (for humans)        |
+| Staleness manifest | `.claude/compliance/compiled/manifest.sha256`           | Source checksum + artifact checksums                               |
 
 ### Compiler Behavior
 
-1. Extract all ` ```enforcement ` blocks via `sed`/`awk`
+1. Extract all ` ```enforcement ` blocks by scanning for lines matching `^```enforcement$` and collecting until the closing `^```$`. The Nth block associates with the Nth prose rule.
 2. Parse YAML fields with `yq` (lightweight, single binary)
-3. Validate: every rule has `id`, `severity`, at least one non-CI enforcement point. Reject `bypass`/`skip`/`override` fields.
+3. Validate: every rule has `version`, `id`, `severity`, at least one non-CI enforcement point. Reject `bypass`/`skip`/`override` fields. Reject `action`/`severity` contradictions. Validate `rule-path` references exist.
 4. Group rules by check type and enforcement point (batch — don't run semgrep N times)
-5. Generate hook commands per enforcement point per check type
+5. Generate `enforce.sh` — a single shell script with functions for each enforcement point (see Hook Delivery)
 6. Generate semgrep/eslint configs from rule definitions
 7. Produce prose file by stripping enforcement blocks from source
 8. Write coverage report with trust summary
@@ -115,6 +149,33 @@ A shell script `ops/compile-floor.sh` reads `compliance-floor.md`, extracts enfo
 | `--dry-run`         | Iterating on rules  | No, prints to stdout | Invalid rules                |
 | `--verify`          | CI, SessionStart    | No                   | Artifacts don't match source |
 
+**Exit codes:** 0 = success, 1 = validation warnings (non-fatal), 2 = validation errors (fatal). In `--verify` mode: 0 = artifacts match, 1 = drift detected. Error messages reference rules by `id` and line number in `compliance-floor.md`.
+
+### Hook Delivery
+
+The compiler does NOT modify `settings.json` directly. Instead, it generates a single `enforce.sh` script that `settings.json` hooks call. The implementer adds two static hook entries to `settings.json` once (during setup), and they never change:
+
+```json
+{
+  "matcher": "Edit|Write",
+  "hooks": [{
+    "type": "command",
+    "command": ".claude/compliance/compiled/enforce.sh pre-tool-use \"$CLAUDE_FILE_PATH\""
+  }]
+},
+{
+  "matcher": "Edit|Write",
+  "hooks": [{
+    "type": "command",
+    "command": ".claude/compliance/compiled/enforce.sh post-tool-use \"$CLAUDE_FILE_PATH\""
+  }]
+}
+```
+
+The `enforce.sh` script accepts the enforcement point as its first argument and the file path as its second. It runs all checks for that enforcement point and exits with the appropriate code (0/1/2). When rules change, only `enforce.sh` is regenerated — `settings.json` stays untouched.
+
+**Migration path:** Existing hardcoded hooks in `settings.json` (e.g., `.env` blocking) remain alongside compiled hooks during migration. Once the corresponding rules are added to the floor with enforcement blocks, the hardcoded hooks can be removed. Both can coexist — the first hook to block wins.
+
 ### Dependencies
 
 - `yq` — for YAML parsing. Single static binary, no runtime dependencies. The compiler checks for it and prints install instructions if missing.
@@ -122,6 +183,16 @@ A shell script `ops/compile-floor.sh` reads `compliance-floor.md`, extracts enfo
 ### Integration
 
 The compiler runs automatically at the end of the `/compliance apply` workflow — after the CO writes the floor change, before the sentinel is removed. This ensures the floor cannot change without recompilation.
+
+The `/compliance apply` skill (`.claude/skills/compliance/SKILL.md`) step sequence becomes:
+
+1. Verify proposal status is "approved"
+2. Create sentinel: `.claude/compliance/.applying`
+3. Apply the change to `compliance-floor.md` or `.claude/compliance/targets.md`
+4. **Run `ops/compile-floor.sh`** — if compilation fails (exit 2), revert the change via `git checkout -- compliance-floor.md`, remove sentinel, report error. The apply is atomic: it either fully succeeds (floor change + compiled artifacts) or fully rolls back.
+5. Update checksum: regenerate `.claude/compliance/floor-checksum.sha256`
+6. Append entry to `.claude/compliance/change-log.md`
+7. Remove sentinel. Log `compliance-applied` event. Update proposal to "applied"
 
 ### Generated Artifact Headers
 
@@ -140,21 +211,20 @@ Three layers, each honest about what it guarantees.
 
 ### Layer 1: Hooks (Behavioral Guardrails)
 
-The compiled `hooks.json` produces hook commands that get merged into `settings.json`. Example generated output for a `file-pattern` pre-tool rule:
+The compiled `enforce.sh` script is called by two static hooks in `settings.json` (see Hook Delivery in Section 2). The script contains all compiled rule checks, dispatched by enforcement point.
 
-```json
-{
-  "matcher": "Edit|Write",
-  "hooks": [
-    {
-      "type": "command",
-      "command": "echo \"$CLAUDE_FILE_PATH\" | grep -qE '(\\.env|\\.pem|\\.key|secrets?\\.yaml)$' && echo 'BLOCKED [no-hardcoded-secrets]: Cannot edit sensitive file' && exit 2 || exit 0"
-    }
-  ]
+Example of what `enforce.sh` does internally for a `file-pattern` pre-tool-use rule:
+
+```bash
+# Called as: enforce.sh pre-tool-use "$CLAUDE_FILE_PATH"
+check_no_hardcoded_secrets() {
+  echo "$FILE_PATH" | grep -qE '(\.env|\.pem|\.key|secrets?\.yaml)$' && \
+    echo "BLOCKED [no-hardcoded-secrets]: Cannot edit sensitive file" && return 2
+  return 0
 }
 ```
 
-For `content-pattern` post-commit rules, the hook runs the pattern against `$CLAUDE_FILE_PATH` content after each write. For semgrep/eslint post-commit rules, the hook runs the batched ruleset against the changed file.
+For `content-pattern` post-tool-use rules, the script greps file content after the write completes. For semgrep/eslint post-tool-use rules, the script runs the batched ruleset against the changed file. All checks for a given enforcement point are batched into a single script invocation.
 
 **Guarantee:** Catches accidental violations in real-time. Routes agents toward the CO workflow. Does NOT prevent a determined bypass — any agent can write files.
 
@@ -202,7 +272,7 @@ Recommended for any team with more than one person or any project heading toward
 - Git branch protection on `main` — require PR + CI pass
 - `CODEOWNERS` for `compliance-floor.md` and `.claude/compliance/` — human must approve
 - CI verification job — `ops/compile-floor.sh --verify` + compiled linter rulesets
-- Post-commit hooks for semgrep/eslint
+- PostToolUse hooks for semgrep/eslint (via compiled `enforce.sh`)
 
 ### Tier 3: Hardened (MAY)
 
@@ -258,29 +328,32 @@ artifacts:
   eslint-rules.json: <sha256>
 ```
 
-SessionStart runs `--verify` to check source/artifact consistency.
+SessionStart runs a **lightweight staleness check**: compare the SHA-256 of `compliance-floor.md` against the `source` field in the manifest, and compare each artifact hash. This is a fast file-hash comparison (no recompilation). The full `--verify` mode (which recompiles from source and diffs) runs in CI only, where latency is acceptable.
 
 **Proves:** Source and artifacts are in sync. Does NOT prove who compiled them.
 
 ### Tier 2: CI-Based Signing
 
-A GitHub Actions job signs artifacts after verification:
+A GitHub Actions job signs the manifest (which contains all artifact hashes and the source hash) after verification:
 
 ```yaml
 - name: Verify compliance artifacts
   run: ops/compile-floor.sh --verify
 
-- name: Sign compliance artifacts
+- name: Sign compliance manifest
   run: |
-    sha256sum .claude/compliance/compiled/* > /tmp/artifact-hashes.txt
-    openssl dgst -sha256 -sign <(echo "$SIGNING_KEY") \
+    openssl dgst -sha256 \
+      -sign /dev/stdin \
       -out .claude/compliance/compiled/signature.sig \
-      /tmp/artifact-hashes.txt
+      .claude/compliance/compiled/manifest.sha256 \
+      <<< "$SIGNING_KEY"
   env:
     SIGNING_KEY: ${{ secrets.COMPLIANCE_SIGNING_KEY }}
 ```
 
-SessionStart verifies the signature against the public key (committed to the repo).
+The signing covers the manifest (which includes the source hash and all artifact hashes), not raw artifact hashes. This ensures an attacker cannot modify artifacts and regenerate hashes to produce a valid signature.
+
+SessionStart verifies the signature against the public key (committed to the repo at `.claude/compliance/signing-public.pem`).
 
 **Proves:** Artifacts are the same ones CI verified. No local tampering after merge.
 
@@ -336,21 +409,23 @@ PreToolUse (Edit|Write):
        "Compliance modification: <filename> via proposal #<id>. Approve?"
 ```
 
-For compiled artifacts and infrastructure files (no sentinel path):
+For compiled artifacts and infrastructure files (no sentinel path). This is a **single hook** with cascading checks — the first match determines the message and exit code:
 
 ```
 PreToolUse (Edit|Write):
-  1. Is file a compiled artifact?
+  Is file a compiled artifact (.claude/compliance/compiled/*)?
      → WARN (exit 1): "This is generated by ops/compile-floor.sh.
        Manual edits will be overwritten. Proceed?"
 
-  2. Is file the compiler script?
+  Else, is file the compiler script (ops/compile-floor.sh)?
      → WARN (exit 1): "This modifies the compliance compiler.
        Changes affect all rule enforcement. Proceed?"
 
-  3. Is file a compliance agent definition?
+  Else, is file a compliance agent definition?
      → WARN (exit 1): "This modifies a compliance agent's instructions.
        Changes affect compliance governance. Proceed?"
+
+  Else: pass through (exit 0)
 ```
 
 ### Guarantees
@@ -402,8 +477,16 @@ This replaces the need for separate anti-pattern documentation — implementers 
 
 ---
 
-## Open Questions
+## Resolved Design Decisions
 
-1. Should the compiler support custom check types beyond the five defined (file-pattern, content-pattern, semgrep, eslint, custom-script)?
-2. Should compiled hooks be merged into `settings.json` automatically, or should the implementer manually reference them?
-3. What is the migration path for existing hardcoded hooks in `settings.json` — replace them with compiled equivalents, or keep both?
+1. **Custom check types:** The five defined types (file-pattern, content-pattern, semgrep, eslint, custom-script) are sufficient. `custom-script` serves as the escape hatch for anything not covered by the built-in types. Additional built-in types can be added in a future DSL version.
+
+2. **Hook delivery:** Compiled hooks are NOT merged into `settings.json`. Instead, `settings.json` contains two static hook entries that call `enforce.sh` (see Hook Delivery in Section 2). The implementer adds these once during setup. When rules change, only `enforce.sh` is regenerated.
+
+3. **Migration path:** Existing hardcoded hooks coexist with compiled hooks during migration. Once corresponding enforcement blocks are added to the floor, hardcoded hooks can be removed. Both can fire — the first to block wins. There is no automated migration; this is a deliberate per-rule decision.
+
+4. **Enforcement point naming:** Uses `pre-tool-use` and `post-tool-use` to match Claude Code's hook system vocabulary. No git-level hooks. CI is a separate enforcement point.
+
+5. **SessionStart performance:** SessionStart runs a lightweight hash comparison (manifest check), not a full recompilation. Full `--verify` (recompile + diff) runs in CI only.
+
+6. **Coverage report audience:** The coverage report lives at `docs/compliance-coverage.md` (outside the protected compiled directory) because it is for human consumption, not agents. It is regenerated by the compiler but is not a protected artifact.
