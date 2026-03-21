@@ -168,6 +168,41 @@ assert_contains "block-002.yaml has id=no-console-log" \
   "no-console-log"
 
 # ---------------------------------------------------------------------------
+# Section: Validation tests
+# ---------------------------------------------------------------------------
+
+echo ""
+echo "=== Validation ==="
+
+VALDIR="$TMPDIR_ROOT/validation"
+mkdir -p "$VALDIR"
+
+# Test: valid fixture passes validation
+val_valid_exit=0
+"$COMPILER" --validate-only "$FIXTURES/floor-valid.md" "$VALDIR" >/dev/null 2>&1 || val_valid_exit=$?
+assert_exit "valid fixture passes validation" 0 "${val_valid_exit}"
+
+# Test: CI-only rule rejected
+val_norealtime_exit=0
+"$COMPILER" --validate-only "$FIXTURES/floor-invalid-no-realtime.md" "$VALDIR" >/dev/null 2>&1 || val_norealtime_exit=$?
+assert_exit "CI-only rule rejected (exit 2)" 2 "${val_norealtime_exit}"
+
+# Test: bypass field rejected
+val_bypass_exit=0
+"$COMPILER" --validate-only "$FIXTURES/floor-invalid-bypass.md" "$VALDIR" >/dev/null 2>&1 || val_bypass_exit=$?
+assert_exit "bypass field rejected (exit 2)" 2 "${val_bypass_exit}"
+
+# Test: severity/action contradiction rejected
+val_sevact_exit=0
+"$COMPILER" --validate-only "$FIXTURES/floor-invalid-severity-action.md" "$VALDIR" >/dev/null 2>&1 || val_sevact_exit=$?
+assert_exit "severity/action contradiction rejected (exit 2)" 2 "${val_sevact_exit}"
+
+# Test: missing version rejected
+val_noversion_exit=0
+"$COMPILER" --validate-only "$FIXTURES/floor-invalid-no-version.md" "$VALDIR" >/dev/null 2>&1 || val_noversion_exit=$?
+assert_exit "missing version rejected (exit 2)" 2 "${val_noversion_exit}"
+
+# ---------------------------------------------------------------------------
 # Results summary
 # ---------------------------------------------------------------------------
 
