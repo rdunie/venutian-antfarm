@@ -1,0 +1,89 @@
+{
+  "project": {
+    "name": "fintech-api",
+    "description": "Financial technology API platform — mature operational posture"
+  },
+  "metrics": {
+    "backend": "jsonl",
+    "file": ".claude/metrics/events.jsonl"
+  },
+  "deploy": {
+    "command": "ops/deploy.sh",
+    "environments": ["dev", "staging", "prod"]
+  },
+  "pace": {
+    "current": "Walk",
+    "walk_threshold_cfr": 10,
+    "run_threshold_cfr": 5,
+    "run_threshold_fpy": 80
+  },
+  "agents": {
+    "governance": [
+      "compliance-officer",
+      "ciso",
+      "ceo",
+      "cto",
+      "cfo",
+      "coo",
+      "cko"
+    ],
+    "core": [
+      "product-owner",
+      "solution-architect",
+      "scrum-master",
+      "knowledge-ops",
+      "platform-ops",
+      "compliance-auditor"
+    ],
+    "specialists": [
+      "frontend-specialist",
+      "backend-specialist",
+      "e2e-test-engineer"
+    ],
+    "reviewers": [],
+    "output": []
+  },
+  "retro": {
+    "cadence": 3,
+    "note": "Every 3 items. Team has stabilized — retros focus on optimization, not firefighting."
+  },
+  "knowledge": {
+    "cadence": {
+      "crawl": 1,
+      "walk": 3,
+      "run": 5,
+      "fly": 0
+    },
+    "note": "Wider cadence — knowledge base is mature, distributions focus on refinements."
+  },
+  "pathways": {
+    "declared": {
+      "build": [
+        "product-owner -> frontend-specialist",
+        "product-owner -> backend-specialist",
+        "product-owner -> e2e-test-engineer",
+        "frontend-specialist -> product-owner",
+        "backend-specialist -> product-owner",
+        "e2e-test-engineer -> product-owner",
+        "frontend-specialist -> backend-specialist",
+        "backend-specialist -> frontend-specialist",
+        "frontend-specialist -> e2e-test-engineer",
+        "backend-specialist -> e2e-test-engineer",
+        "e2e-test-engineer -> frontend-specialist",
+        "e2e-test-engineer -> backend-specialist"
+      ],
+      "review": [],
+      "escalation": ["* -> solution-architect", "* -> scrum-master"],
+      "governance": [
+        "ciso -> compliance-officer",
+        "compliance-officer -> compliance-auditor",
+        "* -> compliance-officer",
+        "cko -> knowledge-ops",
+        "cto -> solution-architect",
+        "cfo -> platform-ops",
+        "coo -> scrum-master",
+        "* -> ceo"
+      ]
+    }
+  }
+}
