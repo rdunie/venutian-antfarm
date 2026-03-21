@@ -9,7 +9,7 @@
 ```bash
 cp templates/fleet-config.json fleet-config.json   # configure your fleet
 cp templates/compliance-floor.md compliance-floor.md # define non-negotiable rules
-# See example/ for a complete working reference
+# See examples/ for progressive working references
 ```
 
 **Prerequisites:** Claude Code CLI, Git, Bash, jq (optional).
@@ -43,7 +43,7 @@ cp templates/compliance-floor.md compliance-floor.md # define non-negotiable rul
 │   ├── compliance-floor.md          # Starter compliance floor
 │   ├── fleet-config.json            # Fleet configuration template
 │   └── agents/                      # Specialist agent templates (5)
-├── example/                         # Working example app (complete reference)
+├── examples/                        # Progressive examples (01-05)
 └── memory/
     ├── harness/                     # Framework-level memories
     └── app/                         # Application-specific memories
@@ -163,7 +163,7 @@ Active hooks that affect every session:
 - **Metrics backend is pluggable**: Default is JSONL, but `fleet-config.json` supports webhook, StatsD, and OpenTelemetry backends. Always use `ops/metrics-log.sh` regardless of backend.
 - **Pathway analysis catches governance bypasses**: `ops/pathways.sh` compares declared pathways in `fleet-config.json` against actual handoff events. Undeclared paths are flagged -- they may be innovation or unauthorized communication.
 - **Pace thresholds are in `fleet-config.json`**, not in COLLABORATION.md. The collaboration doc records the _current_ pace; the config defines _when_ to promote.
-- **The `example/` directory is a complete working reference** with specialist agents, overrides, compliance floor, and fleet config. Use it as a starting point.
+- **The `examples/` directory contains 5 progressive examples** from minimum setup (01-getting-started) to operational maturity (05-operational-maturity). Test any example with `ops/test-example.sh <name>`.
 - **Editing `settings.json`**: Use Write (full rewrite) instead of Edit for `settings.json` — complex escaped strings in hook commands cause JSON validation failures with partial edits.
 
 ## Anti-Patterns

@@ -320,7 +320,7 @@ Every fleet starts at Crawl. This is intentional. You learn more about your proc
 
 ## Worked Example: Compliance-Sensitive Platform
 
-This pattern was originally developed for a self-hosted platform with strict compliance requirements: PII isolation, role-based access control, audit trails, and incident response procedures. See the `example/` directory in this repository for a minimal working demonstration.
+This pattern was originally developed for a self-hosted platform with strict compliance requirements: PII isolation, role-based access control, audit trails, and incident response procedures. See the `examples/` directory in this repository for progressive working demonstrations.
 
 Key domain-specific elements from the original deployment:
 
@@ -367,4 +367,4 @@ The pattern sacrifices portability for governance depth. This is the right trade
 - `ops/dora.sh` -- DORA + flow quality metrics dashboard
 - `ops/pathways.sh` -- Agent communication pathway analysis
 - `templates/` -- Templates for specialist agents, compliance floor, fleet config
-- `example/` -- Working example with 2 specialist agents
+- `examples/` -- 5 progressive examples (getting started through operational maturity)

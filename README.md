@@ -279,7 +279,7 @@ All skills can be overridden by implementers. Create `.claude/skills/<name>/SKIL
 - **[Collaboration Model](docs/COLLABORATION-MODEL.md)** -- Visual diagrams
 - **[Metrics Guide](docs/METRICS-GUIDE.md)** -- Event types, dashboards, extending metrics, example output
 - **[Pathway Analysis](docs/PATHWAY-ANALYSIS.md)** -- Agent communication pathway analysis: declaring, interpreting, governance
-- **[Example App](example/)** -- Working example with 2 specialist agents
+- **[Examples](examples/)** -- 5 progressive examples from getting started to operational maturity
 
 ## License
 

@@ -152,5 +152,5 @@ This is the fleet learning autonomy. Not because you told it to, but because the
 
 - Read the [Agent Fleet Pattern](AGENT-FLEET-PATTERN.md) for the full specification
 - Review the [Collaboration Protocol](../.claude/COLLABORATION.md) for all 11 core principles
-- Check the [Example App](../example/) for a working 2-specialist setup
+- Check the [Examples](../examples/) for progressive working examples (start with 01-getting-started)
 - Add review agents (security-reviewer, etc.) as your compliance needs crystallize. Note: governance tier agents (CO, CISO at minimum) are active from the first session via `/onboard` and don't need to be added separately.
