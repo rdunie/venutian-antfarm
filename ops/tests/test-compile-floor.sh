@@ -323,6 +323,72 @@ verify_fail_exit=0
 assert_exit "--verify on tampered artifacts exits 1" 1 "${verify_fail_exit}"
 
 # ---------------------------------------------------------------------------
+# Section: Coverage Report
+# ---------------------------------------------------------------------------
+
+echo ""
+echo "=== Coverage Report ==="
+
+COVERAGEDIR="${TMPDIR_ROOT}/coverage"
+mkdir -p "${COVERAGEDIR}"
+COVERAGE_PATH="${COVERAGEDIR}/compliance-coverage.md"
+
+# Run full compile with COVERAGE_PATH env var set
+coverage_exit=0
+COVERAGE_PATH="${COVERAGE_PATH}" "${COMPILER}" "${FIXTURES}/floor-valid.md" "${COVERAGEDIR}" >/dev/null 2>&1 || coverage_exit=$?
+assert_exit "full compile with COVERAGE_PATH exits 0" 0 "${coverage_exit}"
+
+# Assert: coverage report file exists at COVERAGE_PATH
+assert_file_exists "coverage report file exists at COVERAGE_PATH" "${COVERAGE_PATH}"
+
+# Assert: contains "no-hardcoded-secrets" rule ID
+assert_contains "coverage report contains no-hardcoded-secrets" "${COVERAGE_PATH}" "no-hardcoded-secrets"
+
+# Assert: contains "pre-tool-use" enforcement point
+assert_contains "coverage report contains pre-tool-use" "${COVERAGE_PATH}" "pre-tool-use"
+
+# Assert: contains "What Each Layer Guarantees" trust summary
+assert_contains "coverage report contains What Each Layer Guarantees" "${COVERAGE_PATH}" "What Each Layer Guarantees"
+
+# Assert: contains "judgment-only" (for rule 3 which has no enforcement block)
+assert_contains "coverage report contains judgment-only" "${COVERAGE_PATH}" "judgment-only"
+
+# ---------------------------------------------------------------------------
+# Section: Dry Run
+# ---------------------------------------------------------------------------
+
+echo ""
+echo "=== Dry Run ==="
+
+DRYRUNDIR="${TMPDIR_ROOT}/dryrun"
+mkdir -p "${DRYRUNDIR}"
+
+# Run --dry-run on valid fixture → exit 0
+dryrun_valid_exit=0
+dryrun_output=$("${COMPILER}" --dry-run "${FIXTURES}/floor-valid.md" "${DRYRUNDIR}" 2>/dev/null) || dryrun_valid_exit=$?
+assert_exit "--dry-run on valid fixture exits 0" 0 "${dryrun_valid_exit}"
+
+# Capture stdout, assert it contains "no-hardcoded-secrets"
+TOTAL=$((TOTAL + 1))
+if echo "${dryrun_output}" | grep -q "no-hardcoded-secrets"; then
+  echo -e "  ${GREEN}PASS${NC} --dry-run stdout contains no-hardcoded-secrets"
+  PASS=$((PASS + 1))
+else
+  echo -e "  ${RED}FAIL${NC} --dry-run stdout contains no-hardcoded-secrets — not found in output"
+  FAIL=$((FAIL + 1))
+fi
+
+# Assert: --dry-run writes no files
+assert_file_not_exists "--dry-run writes no block YAML files" "${DRYRUNDIR}/block-001.yaml"
+assert_file_not_exists "--dry-run writes no enforce.sh" "${DRYRUNDIR}/enforce.sh"
+assert_file_not_exists "--dry-run writes no manifest.sha256" "${DRYRUNDIR}/manifest.sha256"
+
+# Run --dry-run on invalid fixture → exit 2
+dryrun_invalid_exit=0
+"${COMPILER}" --dry-run "${FIXTURES}/floor-invalid-no-version.md" "${DRYRUNDIR}" >/dev/null 2>&1 || dryrun_invalid_exit=$?
+assert_exit "--dry-run on invalid fixture exits 2" 2 "${dryrun_invalid_exit}"
+
+# ---------------------------------------------------------------------------
 # Results summary
 # ---------------------------------------------------------------------------
 
