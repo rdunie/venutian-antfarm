@@ -231,12 +231,41 @@ Example of what `enforce.sh` does internally for a `file-pattern` pre-tool-use r
 # Called as: enforce.sh pre-tool-use "$CLAUDE_FILE_PATH"
 check_no_hardcoded_secrets() {
   echo "$FILE_PATH" | grep -qE '(\.env|\.pem|\.key|secrets?\.yaml)$' && \
-    echo "BLOCKED [no-hardcoded-secrets]: Cannot edit sensitive file" && return 2
+    echo "BLOCKED [no-hardcoded-secrets]: Cannot edit sensitive file" && \
+    log_violation "no-hardcoded-secrets" "blocking" "$FILE_PATH" && return 2
   return 0
 }
 ```
 
 For `content-pattern` post-tool-use rules, the script greps file content after the write completes. For semgrep/eslint post-tool-use rules, the script runs the batched ruleset against the changed file. All checks for a given enforcement point are batched into a single script invocation.
+
+### Signal Emission
+
+`enforce.sh` emits structured events for every enforcement outcome via `ops/metrics-log.sh`. This makes enforcement signals consumable by downstream systems (e.g., the planned rewards system, dashboards, retrospectives) without parsing hook stdout.
+
+**On violation (block or warn):**
+
+```bash
+ops/metrics-log.sh compliance-violation \
+  --rule-id "$RULE_ID" \
+  --severity "$SEVERITY" \
+  --enforcement-point "$POINT" \
+  --file "$FILE_PATH" \
+  --action "$ACTION"
+```
+
+**On pass (clean check with no violations):**
+
+```bash
+ops/metrics-log.sh compliance-pass \
+  --rule-id "$RULE_ID" \
+  --enforcement-point "$POINT" \
+  --file "$FILE_PATH"
+```
+
+Pass events are emitted per-rule so that downstream consumers can track positive compliance behavior, not just violations. This enables the rewards system to identify agents that consistently satisfy rules.
+
+**Event volume consideration:** Pass events are high-volume (every file edit × every rule). The compiler generates pass logging as **opt-in** — disabled by default, enabled via a `signal-passes: true` flag in `fleet-config.json`. Violation events are always emitted.
 
 **Guarantee:** Catches accidental violations in real-time. Routes agents toward the CO workflow. Does NOT prevent a determined bypass — any agent can write files.
 
