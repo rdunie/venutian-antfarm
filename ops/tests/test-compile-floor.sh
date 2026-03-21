@@ -203,6 +203,26 @@ val_noversion_exit=0
 assert_exit "missing version rejected (exit 2)" 2 "${val_noversion_exit}"
 
 # ---------------------------------------------------------------------------
+# Section: Prose Generation
+# ---------------------------------------------------------------------------
+
+echo ""
+echo "=== Prose Generation ==="
+
+PROSEDIR="$TMPDIR_ROOT/prose"
+mkdir -p "$PROSEDIR"
+
+prose_exit=0
+"$COMPILER" --prose-only "$FIXTURES/floor-valid.md" "$PROSEDIR" >/dev/null 2>&1 || prose_exit=$?
+assert_exit "prose generation exits 0" 0 $prose_exit
+
+assert_file_exists "prose file generated" "$PROSEDIR/compliance-floor.prose.md"
+assert_not_contains "prose has no enforcement blocks" "$PROSEDIR/compliance-floor.prose.md" '```enforcement'
+assert_contains "prose retains rule 1 text" "$PROSEDIR/compliance-floor.prose.md" "No hardcoded secrets"
+assert_contains "prose retains rule 2 text" "$PROSEDIR/compliance-floor.prose.md" "No console.log"
+assert_contains "prose retains rule 3 text" "$PROSEDIR/compliance-floor.prose.md" "All data changes are auditable"
+
+# ---------------------------------------------------------------------------
 # Results summary
 # ---------------------------------------------------------------------------
 
