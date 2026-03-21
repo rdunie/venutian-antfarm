@@ -1,0 +1,50 @@
+{
+  "project": {
+    "name": "getting-started",
+    "description": "Single-specialist project to learn the framework lifecycle"
+  },
+  "metrics": {
+    "backend": "jsonl",
+    "file": ".claude/metrics/events.jsonl"
+  },
+  "deploy": {
+    "command": "ops/deploy.sh",
+    "environments": ["dev"]
+  },
+  "pace": {
+    "current": "Crawl",
+    "walk_threshold_cfr": 10,
+    "run_threshold_cfr": 5,
+    "run_threshold_fpy": 80
+  },
+  "agents": {
+    "governance": [
+      "compliance-officer",
+      "ciso",
+      "ceo",
+      "cto",
+      "cfo",
+      "coo",
+      "cko"
+    ],
+    "core": [
+      "product-owner",
+      "solution-architect",
+      "scrum-master",
+      "knowledge-ops",
+      "platform-ops",
+      "compliance-auditor"
+    ],
+    "specialists": ["developer"],
+    "reviewers": [],
+    "output": []
+  },
+  "pathways": {
+    "declared": {
+      "build": ["product-owner -> developer", "developer -> product-owner"],
+      "review": [],
+      "escalation": ["* -> solution-architect", "* -> scrum-master"],
+      "governance": ["* -> compliance-officer", "* -> ceo"]
+    }
+  }
+}
