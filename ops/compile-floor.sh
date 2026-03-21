@@ -263,6 +263,31 @@ validate_block() {
     fi
   fi
 
+  # Check: custom-script enforcement points must have script that exists and is executable
+  local enforce_keys_cs
+  enforce_keys_cs="$(yq '.enforce | keys | .[]' "${block_file}" 2>/dev/null || true)"
+  while IFS= read -r cs_ekey; do
+    cs_ekey="${cs_ekey//\"/}"
+    [[ -z "${cs_ekey}" ]] && continue
+    local cs_type
+    cs_type="$(yq ".enforce.\"${cs_ekey}\".type" "${block_file}" 2>/dev/null)"
+    cs_type="${cs_type//\"/}"
+    [[ "${cs_type}" != "custom-script" ]] && continue
+    local cs_script
+    cs_script="$(yq ".enforce.\"${cs_ekey}\".script" "${block_file}" 2>/dev/null)"
+    cs_script="${cs_script//\"/}"
+    if [[ -z "${cs_script}" || "${cs_script}" == "null" ]]; then
+      echo "INVALID ${block_name}: custom-script at '${cs_ekey}' missing 'script' field" >&2
+      valid=0
+    elif [[ ! -f "${cs_script}" ]]; then
+      echo "INVALID ${block_name}: custom-script 'script' does not exist: ${cs_script}" >&2
+      valid=0
+    elif [[ ! -x "${cs_script}" ]]; then
+      echo "INVALID ${block_name}: custom-script 'script' is not executable: ${cs_script}" >&2
+      valid=0
+    fi
+  done <<< "${enforce_keys_cs}"
+
   if [[ "${valid}" -eq 0 ]]; then
     exit 2
   fi
@@ -345,26 +370,61 @@ generate_enforce() {
       pre_action="$(yq '.enforce."pre-tool-use".action' "${block_file}")"
       pre_action="${pre_action//\"/}"
 
-      # Collect patterns (unescape yq's double-backslash output)
-      local pre_patterns=""
-      while IFS= read -r pat; do
-        pat="${pat//\"/}"
-        pat="${pat//\'/}"
-        pat="${pat//\\\\/\\}"
-        if [[ -n "${pre_patterns}" ]]; then
-          pre_patterns="${pre_patterns}|${pat}"
-        else
-          pre_patterns="${pat}"
-        fi
-      done < <(yq '.enforce."pre-tool-use".patterns[]' "${block_file}")
-
       local exit_code=1
       if [[ "${pre_action}" == "block" ]]; then
         exit_code=2
       fi
 
       local func_name="check_${rule_id//-/_}"
-      pre_rules="${pre_rules}
+
+      if [[ "${pre_type}" == "custom-script" ]]; then
+        # Custom-script type: call the script with timeout wrapper
+        local script_path
+        script_path="$(yq '.enforce."pre-tool-use".script' "${block_file}")"
+        script_path="${script_path//\"/}"
+
+        pre_rules="${pre_rules}
+# Rule: ${rule_id} (${severity}, ${pre_action}, custom-script)
+${func_name}() {
+  local file_path=\"\$1\"
+  local rc=0
+  timeout 10 ${script_path} \"\${file_path}\" || rc=\$?
+  if [[ \${rc} -ne 0 ]]; then
+    log_violation \"${rule_id}\" \"${pre_action}\" \"pre-tool-use\" \"\${file_path}\"
+    return ${exit_code}
+  fi
+  return 0
+}
+"
+      else
+        # Pattern-based types (file-pattern, content-pattern)
+        local pre_patterns=""
+        while IFS= read -r pat; do
+          pat="${pat//\"/}"
+          pat="${pat//\'/}"
+          pat="${pat//\\\\/\\}"
+          if [[ -n "${pre_patterns}" ]]; then
+            pre_patterns="${pre_patterns}|${pat}"
+          else
+            pre_patterns="${pat}"
+          fi
+        done < <(yq '.enforce."pre-tool-use".patterns[]' "${block_file}" 2>/dev/null || true)
+
+        if [[ "${pre_type}" == "content-pattern" ]]; then
+          pre_rules="${pre_rules}
+# Rule: ${rule_id} (${severity}, ${pre_action}, content-pattern)
+${func_name}() {
+  local file_path=\"\$1\"
+  if [[ -f \"\${file_path}\" ]] && grep -qE '${pre_patterns}' \"\${file_path}\"; then
+    log_violation \"${rule_id}\" \"${pre_action}\" \"pre-tool-use\" \"\${file_path}\"
+    return ${exit_code}
+  fi
+  return 0
+}
+"
+        else
+          # file-pattern (default)
+          pre_rules="${pre_rules}
 # Rule: ${rule_id} (${severity}, ${pre_action})
 ${func_name}() {
   local file_path=\"\$1\"
@@ -375,6 +435,8 @@ ${func_name}() {
   return 0
 }
 "
+        fi
+      fi
     fi
 
     # Check post-tool-use
@@ -386,26 +448,48 @@ ${func_name}() {
       post_action="$(yq '.enforce."post-tool-use".action' "${block_file}")"
       post_action="${post_action//\"/}"
 
-      # Collect patterns (unescape yq's double-backslash output)
-      local post_patterns=""
-      while IFS= read -r pat; do
-        pat="${pat//\"/}"
-        pat="${pat//\'/}"
-        pat="${pat//\\\\/\\}"
-        if [[ -n "${post_patterns}" ]]; then
-          post_patterns="${post_patterns}|${pat}"
-        else
-          post_patterns="${pat}"
-        fi
-      done < <(yq '.enforce."post-tool-use".patterns[]' "${block_file}")
-
       local exit_code=1
       if [[ "${post_action}" == "block" ]]; then
         exit_code=2
       fi
 
       local func_name="check_${rule_id//-/_}"
-      post_rules="${post_rules}
+
+      if [[ "${post_type}" == "semgrep" ]]; then
+        # Semgrep type: run semgrep if installed, skip gracefully if not
+        local rule_path
+        rule_path="$(yq '.enforce."post-tool-use"."rule-path"' "${block_file}")"
+        rule_path="${rule_path//\"/}"
+
+        post_rules="${post_rules}
+# Rule: ${rule_id} (${severity}, ${post_action}, semgrep)
+${func_name}() {
+  local file_path=\"\$1\"
+  if ! command -v semgrep &>/dev/null; then
+    return 0  # semgrep not installed — skip gracefully
+  fi
+  if semgrep --config ${rule_path} --quiet \"\${file_path}\" 2>/dev/null | grep -q .; then
+    log_violation \"${rule_id}\" \"${post_action}\" \"post-tool-use\" \"\${file_path}\"
+    return ${exit_code}
+  fi
+  return 0
+}
+"
+      else
+        # content-pattern (default for post-tool-use)
+        local post_patterns=""
+        while IFS= read -r pat; do
+          pat="${pat//\"/}"
+          pat="${pat//\'/}"
+          pat="${pat//\\\\/\\}"
+          if [[ -n "${post_patterns}" ]]; then
+            post_patterns="${post_patterns}|${pat}"
+          else
+            post_patterns="${pat}"
+          fi
+        done < <(yq '.enforce."post-tool-use".patterns[]' "${block_file}" 2>/dev/null || true)
+
+        post_rules="${post_rules}
 # Rule: ${rule_id} (${severity}, ${post_action})
 ${func_name}() {
   local file_path=\"\$1\"
@@ -416,6 +500,7 @@ ${func_name}() {
   return 0
 }
 "
+      fi
     fi
   done
 
@@ -602,6 +687,150 @@ dispatch "$1" "$2"
 ENFORCE_TAIL
 
   chmod +x "${out_file}"
+}
+
+# ---------------------------------------------------------------------------
+# generate_semgrep — merge all semgrep rule files into semgrep-rules.yaml
+#
+# Arguments:
+#   $1  output directory (contains block-NNN.yaml files)
+#
+# Writes semgrep-rules.yaml to $1 with a GENERATED header.
+# If no semgrep rules exist, writes an empty placeholder.
+# ---------------------------------------------------------------------------
+
+generate_semgrep() {
+  local out_dir="$1"
+  local out_file="${out_dir}/semgrep-rules.yaml"
+
+  # Collect all rule-path files for type=semgrep across all enforcement points
+  local merged_rules=""
+  local found=0
+
+  for block_file in "${out_dir}"/block-*.yaml; do
+    [[ -f "${block_file}" ]] || continue
+
+    # Check all enforcement points for type=semgrep
+    local enforce_keys
+    enforce_keys="$(yq '.enforce | keys | .[]' "${block_file}" 2>/dev/null || true)"
+    while IFS= read -r ekey; do
+      ekey="${ekey//\"/}"
+      [[ -z "${ekey}" ]] && continue
+
+      local etype
+      etype="$(yq ".enforce.\"${ekey}\".type" "${block_file}")"
+      etype="${etype//\"/}"
+      [[ "${etype}" != "semgrep" ]] && continue
+
+      local rule_id
+      rule_id="$(yq ".enforce.\"${ekey}\".\"rule-id\"" "${block_file}")"
+      rule_id="${rule_id//\"/}"
+
+      local rule_path
+      rule_path="$(yq ".enforce.\"${ekey}\".\"rule-path\"" "${block_file}")"
+      rule_path="${rule_path//\"/}"
+
+      if [[ -n "${rule_path}" && "${rule_path}" != "null" && -f "${rule_path}" ]]; then
+        # Append rules from the rule-path file (strip existing 'rules:' header)
+        local rules_content
+        rules_content="$(yq '.rules // []' "${rule_path}" 2>/dev/null || echo "[]")"
+        if [[ "${rules_content}" != "[]" && "${rules_content}" != "null" ]]; then
+          merged_rules="${merged_rules}${rules_content}"$'\n'
+          found=$((found + 1))
+        fi
+      fi
+
+      # Even with empty rule file, we record the rule-id for reference
+      if [[ "${found}" -eq 0 ]]; then
+        found=$((found + 1))
+        # Record as a stub with rule-id comment
+        merged_rules="${merged_rules}# rule-id: ${rule_id}"$'\n'
+      fi
+
+    done <<< "${enforce_keys}"
+  done
+
+  {
+    printf '# GENERATED by ops/compile-floor.sh — do not edit manually.\n'
+    printf '# Re-generate with: ops/compile-floor.sh --generate-enforce\n'
+    printf '\n'
+    if [[ "${found}" -gt 0 ]]; then
+      printf 'rules:\n'
+      # Indent each non-comment rule line
+      while IFS= read -r rline; do
+        if [[ "${rline}" =~ ^#.*rule-id ]]; then
+          printf '  # %s\n' "${rline#\# }"
+        elif [[ -n "${rline}" ]]; then
+          printf '  %s\n' "${rline}"
+        fi
+      done <<< "${merged_rules}"
+    else
+      printf '# No semgrep rules defined in compliance floor.\n'
+      printf 'rules: []\n'
+    fi
+  } > "${out_file}"
+}
+
+# ---------------------------------------------------------------------------
+# generate_eslint — merge all eslint rule files into eslint-rules.json
+#
+# Arguments:
+#   $1  output directory (contains block-NNN.yaml files)
+#
+# Writes eslint-rules.json to $1 with a GENERATED header comment.
+# If no eslint rules exist, writes an empty placeholder.
+# ---------------------------------------------------------------------------
+
+generate_eslint() {
+  local out_dir="$1"
+  local out_file="${out_dir}/eslint-rules.json"
+
+  # Collect all rule-path files for type=eslint across all enforcement points
+  local found=0
+  local rule_ids=""
+
+  for block_file in "${out_dir}"/block-*.yaml; do
+    [[ -f "${block_file}" ]] || continue
+
+    local enforce_keys
+    enforce_keys="$(yq '.enforce | keys | .[]' "${block_file}" 2>/dev/null || true)"
+    while IFS= read -r ekey; do
+      ekey="${ekey//\"/}"
+      [[ -z "${ekey}" ]] && continue
+
+      local etype
+      etype="$(yq ".enforce.\"${ekey}\".type" "${block_file}")"
+      etype="${etype//\"/}"
+      [[ "${etype}" != "eslint" ]] && continue
+
+      local rule_id
+      rule_id="$(yq ".enforce.\"${ekey}\".\"rule-id\"" "${block_file}")"
+      rule_id="${rule_id//\"/}"
+
+      found=$((found + 1))
+      if [[ -n "${rule_ids}" ]]; then
+        rule_ids="${rule_ids},${rule_id}"
+      else
+        rule_ids="${rule_id}"
+      fi
+
+    done <<< "${enforce_keys}"
+  done
+
+  {
+    printf '// GENERATED by ops/compile-floor.sh — do not edit manually.\n'
+    printf '// Re-generate with: ops/compile-floor.sh --generate-enforce\n'
+    if [[ "${found}" -gt 0 ]]; then
+      printf '// ESLint rules from compliance floor: %s\n' "${rule_ids}"
+      printf '{\n'
+      printf '  "_rules": ["%s"],\n' "${rule_ids//,/\",\"}"
+      printf '  "_generated": true\n'
+      printf '}\n'
+    else
+      printf '// No eslint rules defined in compliance floor.\n'
+      printf '{}\n'
+    fi
+  } > "${out_file}"
 }
 
 # ---------------------------------------------------------------------------
@@ -876,6 +1105,10 @@ case "${MODE}" in
       generate_enforce "${OUTPUT_DIR}"
     fi
 
+    # Generate semgrep and eslint config files
+    generate_semgrep "${OUTPUT_DIR}"
+    generate_eslint "${OUTPUT_DIR}"
+
     # Generate coverage report
     generate_coverage "${FLOOR_FILE}" "${OUTPUT_DIR}"
 
@@ -952,6 +1185,8 @@ case "${MODE}" in
     done
 
     generate_enforce "${OUTPUT_DIR}"
+    generate_semgrep "${OUTPUT_DIR}"
+    generate_eslint "${OUTPUT_DIR}"
     echo "Generated enforce.sh to ${OUTPUT_DIR}/enforce.sh (${block_count} rule(s))"
     ;;
 
