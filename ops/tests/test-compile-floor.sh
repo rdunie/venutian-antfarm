@@ -122,8 +122,50 @@ trap cleanup_all EXIT
 setup_tmpdir
 
 # ---------------------------------------------------------------------------
-# Tests will be added in subsequent tasks
+# Section: Extraction tests
 # ---------------------------------------------------------------------------
+
+echo ""
+echo "=== Extraction ==="
+
+EXTRACT_DIR="${TMPDIR_ROOT}/extraction"
+mkdir -p "${EXTRACT_DIR}"
+
+# Run compiler in extract-only mode against the valid fixture
+"${COMPILER}" --extract-only "${FIXTURES}/floor-valid.md" "${EXTRACT_DIR}" 2>/dev/null
+extract_exit=$?
+
+assert_exit "extract-only exits 0 on valid fixture" 0 "${extract_exit}"
+
+# Count extracted blocks (expect 2 — rule 3 has no enforcement block)
+block_count=$(ls "${EXTRACT_DIR}"/block-*.yaml 2>/dev/null | wc -l | tr -d ' ')
+TOTAL=$((TOTAL + 1))
+if [[ "${block_count}" -eq 2 ]]; then
+  echo -e "  ${GREEN}PASS${NC} extracted block count is 2"
+  PASS=$((PASS + 1))
+else
+  echo -e "  ${RED}FAIL${NC} extracted block count is 2 — got ${block_count}"
+  FAIL=$((FAIL + 1))
+fi
+
+# Verify each extracted block is valid YAML (parseable by yq)
+for block_file in "${EXTRACT_DIR}"/block-*.yaml; do
+  if [[ -f "${block_file}" ]]; then
+    yq '.' "${block_file}" >/dev/null 2>&1
+    yq_exit=$?
+    assert_exit "block $(basename "${block_file}") is valid YAML" 0 "${yq_exit}"
+  fi
+done
+
+# Verify block 1 has id=no-hardcoded-secrets
+assert_contains "block-001.yaml has id=no-hardcoded-secrets" \
+  "${EXTRACT_DIR}/block-001.yaml" \
+  "no-hardcoded-secrets"
+
+# Verify block 2 has id=no-console-log
+assert_contains "block-002.yaml has id=no-console-log" \
+  "${EXTRACT_DIR}/block-002.yaml" \
+  "no-console-log"
 
 # ---------------------------------------------------------------------------
 # Results summary
