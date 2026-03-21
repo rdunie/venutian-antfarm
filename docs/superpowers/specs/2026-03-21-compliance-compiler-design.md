@@ -157,18 +157,30 @@ The compiler does NOT modify `settings.json` directly. Instead, it generates a s
 
 ```json
 {
-  "matcher": "Edit|Write",
-  "hooks": [{
-    "type": "command",
-    "command": ".claude/compliance/compiled/enforce.sh pre-tool-use \"$CLAUDE_FILE_PATH\""
-  }]
-},
-{
-  "matcher": "Edit|Write",
-  "hooks": [{
-    "type": "command",
-    "command": ".claude/compliance/compiled/enforce.sh post-tool-use \"$CLAUDE_FILE_PATH\""
-  }]
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/compliance/compiled/enforce.sh pre-tool-use \"$CLAUDE_FILE_PATH\""
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/compliance/compiled/enforce.sh post-tool-use \"$CLAUDE_FILE_PATH\""
+          }
+        ]
+      }
+    ]
+  }
 }
 ```
 
@@ -323,7 +335,7 @@ source: <sha256 of compliance-floor.md>
 compiled-from: <proposal ID>
 artifacts:
   compliance-floor.prose.md: <sha256>
-  hooks.json: <sha256>
+  enforce.sh: <sha256>
   semgrep-rules.yaml: <sha256>
   eslint-rules.json: <sha256>
 ```
