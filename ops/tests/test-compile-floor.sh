@@ -542,6 +542,51 @@ custom_clean_exit=0
 assert_exit "custom-script: clean file → exit 0 (passes)" 0 "${custom_clean_exit}"
 
 # ---------------------------------------------------------------------------
+# Section: End-to-End
+# ---------------------------------------------------------------------------
+
+echo ""
+echo "=== End-to-End ==="
+
+E2E_DIR="${TMPDIR_ROOT}/e2e"
+mkdir -p "${E2E_DIR}"
+
+# Step 1: Full compile with --proposal e2e-001 on valid fixture
+e2e_compile_exit=0
+"${COMPILER}" --proposal e2e-001 "${FIXTURES}/floor-valid.md" "${E2E_DIR}" >/dev/null 2>&1 || e2e_compile_exit=$?
+assert_exit "e2e: full compile with --proposal e2e-001 exits 0" 0 "${e2e_compile_exit}"
+
+# Step 2: Assert all artifacts exist
+assert_file_exists "e2e: prose file exists" "${E2E_DIR}/compliance-floor.prose.md"
+assert_file_exists "e2e: enforce.sh exists" "${E2E_DIR}/enforce.sh"
+assert_file_exists "e2e: manifest.sha256 exists" "${E2E_DIR}/manifest.sha256"
+assert_file_exists "e2e: semgrep-rules.yaml exists" "${E2E_DIR}/semgrep-rules.yaml"
+assert_file_exists "e2e: eslint-rules.json exists" "${E2E_DIR}/eslint-rules.json"
+
+# Step 3: Verify mode passes (exit 0) on freshly compiled artifacts
+e2e_verify_pass_exit=0
+"${COMPILER}" --verify "${FIXTURES}/floor-valid.md" "${E2E_DIR}" >/dev/null 2>&1 || e2e_verify_pass_exit=$?
+assert_exit "e2e: --verify on fresh artifacts exits 0" 0 "${e2e_verify_pass_exit}"
+
+# Step 4: Tamper with enforce.sh
+printf '\n# e2e tamper\n' >> "${E2E_DIR}/enforce.sh"
+
+# Step 5: Verify mode catches tampering (exit 1)
+e2e_verify_tamper_exit=0
+"${COMPILER}" --verify "${FIXTURES}/floor-valid.md" "${E2E_DIR}" >/dev/null 2>&1 || e2e_verify_tamper_exit=$?
+assert_exit "e2e: --verify on tampered enforce.sh exits 1" 1 "${e2e_verify_tamper_exit}"
+
+# Step 6: Recompile with --proposal e2e-002 (fixes tampered artifacts)
+e2e_recompile_exit=0
+"${COMPILER}" --proposal e2e-002 "${FIXTURES}/floor-valid.md" "${E2E_DIR}" >/dev/null 2>&1 || e2e_recompile_exit=$?
+assert_exit "e2e: recompile with --proposal e2e-002 exits 0" 0 "${e2e_recompile_exit}"
+
+# Step 7: Verify mode passes again after recompile (exit 0)
+e2e_verify_final_exit=0
+"${COMPILER}" --verify "${FIXTURES}/floor-valid.md" "${E2E_DIR}" >/dev/null 2>&1 || e2e_verify_final_exit=$?
+assert_exit "e2e: --verify after recompile exits 0" 0 "${e2e_verify_final_exit}"
+
+# ---------------------------------------------------------------------------
 # Results summary
 # ---------------------------------------------------------------------------
 
