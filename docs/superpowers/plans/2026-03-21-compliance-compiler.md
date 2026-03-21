@@ -29,7 +29,7 @@
 | `ops/metrics-log.sh`                                    | Modified: add `compliance-pass` event type and update `compliance-violation` to accept structured fields |
 | `.claude/settings.json`                                 | Modified: add SessionStart staleness check (use Write tool per CLAUDE.md gotchas)                        |
 
-**Testing pattern:** The test harness uses `setup_tmpdir` (defined in Task 1) to create temp directories with centralized cleanup. When test code blocks below show `TMPDIR=$(mktemp -d)` with `trap`, replace with `TMPDIR=$(setup_tmpdir)` and omit the `trap`/`rm -rf` cleanup — `cleanup_all` handles it at exit.
+**Testing pattern:** The test harness uses `setup_tmpdir` (defined in Task 1) to create temp directories with centralized cleanup via `cleanup_all` at exit. All test sections use `TMPDIR=$(setup_tmpdir)` — no manual `trap` or `rm -rf` needed per section.
 
 **Fixture note:** Fixture files contain nested Markdown fencing (enforcement blocks inside Markdown files). Write fixtures with the Write tool rather than copy-pasting from this plan — the nested backtick fencing is unreliable in plan rendering.
 
@@ -98,7 +98,7 @@ Write each fixture with the Write tool. All follow the same pattern: `# Complian
 
 `ops/tests/fixtures/floor-invalid-no-version.md`: id: `no-version-rule`, severity: `blocking`, valid `pre-tool-use` file-pattern, but NO `version` field.
 
-- [ ] **Step 7: Write the test harness shell script**
+- [ ] **Step 5: Write the test harness shell script**
 
 Create `ops/tests/test-compile-floor.sh`:
 
@@ -204,7 +204,7 @@ echo "=== Results: $PASS/$TOTAL passed, $FAIL failed ==="
 [[ $FAIL -eq 0 ]] && exit 0 || exit 1
 ````
 
-- [ ] **Step 8: Make test script executable and verify it runs**
+- [ ] **Step 6: Make test script executable and verify it runs**
 
 ```bash
 chmod +x ops/tests/test-compile-floor.sh
@@ -213,7 +213,7 @@ ops/tests/test-compile-floor.sh
 
 Expected: 0/0 passed, 0 failed (empty test suite runs clean)
 
-- [ ] **Step 9: Commit**
+- [ ] **Step 7: Commit**
 
 ```bash
 git add ops/tests/
@@ -243,8 +243,7 @@ Add to `ops/tests/test-compile-floor.sh` before the results line:
 echo "--- Extraction ---"
 
 # Test: extracts correct number of blocks from valid fixture
-TMPDIR=$(mktemp -d)
-trap "rm -rf $TMPDIR" EXIT
+TMPDIR=$(setup_tmpdir)
 
 "$COMPILER" --extract-only "$FIXTURES/floor-valid.md" "$TMPDIR" 2>/dev/null
 BLOCK_COUNT=$(ls "$TMPDIR"/block-*.yaml 2>/dev/null | wc -l)
@@ -270,8 +269,7 @@ assert_exit "block 1 has id=no-hardcoded-secrets" 0 $([[ "$BLOCK1_ID" == "no-har
 BLOCK2_ID=$(yq '.id' "$TMPDIR/block-002.yaml" 2>/dev/null)
 assert_exit "block 2 has id=no-console-log" 0 $([[ "$BLOCK2_ID" == "no-console-log" ]] && echo 0 || echo 1)
 
-rm -rf "$TMPDIR"
-trap - EXIT
+# cleanup handled by cleanup_all
 ```
 
 - [ ] **Step 2: Run tests to verify they fail**
@@ -448,8 +446,7 @@ Add to `ops/tests/test-compile-floor.sh`:
 ```bash
 echo "--- Validation ---"
 
-TMPDIR=$(mktemp -d)
-trap "rm -rf $TMPDIR" EXIT
+TMPDIR=$(setup_tmpdir)
 
 # Test: valid fixture passes validation
 "$COMPILER" --validate-only "$FIXTURES/floor-valid.md" "$TMPDIR" >/dev/null 2>&1
@@ -471,8 +468,7 @@ assert_exit "severity/action contradiction rejected (exit 2)" 2 $?
 "$COMPILER" --validate-only "$FIXTURES/floor-invalid-no-version.md" "$TMPDIR" >/dev/null 2>&1
 assert_exit "missing version rejected (exit 2)" 2 $?
 
-rm -rf "$TMPDIR"
-trap - EXIT
+# cleanup handled by cleanup_all
 ```
 
 - [ ] **Step 2: Run tests to verify they fail**
@@ -534,8 +530,7 @@ Add to `ops/tests/test-compile-floor.sh`:
 ````bash
 echo "--- Prose Generation ---"
 
-TMPDIR=$(mktemp -d)
-trap "rm -rf $TMPDIR" EXIT
+TMPDIR=$(setup_tmpdir)
 
 "$COMPILER" --prose-only "$FIXTURES/floor-valid.md" "$TMPDIR" >/dev/null 2>&1
 
@@ -544,8 +539,7 @@ assert_not_contains "prose has no enforcement blocks" "$TMPDIR/compliance-floor.
 assert_contains "prose retains rule text" "$TMPDIR/compliance-floor.prose.md" "No hardcoded secrets"
 assert_contains "prose retains rule 2 text" "$TMPDIR/compliance-floor.prose.md" "No console.log"
 
-rm -rf "$TMPDIR"
-trap - EXIT
+# cleanup handled by cleanup_all
 ````
 
 - [ ] **Step 2: Run tests to verify they fail**
@@ -599,8 +593,7 @@ Add to `ops/tests/test-compile-floor.sh`:
 ```bash
 echo "--- enforce.sh Generation ---"
 
-TMPDIR=$(mktemp -d)
-trap "rm -rf $TMPDIR" EXIT
+TMPDIR=$(setup_tmpdir)
 
 "$COMPILER" --generate-enforce "$FIXTURES/floor-valid.md" "$TMPDIR" >/dev/null 2>&1
 
@@ -629,8 +622,7 @@ echo 'logger.info("debug")' > "$TMPDIR/test-file-clean.js"
 "$TMPDIR/enforce.sh" post-tool-use "$TMPDIR/test-file-clean.js" >/dev/null 2>&1
 assert_exit "enforce.sh passes clean file content" 0 $?
 
-rm -rf "$TMPDIR"
-trap - EXIT
+# cleanup handled by cleanup_all
 ```
 
 - [ ] **Step 2: Run tests to verify they fail**
@@ -694,8 +686,7 @@ Add to `ops/tests/test-compile-floor.sh`:
 ```bash
 echo "--- Manifest + Verify ---"
 
-TMPDIR=$(mktemp -d)
-trap "rm -rf $TMPDIR" EXIT
+TMPDIR=$(setup_tmpdir)
 
 # Full compile to get all artifacts
 "$COMPILER" --proposal test-001 "$FIXTURES/floor-valid.md" "$TMPDIR" >/dev/null 2>&1
@@ -714,8 +705,7 @@ echo "# tampered" >> "$TMPDIR/enforce.sh"
 "$COMPILER" --verify "$FIXTURES/floor-valid.md" "$TMPDIR" >/dev/null 2>&1
 assert_exit "verify detects tampered artifact (exit 1)" 1 $?
 
-rm -rf "$TMPDIR"
-trap - EXIT
+# cleanup handled by cleanup_all
 ```
 
 - [ ] **Step 2: Run tests to verify they fail**
@@ -779,8 +769,7 @@ Add to `ops/tests/test-compile-floor.sh`:
 echo "--- Coverage Report ---"
 
 TMPDIR=$(mktemp -d)
-DOCS_DIR=$(mktemp -d)
-trap "rm -rf $TMPDIR $DOCS_DIR" EXIT
+DOCS_DIR=$(setup_tmpdir)
 
 COVERAGE_PATH="$DOCS_DIR/compliance-coverage.md" \
   "$COMPILER" --proposal test-001 "$FIXTURES/floor-valid.md" "$TMPDIR" >/dev/null 2>&1
@@ -791,8 +780,7 @@ assert_contains "coverage lists enforcement points" "$DOCS_DIR/compliance-covera
 assert_contains "coverage has trust summary" "$DOCS_DIR/compliance-coverage.md" "What Each Layer Guarantees"
 assert_contains "coverage flags judgment-only rule" "$DOCS_DIR/compliance-coverage.md" "judgment-only"
 
-rm -rf "$TMPDIR" "$DOCS_DIR"
-trap - EXIT
+# cleanup handled by cleanup_all
 ```
 
 - [ ] **Step 2: Run tests to verify they fail**
@@ -847,8 +835,7 @@ Add to `ops/tests/test-compile-floor.sh`:
 ```bash
 echo "--- Dry Run ---"
 
-TMPDIR=$(mktemp -d)
-trap "rm -rf $TMPDIR" EXIT
+TMPDIR=$(setup_tmpdir)
 
 # Dry run should produce output on stdout but not write files
 OUTPUT=$("$COMPILER" --dry-run "$FIXTURES/floor-valid.md" 2>/dev/null)
@@ -867,8 +854,7 @@ fi
 "$COMPILER" --dry-run "$FIXTURES/floor-invalid-bypass.md" >/dev/null 2>&1
 assert_exit "dry-run exits 2 on invalid input" 2 $?
 
-rm -rf "$TMPDIR"
-trap - EXIT
+# cleanup handled by cleanup_all
 ```
 
 - [ ] **Step 2: Run tests, verify fail, implement, verify pass**
@@ -900,8 +886,7 @@ Add to `ops/tests/test-compile-floor.sh`:
 ```bash
 echo "--- Metrics Events ---"
 
-TMPDIR=$(mktemp -d)
-trap "rm -rf $TMPDIR" EXIT
+TMPDIR=$(setup_tmpdir)
 
 METRICS_LOG_FILE="$TMPDIR/events.jsonl" \
   "$REPO_ROOT/ops/metrics-log.sh" compliance-violation \
@@ -920,8 +905,7 @@ assert_exit "compliance-pass event accepted" 0 $?
 
 assert_contains "pass event has rule-id" "$TMPDIR/events.jsonl" '"rule_id":"no-hardcoded-secrets"'
 
-rm -rf "$TMPDIR"
-trap - EXIT
+# cleanup handled by cleanup_all
 ```
 
 - [ ] **Step 2: Run tests to verify they fail**
@@ -1065,8 +1049,7 @@ Add to `ops/tests/test-compile-floor.sh`:
 ```bash
 echo "--- Intent Declaration ---"
 
-TMPDIR=$(mktemp -d)
-trap "rm -rf $TMPDIR" EXIT
+TMPDIR=$(setup_tmpdir)
 
 "$COMPILER" --proposal test-001 "$FIXTURES/floor-valid.md" "$TMPDIR" >/dev/null 2>&1
 chmod +x "$TMPDIR/enforce.sh"
@@ -1087,8 +1070,7 @@ assert_exit "intent declaration warns on CO agent edit" 1 $?
 "$TMPDIR/enforce.sh" pre-tool-use "src/app.js" >/dev/null 2>&1
 assert_exit "intent declaration passes normal files" 0 $?
 
-rm -rf "$TMPDIR"
-trap - EXIT
+# cleanup handled by cleanup_all
 ```
 
 - [ ] **Step 2: Add sentinel-gated BLOCK tests**
@@ -1167,8 +1149,7 @@ Add to `ops/tests/test-compile-floor.sh`:
 ```bash
 echo "--- Semgrep/ESLint Generation ---"
 
-TMPDIR=$(mktemp -d)
-trap "rm -rf $TMPDIR" EXIT
+TMPDIR=$(setup_tmpdir)
 
 "$COMPILER" --proposal test-001 "$FIXTURES/floor-with-semgrep.md" "$TMPDIR" >/dev/null 2>&1
 
@@ -1178,8 +1159,7 @@ assert_contains "semgrep includes rule reference" "$TMPDIR/semgrep-rules.yaml" "
 assert_contains "eslint includes rule reference" "$TMPDIR/eslint-rules.json" "no-eval"
 assert_contains "semgrep has GENERATED header" "$TMPDIR/semgrep-rules.yaml" "GENERATED"
 
-rm -rf "$TMPDIR"
-trap - EXIT
+# cleanup handled by cleanup_all
 ```
 
 - [ ] **Step 3: Run tests to verify they fail**
@@ -1201,6 +1181,8 @@ Add `generate_semgrep()` and `generate_eslint()` functions:
 Both skip generation (write empty placeholder with header) if no rules use that check type.
 
 Update `enforce.sh` generation: for `post-tool-use` semgrep rules, generate a check function that runs `semgrep --config "$COMPILED_DIR/semgrep-rules.yaml" "$FILE_PATH"`. For eslint, generate `eslint --config "$COMPILED_DIR/eslint-rules.json" "$FILE_PATH"`. Both check if the tool is installed first — if not, print a warning and pass (graceful degradation).
+
+Additionally, implement the unreferenced rule file warning (spec Section 1, validation constraints): scan the repository for `.yaml` files in known semgrep directories and `.json` files in known eslint directories. If any exist that are not referenced by an enforcement block's `rule-path`, emit a warning to stderr (exit 1, not exit 2 — it's a warning, not an error).
 
 - [ ] **Step 5: Run tests to verify they pass**
 
@@ -1255,8 +1237,7 @@ Add to `ops/tests/test-compile-floor.sh`:
 ```bash
 echo "--- Custom Script ---"
 
-TMPDIR=$(mktemp -d)
-trap "rm -rf $TMPDIR" EXIT
+TMPDIR=$(setup_tmpdir)
 
 chmod +x "$FIXTURES/test-custom-check.sh"
 "$COMPILER" --proposal test-001 "$FIXTURES/floor-with-custom-script.md" "$TMPDIR" >/dev/null 2>&1
@@ -1275,13 +1256,14 @@ echo "all good here" > "$TMPDIR/test-good.txt"
 "$TMPDIR/enforce.sh" pre-tool-use "$TMPDIR/test-good.txt" >/dev/null 2>&1
 assert_exit "custom script passes clean file" 0 $?
 
-rm -rf "$TMPDIR"
-trap - EXIT
+# cleanup handled by cleanup_all
 ```
 
 - [ ] **Step 3: Run tests, verify fail, implement, verify pass**
 
-In `generate_enforce()`, add custom-script handling: generate a check function that wraps the script path with `timeout 10` and calls it with the file path as the first argument. Validate during compilation that the script path exists and is within the repository root.
+In `generate_enforce()`, add custom-script handling: generate a check function that wraps the script path with `timeout 10` and `unshare --net` (where available — check with `command -v unshare`, fall back to running without network isolation and printing a warning to stderr). Call the script with the file path as the first argument. During compilation, validate that: the script path exists, is executable, and is within the repository root (reject absolute paths outside `$REPO_ROOT`). Add test for non-existent script path rejection at compile time.
+
+Also add custom script paths to the intent declaration surface area: the generated `enforce.sh` should include custom script paths in its cascading pre-tool-use check, so edits to custom scripts trigger intent declaration warnings.
 
 - [ ] **Step 4: Commit**
 
@@ -1347,8 +1329,7 @@ Add to `ops/tests/test-compile-floor.sh`:
 echo "--- End-to-End ---"
 
 TMPDIR=$(mktemp -d)
-DOCS_DIR=$(mktemp -d)
-trap "rm -rf $TMPDIR $DOCS_DIR" EXIT
+DOCS_DIR=$(setup_tmpdir)
 
 # Full compile
 COVERAGE_PATH="$DOCS_DIR/compliance-coverage.md" \
@@ -1381,8 +1362,7 @@ assert_exit "e2e: recompile succeeds" 0 $?
 "$COMPILER" --verify "$FIXTURES/floor-valid.md" "$TMPDIR" >/dev/null 2>&1
 assert_exit "e2e: verify passes after recompile" 0 $?
 
-rm -rf "$TMPDIR" "$DOCS_DIR"
-trap - EXIT
+# cleanup handled by cleanup_all
 ```
 
 - [ ] **Step 2: Run full test suite**
