@@ -389,6 +389,35 @@ dryrun_invalid_exit=0
 assert_exit "--dry-run on invalid fixture exits 2" 2 "${dryrun_invalid_exit}"
 
 # ---------------------------------------------------------------------------
+# Section: Metrics Events
+# ---------------------------------------------------------------------------
+
+echo ""
+echo "=== Metrics Events ==="
+
+METRICSDIR="$TMPDIR_ROOT/metrics"
+mkdir -p "$METRICSDIR"
+
+metrics_exit=0
+METRICS_LOG_FILE="$METRICSDIR/events.jsonl" \
+  "$REPO_ROOT/ops/metrics-log.sh" compliance-violation \
+    --rule-id no-hardcoded-secrets --severity blocking \
+    --enforcement-point pre-tool-use --file "secrets.env" \
+    --action block >/dev/null 2>&1 || metrics_exit=$?
+assert_exit "compliance-violation with structured fields" 0 $metrics_exit
+
+assert_contains "violation event has rule-id" "$METRICSDIR/events.jsonl" '"rule_id"'
+
+metrics_exit=0
+METRICS_LOG_FILE="$METRICSDIR/events.jsonl" \
+  "$REPO_ROOT/ops/metrics-log.sh" compliance-pass \
+    --rule-id no-hardcoded-secrets \
+    --enforcement-point pre-tool-use --file "app.js" >/dev/null 2>&1 || metrics_exit=$?
+assert_exit "compliance-pass event accepted" 0 $metrics_exit
+
+assert_contains "pass event has rule-id" "$METRICSDIR/events.jsonl" '"rule_id"'
+
+# ---------------------------------------------------------------------------
 # Results summary
 # ---------------------------------------------------------------------------
 
