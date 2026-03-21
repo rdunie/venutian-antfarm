@@ -1,6 +1,5 @@
 ---
 name: frontend-specialist
-extends: harness/platform-ops
 description: "Frontend specialist agent. Owns UI components, state management, styling, and component tests."
 model: sonnet
 color: cyan

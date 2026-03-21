@@ -25,3 +25,6 @@ node_modules/
 
 # Compliance governance sentinel file (transient, never committed)
 .claude/compliance/.applying
+
+# Test worktrees (created by ops/test-example.sh)
+.worktrees/
