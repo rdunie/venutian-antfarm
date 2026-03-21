@@ -1,0 +1,78 @@
+{
+  "project": {
+    "name": "health-data-platform",
+    "description": "Healthcare data platform with HIPAA compliance requirements"
+  },
+  "metrics": {
+    "backend": "jsonl",
+    "file": ".claude/metrics/events.jsonl"
+  },
+  "deploy": {
+    "command": "ops/deploy.sh",
+    "environments": ["dev", "staging", "prod"]
+  },
+  "pace": {
+    "current": "Crawl",
+    "walk_threshold_cfr": 5,
+    "run_threshold_cfr": 2,
+    "run_threshold_fpy": 90
+  },
+  "agents": {
+    "governance": [
+      "compliance-officer",
+      "ciso",
+      "ceo",
+      "cto",
+      "cfo",
+      "coo",
+      "cko"
+    ],
+    "core": [
+      "product-owner",
+      "solution-architect",
+      "scrum-master",
+      "knowledge-ops",
+      "platform-ops",
+      "compliance-auditor"
+    ],
+    "specialists": ["backend-specialist"],
+    "reviewers": ["security-reviewer"],
+    "output": []
+  },
+  "retro": {
+    "cadence": 1,
+    "note": "Every item. Regulated domain — retros capture compliance learnings immediately."
+  },
+  "knowledge": {
+    "cadence": {
+      "crawl": 1,
+      "walk": 1,
+      "run": 2,
+      "fly": 0
+    },
+    "note": "Frequent distribution. Compliance knowledge must propagate quickly."
+  },
+  "pathways": {
+    "declared": {
+      "build": [
+        "product-owner -> backend-specialist",
+        "backend-specialist -> product-owner"
+      ],
+      "review": [
+        "backend-specialist -> security-reviewer",
+        "security-reviewer -> backend-specialist"
+      ],
+      "escalation": ["* -> solution-architect", "* -> scrum-master"],
+      "governance": [
+        "ciso -> compliance-officer",
+        "compliance-officer -> compliance-auditor",
+        "* -> compliance-officer",
+        "cko -> knowledge-ops",
+        "cto -> solution-architect",
+        "cfo -> platform-ops",
+        "coo -> scrum-master",
+        "* -> ceo"
+      ]
+    }
+  }
+}
