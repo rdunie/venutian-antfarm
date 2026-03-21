@@ -418,6 +418,63 @@ assert_exit "compliance-pass event accepted" 0 $metrics_exit
 assert_contains "pass event has rule-id" "$METRICSDIR/events.jsonl" '"rule_id"'
 
 # ---------------------------------------------------------------------------
+# Section: Intent Declaration
+# ---------------------------------------------------------------------------
+
+echo ""
+echo "=== Intent Declaration ==="
+
+INTENT_DIR="${TMPDIR_ROOT}/intent"
+mkdir -p "${INTENT_DIR}"
+
+# Generate enforce.sh from valid fixture
+intent_gen_exit=0
+"${COMPILER}" --generate-enforce "${FIXTURES}/floor-valid.md" "${INTENT_DIR}" >/dev/null 2>&1 || intent_gen_exit=$?
+assert_exit "intent: generate-enforce exits 0" 0 "${intent_gen_exit}"
+chmod +x "${INTENT_DIR}/enforce.sh"
+
+# Test: compiled artifact path → exit 1 (warn)
+intent_compiled_exit=0
+"${INTENT_DIR}/enforce.sh" pre-tool-use ".claude/compliance/compiled/enforce.sh" || intent_compiled_exit=$?
+assert_exit "intent: compiled artifact → exit 1 (warn)" 1 "${intent_compiled_exit}"
+
+# Test: compiler script → exit 1 (warn)
+intent_compiler_exit=0
+"${INTENT_DIR}/enforce.sh" pre-tool-use "ops/compile-floor.sh" || intent_compiler_exit=$?
+assert_exit "intent: compiler script → exit 1 (warn)" 1 "${intent_compiler_exit}"
+
+# Test: compliance agent def → exit 1 (warn)
+intent_agent_exit=0
+"${INTENT_DIR}/enforce.sh" pre-tool-use ".claude/agents/compliance-officer.md" || intent_agent_exit=$?
+assert_exit "intent: compliance agent def → exit 1 (warn)" 1 "${intent_agent_exit}"
+
+# Test: normal source file → exit 0 (pass through to rule checks)
+intent_normal_exit=0
+"${INTENT_DIR}/enforce.sh" pre-tool-use "src/app.js" || intent_normal_exit=$?
+assert_exit "intent: normal file → exit 0 (pass through)" 0 "${intent_normal_exit}"
+
+# Test: compliance-floor.md with no sentinel → exit 2 (block)
+intent_floor_nosent_exit=0
+"${INTENT_DIR}/enforce.sh" pre-tool-use "compliance-floor.md" || intent_floor_nosent_exit=$?
+assert_exit "intent: compliance-floor.md no sentinel → exit 2 (block)" 2 "${intent_floor_nosent_exit}"
+
+# Test: compliance targets.md with no sentinel → exit 2 (block)
+intent_targets_nosent_exit=0
+"${INTENT_DIR}/enforce.sh" pre-tool-use ".claude/compliance/targets.md" || intent_targets_nosent_exit=$?
+assert_exit "intent: .claude/compliance/targets.md no sentinel → exit 2 (block)" 2 "${intent_targets_nosent_exit}"
+
+# Test: compliance-floor.md with sentinel → exit 1 (warn instead of block)
+mkdir -p "${INTENT_DIR}/.claude/compliance"
+touch "${INTENT_DIR}/.claude/compliance/.applying"
+# Run enforce.sh from inside INTENT_DIR so sentinel path is relative to cwd
+pushd "${INTENT_DIR}" >/dev/null
+intent_floor_sent_exit=0
+"${INTENT_DIR}/enforce.sh" pre-tool-use "compliance-floor.md" || intent_floor_sent_exit=$?
+popd >/dev/null
+rm -f "${INTENT_DIR}/.claude/compliance/.applying"
+assert_exit "intent: compliance-floor.md with sentinel → exit 1 (warn)" 1 "${intent_floor_sent_exit}"
+
+# ---------------------------------------------------------------------------
 # Results summary
 # ---------------------------------------------------------------------------
 
