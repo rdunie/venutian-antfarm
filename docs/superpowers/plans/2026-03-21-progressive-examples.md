@@ -149,14 +149,68 @@ examples/02-ecommerce/ops/deploy.sh
 
 - [ ] **Step 3: Update 02-ecommerce README.md**
 
-Update the README to reference its position in the progression. Change the `cp -r example/` instruction to `cp -r examples/02-ecommerce/`. Add a note: "You should be comfortable with 01-getting-started before this example." Update the structure tree paths.
+Replace the full content of `examples/02-ecommerce/README.md` with:
+
+```markdown
+# Example 02: E-Commerce Platform
+
+A two-specialist e-commerce setup demonstrating agent inheritance, overrides, and domain-specific compliance. This is the first example that uses `extends:` to inherit from harness templates.
+
+## What This Teaches Beyond 01
+
+- Splitting work across **multiple specialists** with distinct domains and tech stacks
+- **Agent inheritance** with `extends:` for specialists and overrides for core agents
+- **Domain-specific compliance** (PCI, GDPR, audit logging)
+- **Tuning framework knobs**: retro cadence, knowledge cadence
+
+## Structure
+```
+
+02-ecommerce/
+├── .claude/
+│ ├── agents/
+│ │ ├── frontend-specialist.md # Extends harness template
+│ │ └── backend-specialist.md # Extends harness template
+│ └── overrides/
+│ └── scrum-master.md # Retro cadence override
+├── compliance-floor.md # 5 rules (PCI, GDPR, audit)
+├── fleet-config.json # 2 specialists, pathways, knowledge cadence
+└── ops/
+└── deploy.sh # Deploy stub
+
+````
+
+## Try It
+
+```bash
+ops/test-example.sh 02-ecommerce
+# cd into the worktree, open Claude Code
+/po
+````
+
+## What to Try
+
+1. **`/po`** — See the fleet with two specialists
+2. **Build a feature touching both frontend and backend** — watch the PO dispatch to each specialist
+3. **Look at the agent files** — see how `extends: harness/frontend-specialist` works
+4. **Look at the scrum-master override** — see how retro cadence is changed without redefining the whole agent
+
+## Prerequisites
+
+You should be comfortable with [01-getting-started](../01-getting-started/) before this example.
+
+## Next Example
+
+Move to [03-multi-team](../03-multi-team/) to learn about review gates and cross-team pathways.
+
+````
 
 - [ ] **Step 4: Commit**
 
 ```bash
-git add examples/ -A
+git add examples/
 git commit -m "refactor: migrate example/ to examples/02-ecommerce/"
-```
+````
 
 ---
 
@@ -314,9 +368,13 @@ echo ""
 echo "deployment_id=gs-${ENV}-${COMPONENT}-$(date +%s)"
 ```
 
-Make it executable: `chmod +x examples/01-getting-started/ops/deploy.sh`
+- [ ] **Step 6: Make scripts executable**
 
-- [ ] **Step 6: Create README.md**
+```bash
+chmod +x examples/01-getting-started/ops/deploy.sh
+```
+
+- [ ] **Step 7: Create README.md**
 
 ```markdown
 # Example 01: Getting Started
@@ -367,17 +425,17 @@ Once you're comfortable with the lifecycle, move to [02-ecommerce](../02-ecommer
 
 ````
 
-- [ ] **Step 7: Verify JSON validity**
+- [ ] **Step 8: Verify JSON validity**
 
 Run: `python3 -c "import json; json.load(open('examples/01-getting-started/fleet-config.json')); print('valid')"`
 Expected: `valid`
 
-- [ ] **Step 8: Verify deploy script syntax**
+- [ ] **Step 9: Verify deploy script syntax**
 
 Run: `bash -n examples/01-getting-started/ops/deploy.sh && echo 'ok'`
 Expected: `ok`
 
-- [ ] **Step 9: Commit**
+- [ ] **Step 10: Commit**
 
 ```bash
 git add examples/01-getting-started/
@@ -688,9 +746,13 @@ echo ""
 echo "deployment_id=saas-${ENV}-${COMPONENT}-$(date +%s)"
 ```
 
-Make executable: `chmod +x examples/03-multi-team/ops/deploy.sh`
+- [ ] **Step 9: Make scripts executable**
 
-- [ ] **Step 9: Create README.md**
+```bash
+chmod +x examples/03-multi-team/ops/deploy.sh
+```
+
+- [ ] **Step 10: Create README.md**
 
 ```markdown
 # Example 03: Multi-Team
@@ -744,7 +806,7 @@ You should be comfortable with [01-getting-started](../01-getting-started/) and 
 
 ````
 
-- [ ] **Step 10: Verify JSON validity and script syntax**
+- [ ] **Step 11: Verify JSON validity and script syntax**
 
 Run: `python3 -c "import json; json.load(open('examples/03-multi-team/fleet-config.json')); print('valid')"`
 Expected: `valid`
@@ -752,7 +814,7 @@ Expected: `valid`
 Run: `bash -n examples/03-multi-team/ops/deploy.sh && echo 'ok'`
 Expected: `ok`
 
-- [ ] **Step 11: Commit**
+- [ ] **Step 12: Commit**
 
 ```bash
 git add examples/03-multi-team/
@@ -1038,8 +1100,6 @@ echo ""
 echo "deployment_id=health-${ENV}-${COMPONENT}-$(date +%s)"
 ```
 
-Make executable: `chmod +x examples/04-compliance-heavy/ops/deploy.sh`
-
 - [ ] **Step 8: Create setup.sh**
 
 ```bash
@@ -1078,9 +1138,14 @@ echo "Seeded compliance proposal: .claude/compliance/proposals/001-add-analytics
 echo "Try: /compliance to interact with the proposal"
 ```
 
-Make executable: `chmod +x examples/04-compliance-heavy/setup.sh`
+- [ ] **Step 9: Make scripts executable**
 
-- [ ] **Step 9: Create README.md**
+```bash
+chmod +x examples/04-compliance-heavy/ops/deploy.sh
+chmod +x examples/04-compliance-heavy/setup.sh
+```
+
+- [ ] **Step 10: Create README.md**
 
 ```markdown
 # Example 04: Compliance-Heavy
@@ -1135,7 +1200,7 @@ You should be comfortable with [03-multi-team](../03-multi-team/) before this ex
 
 ````
 
-- [ ] **Step 10: Verify JSON validity and script syntax**
+- [ ] **Step 11: Verify JSON validity and script syntax**
 
 Run: `python3 -c "import json; json.load(open('examples/04-compliance-heavy/fleet-config.json')); print('valid')"`
 Expected: `valid`
@@ -1146,7 +1211,7 @@ Expected: `ok`
 Run: `bash -n examples/04-compliance-heavy/setup.sh && echo 'ok'`
 Expected: `ok`
 
-- [ ] **Step 11: Commit**
+- [ ] **Step 12: Commit**
 
 ```bash
 git add examples/04-compliance-heavy/
@@ -1494,8 +1559,6 @@ echo ""
 echo "deployment_id=fintech-${ENV}-${COMPONENT}-$(date +%s)"
 ```
 
-Make executable: `chmod +x examples/05-operational-maturity/ops/deploy.sh`
-
 - [ ] **Step 10: Create setup.sh**
 
 ```bash
@@ -1542,9 +1605,14 @@ echo "Seeded: 8 completed items, 2 bug cycles, 3 handoffs"
 echo "Run: ops/dora.sh to see the dashboard"
 ```
 
-Make executable: `chmod +x examples/05-operational-maturity/setup.sh`
+- [ ] **Step 11: Make scripts executable**
 
-- [ ] **Step 11: Create README.md**
+```bash
+chmod +x examples/05-operational-maturity/ops/deploy.sh
+chmod +x examples/05-operational-maturity/setup.sh
+```
+
+- [ ] **Step 12: Create README.md**
 
 ```markdown
 # Example 05: Operational Maturity
@@ -1601,7 +1669,7 @@ You should be comfortable with all previous examples. This one shows the operati
 
 ````
 
-- [ ] **Step 12: Verify JSON validity and script syntax**
+- [ ] **Step 13: Verify JSON validity and script syntax**
 
 Run: `python3 -c "import json; json.load(open('examples/05-operational-maturity/fleet-config.json')); print('valid')"`
 Expected: `valid`
@@ -1612,7 +1680,7 @@ Expected: `ok`
 Run: `bash -n examples/05-operational-maturity/setup.sh && echo 'ok'`
 Expected: `ok`
 
-- [ ] **Step 13: Commit**
+- [ ] **Step 14: Commit**
 
 ```bash
 git add examples/05-operational-maturity/
@@ -1802,14 +1870,18 @@ else
 fi
 ```
 
-Make executable: `chmod +x ops/test-example.sh`
+- [ ] **Step 2: Make script executable**
 
-- [ ] **Step 2: Verify script syntax**
+```bash
+chmod +x ops/test-example.sh
+```
+
+- [ ] **Step 3: Verify script syntax**
 
 Run: `bash -n ops/test-example.sh && echo 'ok'`
 Expected: `ok`
 
-- [ ] **Step 3: Commit**
+- [ ] **Step 4: Commit**
 
 ```bash
 git add ops/test-example.sh
