@@ -285,6 +285,44 @@ enf_logger_exit=0
 assert_exit "enforce.sh post-tool-use logger.info file → exit 0 (no match)" 0 "$enf_logger_exit"
 
 # ---------------------------------------------------------------------------
+# Section: Manifest + Verify
+# ---------------------------------------------------------------------------
+
+echo ""
+echo "=== Manifest + Verify ==="
+
+MANIFESTDIR="${TMPDIR_ROOT}/manifest"
+mkdir -p "${MANIFESTDIR}"
+
+# Run full compile with --proposal test-001 on valid fixture
+manifest_compile_exit=0
+"${COMPILER}" --proposal test-001 "${FIXTURES}/floor-valid.md" "${MANIFESTDIR}" >/dev/null 2>&1 || manifest_compile_exit=$?
+assert_exit "full compile with --proposal exits 0" 0 "${manifest_compile_exit}"
+
+# Assert: manifest.sha256 exists
+assert_file_exists "manifest.sha256 exists" "${MANIFESTDIR}/manifest.sha256"
+
+# Assert: manifest contains "source:" line
+assert_contains "manifest contains source: line" "${MANIFESTDIR}/manifest.sha256" "^source:"
+
+# Assert: manifest contains proposal ID "test-001"
+assert_contains "manifest contains test-001 proposal ID" "${MANIFESTDIR}/manifest.sha256" "test-001"
+
+# Assert: manifest contains enforce.sh artifact hash
+assert_contains "manifest contains enforce.sh artifact hash" "${MANIFESTDIR}/manifest.sha256" "enforce\.sh:"
+
+# Verify mode: run --verify against same floor + output dir → exit 0
+verify_pass_exit=0
+"${COMPILER}" --verify "${FIXTURES}/floor-valid.md" "${MANIFESTDIR}" >/dev/null 2>&1 || verify_pass_exit=$?
+assert_exit "--verify on unmodified artifacts exits 0" 0 "${verify_pass_exit}"
+
+# Tamper: append "# tampered" to enforce.sh, run --verify again → exit 1
+printf '\n# tampered\n' >> "${MANIFESTDIR}/enforce.sh"
+verify_fail_exit=0
+"${COMPILER}" --verify "${FIXTURES}/floor-valid.md" "${MANIFESTDIR}" >/dev/null 2>&1 || verify_fail_exit=$?
+assert_exit "--verify on tampered artifacts exits 1" 1 "${verify_fail_exit}"
+
+# ---------------------------------------------------------------------------
 # Results summary
 # ---------------------------------------------------------------------------
 

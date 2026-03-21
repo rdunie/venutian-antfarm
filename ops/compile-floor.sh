@@ -11,10 +11,10 @@ set -euo pipefail
 #   compile-floor.sh [options] [floor-file] [output-dir]
 #
 # Options:
-#   --dry-run       Show what would be done without writing files (planned)
-#   --verify        Validate extracted blocks without generating output (planned)
-#   --extract-only  Extract blocks and write YAML files, then stop
-#   --proposal      Emit a compliance proposal instead of hooks (planned)
+#   --dry-run         Show what would be done without writing files (planned)
+#   --verify          Verify artifacts against manifest.sha256 (exit 0=clean, 1=drift)
+#   --extract-only    Extract blocks and write YAML files, then stop
+#   --proposal <id>   Set proposal ID embedded in manifest (full compile mode)
 #
 # Defaults:
 #   floor-file  compliance-floor.md
@@ -28,6 +28,7 @@ set -euo pipefail
 FLOOR_FILE="compliance-floor.md"
 OUTPUT_DIR=".claude/compliance/compiled"
 MODE=""
+PROPOSAL_ID=""
 
 # ---------------------------------------------------------------------------
 # Arg parsing
@@ -50,8 +51,8 @@ while [[ $# -gt 0 ]]; do
       shift
       ;;
     --proposal)
-      MODE="proposal"
-      shift
+      PROPOSAL_ID="$2"
+      shift 2
       ;;
     --validate-only)
       MODE="validate-only"
@@ -86,7 +87,7 @@ fi
 
 # Default mode if none specified
 if [[ -z "${MODE}" ]]; then
-  MODE="extract-only"
+  MODE="compile"
 fi
 
 # ---------------------------------------------------------------------------
@@ -567,10 +568,159 @@ ENFORCE_TAIL
 }
 
 # ---------------------------------------------------------------------------
+# generate_manifest — write manifest.sha256 for staleness detection
+#
+# Arguments:
+#   $1  input floor file (source)
+#   $2  output directory (must contain compiled artifacts)
+#   $3  proposal ID (may be empty)
+#
+# Writes manifest.sha256 to $2.
+# ---------------------------------------------------------------------------
+
+generate_manifest() {
+  local floor_file="$1"
+  local out_dir="$2"
+  local proposal_id="${3:-}"
+
+  local source_hash
+  source_hash="$(sha256sum "${floor_file}" | cut -d' ' -f1)"
+
+  local prose_hash=""
+  if [[ -f "${out_dir}/compliance-floor.prose.md" ]]; then
+    prose_hash="$(sha256sum "${out_dir}/compliance-floor.prose.md" | cut -d' ' -f1)"
+  fi
+
+  local enforce_hash=""
+  if [[ -f "${out_dir}/enforce.sh" ]]; then
+    enforce_hash="$(sha256sum "${out_dir}/enforce.sh" | cut -d' ' -f1)"
+  fi
+
+  {
+    printf 'source: %s\n' "${source_hash}"
+    printf 'compiled-from: %s\n' "${proposal_id}"
+    printf 'artifacts:\n'
+    printf '  compliance-floor.prose.md: %s\n' "${prose_hash}"
+    printf '  enforce.sh: %s\n' "${enforce_hash}"
+  } > "${out_dir}/manifest.sha256"
+}
+
+# ---------------------------------------------------------------------------
+# verify_manifest — compare current hashes against manifest.sha256
+#
+# Arguments:
+#   $1  input floor file (source)
+#   $2  output directory (must contain manifest.sha256 and artifacts)
+#
+# Exits 0 if all hashes match, exits 1 if any differ (prints which drifted).
+# ---------------------------------------------------------------------------
+
+verify_manifest() {
+  local floor_file="$1"
+  local out_dir="$2"
+  local manifest_file="${out_dir}/manifest.sha256"
+
+  if [[ ! -f "${manifest_file}" ]]; then
+    echo "ERROR: manifest.sha256 not found in ${out_dir}" >&2
+    exit 1
+  fi
+
+  local drift=0
+
+  # Compare source hash
+  local recorded_source
+  recorded_source="$(grep '^source:' "${manifest_file}" | awk '{print $2}')"
+  local current_source
+  current_source="$(sha256sum "${floor_file}" | cut -d' ' -f1)"
+  if [[ "${current_source}" != "${recorded_source}" ]]; then
+    echo "DRIFT: source floor file has changed (${floor_file})"
+    drift=1
+  fi
+
+  # Compare prose artifact
+  if grep -q 'compliance-floor\.prose\.md:' "${manifest_file}"; then
+    local recorded_prose
+    recorded_prose="$(grep 'compliance-floor\.prose\.md:' "${manifest_file}" | awk '{print $2}')"
+    if [[ -n "${recorded_prose}" ]]; then
+      local current_prose=""
+      if [[ -f "${out_dir}/compliance-floor.prose.md" ]]; then
+        current_prose="$(sha256sum "${out_dir}/compliance-floor.prose.md" | cut -d' ' -f1)"
+      fi
+      if [[ "${current_prose}" != "${recorded_prose}" ]]; then
+        echo "DRIFT: compliance-floor.prose.md has changed"
+        drift=1
+      fi
+    fi
+  fi
+
+  # Compare enforce.sh artifact
+  if grep -q 'enforce\.sh:' "${manifest_file}"; then
+    local recorded_enforce
+    recorded_enforce="$(grep 'enforce\.sh:' "${manifest_file}" | awk '{print $2}')"
+    if [[ -n "${recorded_enforce}" ]]; then
+      local current_enforce=""
+      if [[ -f "${out_dir}/enforce.sh" ]]; then
+        current_enforce="$(sha256sum "${out_dir}/enforce.sh" | cut -d' ' -f1)"
+      fi
+      if [[ "${current_enforce}" != "${recorded_enforce}" ]]; then
+        echo "DRIFT: enforce.sh has changed"
+        drift=1
+      fi
+    fi
+  fi
+
+  if [[ "${drift}" -eq 1 ]]; then
+    exit 1
+  fi
+  echo "All artifacts match manifest — no drift detected"
+  exit 0
+}
+
+# ---------------------------------------------------------------------------
 # Mode dispatch
 # ---------------------------------------------------------------------------
 
 case "${MODE}" in
+  compile)
+    if [[ ! -f "${FLOOR_FILE}" ]]; then
+      echo "ERROR: Floor file not found: ${FLOOR_FILE}" >&2
+      exit 1
+    fi
+
+    mkdir -p "${OUTPUT_DIR}"
+
+    # Extract blocks to a temp dir for validation
+    local_compile_tmp="$(mktemp -d)"
+    trap 'rm -rf "${local_compile_tmp}"' EXIT
+
+    block_count=$(extract_blocks "${FLOOR_FILE}" "${local_compile_tmp}")
+
+    if [[ "${block_count}" -gt 0 ]]; then
+      for block_file in "${local_compile_tmp}"/block-*.yaml; do
+        validate_block "${block_file}"
+      done
+    fi
+
+    # Copy validated blocks to output dir
+    for block_file in "${local_compile_tmp}"/block-*.yaml; do
+      [[ -f "${block_file}" ]] || continue
+      cp "${block_file}" "${OUTPUT_DIR}/"
+    done
+
+    # Generate prose
+    generate_prose "${FLOOR_FILE}" "${OUTPUT_DIR}"
+
+    # Generate enforce.sh (if any blocks)
+    if [[ "${block_count}" -gt 0 ]]; then
+      generate_enforce "${OUTPUT_DIR}"
+    fi
+
+    # Generate manifest
+    generate_manifest "${FLOOR_FILE}" "${OUTPUT_DIR}" "${PROPOSAL_ID}"
+
+    echo "Compiled ${block_count} rule(s) to ${OUTPUT_DIR} (proposal: ${PROPOSAL_ID:-<none>})"
+    ;;
+
   extract-only)
     if [[ ! -f "${FLOOR_FILE}" ]]; then
       echo "ERROR: Floor file not found: ${FLOOR_FILE}" >&2
@@ -641,7 +791,16 @@ case "${MODE}" in
     echo "Generated enforce.sh to ${OUTPUT_DIR}/enforce.sh (${block_count} rule(s))"
     ;;
 
-  dry-run|verify|proposal)
+  verify)
+    if [[ ! -f "${FLOOR_FILE}" ]]; then
+      echo "ERROR: Floor file not found: ${FLOOR_FILE}" >&2
+      exit 1
+    fi
+
+    verify_manifest "${FLOOR_FILE}" "${OUTPUT_DIR}"
+    ;;
+
+  dry-run)
     echo "ERROR: Mode '${MODE}' is not yet implemented." >&2
     exit 2
     ;;
