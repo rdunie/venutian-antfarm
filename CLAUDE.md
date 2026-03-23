@@ -68,6 +68,7 @@ ops/metrics-log.sh item-accepted 42
 ops/metrics-log.sh bug-found 42 --severity high --source regression
 ops/metrics-log.sh handoff-sent 42 --from backend-specialist --to security-reviewer
 ops/metrics-log.sh agent-invoked product-owner --tokens 45800 --turns 10 --model opus --item 42
+ops/metrics-log.sh backlog-triaged --items-reviewed 12 --items-added 2 --items-dropped 1 --items-reordered 3
 # Other event types: ext-deployed, bug-fixed, handoff-rejected, item-rejected-at-build,
 # task-restarted, task-discarded, task-blocked, task-unblocked, regression-run
 
@@ -115,16 +116,17 @@ bash -n ops/*.sh                     # Syntax-check all scripts
 
 ## Workflow
 
-1. **Track** -- When the user requests work not currently tracked, add an item to the backlog before or alongside execution. No untracked work.
-2. **Clarify** -- Confirm intent before designing. Ask if ambiguous.
-3. **Plan** -- Plan before building for non-trivial tasks. Get approval first.
-4. **Research** -- Fetch docs before guessing at APIs.
-5. **Delegate** -- Dispatch specialists for domain-specific work. Ad-hoc requests go to the backlog first.
-6. **TDD** -- Tests first. Write tests before implementation.
-7. **Commit often** -- Conventional commits after each passing task.
-8. **Validate** -- Full validation cycle: code, test, typecheck, build, deploy.
+1. **Prioritize** -- Triage the backlog before grooming. Run `/po triage`.
+2. **Track** -- When the user requests work not currently tracked, add an item to the backlog before or alongside execution. No untracked work.
+3. **Clarify** -- Confirm intent before designing. Ask if ambiguous.
+4. **Plan** -- Plan before building for non-trivial tasks. Get approval first.
+5. **Research** -- Fetch docs before guessing at APIs.
+6. **Delegate** -- Dispatch specialists for domain-specific work. Ad-hoc requests go to the backlog first.
+7. **TDD** -- Tests first. Write tests before implementation.
+8. **Commit often** -- Conventional commits after each passing task.
+9. **Validate** -- Full validation cycle: code, test, typecheck, build, deploy.
 
-Work items follow the 9-phase lifecycle defined in `.claude/COLLABORATION.md` § Work Item Lifecycle: Groom, Promote, Build, Review, Fix, Deploy, Accept, Retro, Checkpoint.
+Work items follow the 10-phase lifecycle defined in `.claude/COLLABORATION.md` § Work Item Lifecycle: Prioritize, Groom, Promote, Build, Review, Fix, Deploy, Accept, Retro, Checkpoint.
 
 ## Agent Inheritance
 

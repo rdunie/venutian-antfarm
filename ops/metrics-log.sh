@@ -41,6 +41,7 @@ TOKENS="" TURNS="" DURATION="" MODEL="" TASK=""
 PROPOSAL="" SCOPE="" METHOD="" CHANGE_TYPE=""
 BRANCH="" PR=""
 TOPIC="" BY="" TRIGGER="" ACTION="" ITEMS=""
+ITEMS_REVIEWED="" ITEMS_ADDED="" ITEMS_DROPPED="" ITEMS_REORDERED=""
 RULE_ID="" ENFORCEMENT_POINT="" FILE_PATH_ARG=""
 POSITIONAL=()
 while [[ $# -gt 0 ]]; do
@@ -73,6 +74,10 @@ while [[ $# -gt 0 ]]; do
     --rule-id) RULE_ID="$2"; shift 2 ;;
     --enforcement-point) ENFORCEMENT_POINT="$2"; shift 2 ;;
     --file) FILE_PATH_ARG="$2"; shift 2 ;;
+    --items-reviewed) ITEMS_REVIEWED="$2"; shift 2 ;;
+    --items-added) ITEMS_ADDED="$2"; shift 2 ;;
+    --items-dropped) ITEMS_DROPPED="$2"; shift 2 ;;
+    --items-reordered) ITEMS_REORDERED="$2"; shift 2 ;;
     *) POSITIONAL+=("$1"); shift ;;
   esac
 done
@@ -318,6 +323,14 @@ case "$EVENT_TYPE" in
        '{"ts":$ts,"event":"item-rejected-at-acceptance","item":$item,"reason":$reason,"agent":$agent} | with_entries(select(.value != ""))')"
     ;;
 
+  backlog-triaged)
+    emit_event "$(jq -cn --arg ts "$TS" --arg event "$EVENT_TYPE" \
+       --arg items_reviewed "$ITEMS_REVIEWED" --arg items_added "$ITEMS_ADDED" \
+       --arg items_dropped "$ITEMS_DROPPED" --arg items_reordered "$ITEMS_REORDERED" \
+       --arg agent "$AGENT" \
+       '{"ts":$ts,"event":$event,"items_reviewed":$items_reviewed,"items_added":$items_added,"items_dropped":$items_dropped,"items_reordered":$items_reordered,"agent":$agent} | with_entries(select(.value != ""))')"
+    ;;
+
   *)
     echo "ERROR: unknown event type '$EVENT_TYPE'" >&2
     echo "Valid types: item-promoted item-accepted ext-deployed bug-found bug-fixed" >&2
@@ -327,7 +340,7 @@ case "$EVENT_TYPE" in
     echo "             compliance-proposed compliance-approved compliance-rejected" >&2
     echo "             compliance-applied compliance-violation compliance-pass compliance-reverted" >&2
     echo "             branch-created pr-opened pr-merged" >&2
-    echo "             guidance-published ceo-autonomy-granted ceo-autonomy-violation knowledge-distributed" >&2
+    echo "             guidance-published ceo-autonomy-granted ceo-autonomy-violation knowledge-distributed backlog-triaged" >&2
     exit 1
     ;;
 esac

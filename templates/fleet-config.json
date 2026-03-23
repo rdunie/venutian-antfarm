@@ -55,6 +55,8 @@
     },
     "note": "Items between knowledge distributions per pace. 0 = on-demand/retro only."
   },
+  "prioritize_cadence": "per-iteration",
+  "prioritize_cadence_note": "When Phase 0 (Prioritize) runs. Options: per-iteration (default), per-session, per-item.",
   "pathways": {
     "declared": {
       "build": [

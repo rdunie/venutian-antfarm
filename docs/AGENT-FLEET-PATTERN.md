@@ -230,10 +230,11 @@ Two complementary metric groups provide evidence for pace decisions and process 
 
 ### 7. Work Item Lifecycle
 
-Every work item flows through 9 phases:
+The lifecycle has 10 phases. Phase 0 runs per-iteration; Phases 1-9 run per-item:
 
 | Phase             | What Happens                                                        | Who Leads      |
 | ----------------- | ------------------------------------------------------------------- | -------------- |
+| **0. Prioritize** | Triage the backlog: signals, reprioritize, triage report            | PO leads       |
 | **1. Groom**      | Triad collaborates: acceptance criteria, sizing, NFRs, dependencies | PO leads       |
 | **2. Promote**    | Expand to full work item with story, AC, NFRs                       | PO             |
 | **3. Build**      | Specialists execute with TDD. Owner validates end-to-end.           | Specialists    |
