@@ -119,13 +119,17 @@ extract_blocks() {
   local in_block=0
   local block_num=0
   local current_block=""
+  local line_num=0
+  local block_start_line=0
 
   while IFS= read -r line || [[ -n "${line}" ]]; do
+    line_num=$((line_num + 1))
     if [[ "${in_block}" -eq 0 ]]; then
       # Look for opening enforcement fence
       if [[ "${line}" == '```enforcement' ]]; then
         in_block=1
         current_block=""
+        block_start_line="${line_num}"
       fi
     else
       # Inside a block — look for closing fence
@@ -135,7 +139,8 @@ extract_blocks() {
         block_num=$((block_num + 1))
         local padded
         padded=$(printf "%03d" "${block_num}")
-        printf '%s\n' "${current_block}" > "${out_dir}/block-${padded}.yaml"
+        # Prepend source line number as metadata for error reporting
+        printf '_source_line: %s\n%s\n' "${block_start_line}" "${current_block}" > "${out_dir}/block-${padded}.yaml"
       else
         # Accumulate block content
         if [[ -n "${current_block}" ]]; then
@@ -172,22 +177,38 @@ validate_block() {
   block_name="$(basename "${block_file}")"
   local valid=1
 
+  # Read source line number for error context
+  local source_line
+  source_line="$(yq '._source_line' "${block_file}" 2>/dev/null)"
+  source_line="${source_line//\"/}"
+  local loc=""
+  if [[ "${source_line}" != "null" && -n "${source_line}" ]]; then
+    loc=" (line ${source_line})"
+  fi
+
+  # Read id early for error context
+  local id
+  id="$(yq '.id' "${block_file}")"
+  id="${id//\"/}"
+  local id_label=""
+  if [[ "${id}" != "null" && -n "${id}" && "${id}" != '""' ]]; then
+    id_label=" [${id}]"
+  fi
+
   # Check: version exists and equals 1
   local version
   version="$(yq '.version' "${block_file}")"
   if [[ "${version}" == "null" || -z "${version}" ]]; then
-    echo "INVALID ${block_name}: missing required field 'version'" >&2
+    echo "INVALID${id_label}${loc}: missing required field 'version'" >&2
     valid=0
   elif [[ "${version}" != "1" ]]; then
-    echo "INVALID ${block_name}: 'version' must be 1, got ${version}" >&2
+    echo "INVALID${id_label}${loc}: 'version' must be 1, got ${version}" >&2
     valid=0
   fi
 
-  # Check: id exists and is non-empty
-  local id
-  id="$(yq '.id' "${block_file}")"
+  # Check: id exists and is non-empty (already read above for error context)
   if [[ "${id}" == "null" || -z "${id}" || "${id}" == '""' ]]; then
-    echo "INVALID ${block_name}: missing or empty 'id' field" >&2
+    echo "INVALID${id_label}${loc}: missing or empty 'id' field" >&2
     valid=0
   fi
 
@@ -197,7 +218,7 @@ validate_block() {
   # Remove surrounding quotes if present
   severity="${severity//\"/}"
   if [[ "${severity}" != "blocking" && "${severity}" != "warning" ]]; then
-    echo "INVALID ${block_name}: 'severity' must be 'blocking' or 'warning', got '${severity}'" >&2
+    echo "INVALID${id_label}${loc}: 'severity' must be 'blocking' or 'warning', got '${severity}'" >&2
     valid=0
   fi
 
@@ -207,15 +228,15 @@ validate_block() {
   skip="$(yq '.skip' "${block_file}")"
   override="$(yq '.override' "${block_file}")"
   if [[ "${bypass}" != "null" ]]; then
-    echo "INVALID ${block_name}: forbidden top-level field 'bypass' is present" >&2
+    echo "INVALID${id_label}${loc}: forbidden top-level field 'bypass' is present" >&2
     valid=0
   fi
   if [[ "${skip}" != "null" ]]; then
-    echo "INVALID ${block_name}: forbidden top-level field 'skip' is present" >&2
+    echo "INVALID${id_label}${loc}: forbidden top-level field 'skip' is present" >&2
     valid=0
   fi
   if [[ "${override}" != "null" ]]; then
-    echo "INVALID ${block_name}: forbidden top-level field 'override' is present" >&2
+    echo "INVALID${id_label}${loc}: forbidden top-level field 'override' is present" >&2
     valid=0
   fi
 
@@ -224,9 +245,58 @@ validate_block() {
   pre_hook="$(yq '.enforce."pre-tool-use"' "${block_file}")"
   post_hook="$(yq '.enforce."post-tool-use"' "${block_file}")"
   if [[ "${pre_hook}" == "null" && "${post_hook}" == "null" ]]; then
-    echo "INVALID ${block_name}: 'enforce' must contain at least one 'pre-tool-use' or 'post-tool-use' point" >&2
+    echo "INVALID${id_label}${loc}: 'enforce' must contain at least one 'pre-tool-use' or 'post-tool-use' point" >&2
     valid=0
   fi
+
+  # Check: check type is valid for its enforcement point
+  # file-pattern: pre-tool-use only
+  # content-pattern: pre-tool-use, post-tool-use
+  # semgrep: post-tool-use, ci
+  # eslint: post-tool-use, ci
+  # custom-script: any
+  local enforce_keys_ct
+  enforce_keys_ct="$(yq '.enforce | keys | .[]' "${block_file}" 2>/dev/null || true)"
+  while IFS= read -r ct_ekey; do
+    ct_ekey="${ct_ekey//\"/}"
+    [[ -z "${ct_ekey}" ]] && continue
+    local ct_type
+    ct_type="$(yq ".enforce.\"${ct_ekey}\".type" "${block_file}" 2>/dev/null)"
+    ct_type="${ct_type//\"/}"
+    [[ "${ct_type}" == "null" || -z "${ct_type}" ]] && continue
+    case "${ct_type}" in
+      file-pattern)
+        if [[ "${ct_ekey}" != "pre-tool-use" ]]; then
+          echo "INVALID${id_label}${loc}: 'file-pattern' is only valid at 'pre-tool-use', found at '${ct_ekey}'" >&2
+          valid=0
+        fi
+        ;;
+      content-pattern)
+        if [[ "${ct_ekey}" != "pre-tool-use" && "${ct_ekey}" != "post-tool-use" ]]; then
+          echo "INVALID${id_label}${loc}: 'content-pattern' is only valid at 'pre-tool-use' or 'post-tool-use', found at '${ct_ekey}'" >&2
+          valid=0
+        fi
+        ;;
+      semgrep)
+        if [[ "${ct_ekey}" != "post-tool-use" && "${ct_ekey}" != "ci" ]]; then
+          echo "INVALID${id_label}${loc}: 'semgrep' is only valid at 'post-tool-use' or 'ci', found at '${ct_ekey}'" >&2
+          valid=0
+        fi
+        ;;
+      eslint)
+        if [[ "${ct_ekey}" != "post-tool-use" && "${ct_ekey}" != "ci" ]]; then
+          echo "INVALID${id_label}${loc}: 'eslint' is only valid at 'post-tool-use' or 'ci', found at '${ct_ekey}'" >&2
+          valid=0
+        fi
+        ;;
+      custom-script)
+        ;; # valid at any enforcement point
+      *)
+        echo "INVALID${id_label}${loc}: unknown check type '${ct_type}' at '${ct_ekey}'" >&2
+        valid=0
+        ;;
+    esac
+  done <<< "${enforce_keys_ct}"
 
   # Check: severity/action contradiction
   # warning + block → reject; blocking + warn → reject
@@ -243,25 +313,44 @@ validate_block() {
       continue
     fi
     if [[ "${severity_clean}" == "warning" && "${action}" == "block" ]]; then
-      echo "INVALID ${block_name}: contradiction — severity 'warning' with action 'block' at enforcement point '${ekey}'" >&2
+      echo "INVALID${id_label}${loc}: contradiction — severity 'warning' with action 'block' at enforcement point '${ekey}'" >&2
       valid=0
     fi
     if [[ "${severity_clean}" == "blocking" && "${action}" == "warn" ]]; then
-      echo "INVALID ${block_name}: contradiction — severity 'blocking' with action 'warn' at enforcement point '${ekey}'" >&2
+      echo "INVALID${id_label}${loc}: contradiction — severity 'blocking' with action 'warn' at enforcement point '${ekey}'" >&2
       valid=0
     fi
   done <<< "${enforce_keys}"
 
-  # Check: if rule-path is specified, the file must exist
-  local rule_path
-  rule_path="$(yq '.["rule-path"]' "${block_file}" 2>/dev/null || echo "null")"
-  rule_path="${rule_path//\"/}"
-  if [[ "${rule_path}" != "null" && -n "${rule_path}" ]]; then
-    if [[ ! -f "${rule_path}" ]]; then
-      echo "INVALID ${block_name}: 'rule-path' file does not exist: ${rule_path}" >&2
-      valid=0
+  # Check: rule-path inside enforcement points (required for semgrep/eslint, must exist)
+  local enforce_keys_rp
+  enforce_keys_rp="$(yq '.enforce | keys | .[]' "${block_file}" 2>/dev/null || true)"
+  while IFS= read -r rp_ekey; do
+    rp_ekey="${rp_ekey//\"/}"
+    [[ -z "${rp_ekey}" ]] && continue
+    local rp_type
+    rp_type="$(yq ".enforce.\"${rp_ekey}\".type" "${block_file}" 2>/dev/null)"
+    rp_type="${rp_type//\"/}"
+    if [[ "${rp_type}" == "semgrep" || "${rp_type}" == "eslint" ]]; then
+      local rp_rule_path
+      rp_rule_path="$(yq ".enforce.\"${rp_ekey}\".\"rule-path\"" "${block_file}" 2>/dev/null)"
+      rp_rule_path="${rp_rule_path//\"/}"
+      if [[ -z "${rp_rule_path}" || "${rp_rule_path}" == "null" ]]; then
+        echo "INVALID${id_label}${loc}: ${rp_type} at '${rp_ekey}' missing required 'rule-path' field" >&2
+        valid=0
+      elif [[ ! -f "${rp_rule_path}" ]]; then
+        echo "INVALID${id_label}${loc}: ${rp_type} at '${rp_ekey}' rule-path does not exist: ${rp_rule_path}" >&2
+        valid=0
+      fi
+      local rp_rule_id
+      rp_rule_id="$(yq ".enforce.\"${rp_ekey}\".\"rule-id\"" "${block_file}" 2>/dev/null)"
+      rp_rule_id="${rp_rule_id//\"/}"
+      if [[ -z "${rp_rule_id}" || "${rp_rule_id}" == "null" ]]; then
+        echo "INVALID${id_label}${loc}: ${rp_type} at '${rp_ekey}' missing required 'rule-id' field" >&2
+        valid=0
+      fi
     fi
-  fi
+  done <<< "${enforce_keys_rp}"
 
   # Check: custom-script enforcement points must have script that exists and is executable
   local enforce_keys_cs
@@ -277,13 +366,16 @@ validate_block() {
     cs_script="$(yq ".enforce.\"${cs_ekey}\".script" "${block_file}" 2>/dev/null)"
     cs_script="${cs_script//\"/}"
     if [[ -z "${cs_script}" || "${cs_script}" == "null" ]]; then
-      echo "INVALID ${block_name}: custom-script at '${cs_ekey}' missing 'script' field" >&2
+      echo "INVALID${id_label}${loc}: custom-script at '${cs_ekey}' missing 'script' field" >&2
+      valid=0
+    elif [[ "${cs_script}" == /* ]]; then
+      echo "INVALID${id_label}${loc}: custom-script 'script' must be a relative path within the repo, got: ${cs_script}" >&2
       valid=0
     elif [[ ! -f "${cs_script}" ]]; then
-      echo "INVALID ${block_name}: custom-script 'script' does not exist: ${cs_script}" >&2
+      echo "INVALID${id_label}${loc}: custom-script 'script' does not exist: ${cs_script}" >&2
       valid=0
     elif [[ ! -x "${cs_script}" ]]; then
-      echo "INVALID ${block_name}: custom-script 'script' is not executable: ${cs_script}" >&2
+      echo "INVALID${id_label}${loc}: custom-script 'script' is not executable: ${cs_script}" >&2
       valid=0
     fi
   done <<< "${enforce_keys_cs}"
@@ -314,7 +406,7 @@ generate_prose() {
 
   {
     printf '# GENERATED by ops/compile-floor.sh from compliance-floor.md\n'
-    printf '# Do not edit — changes will be overwritten. Proposal: <id>\n'
+    printf '# Do not edit — changes will be overwritten. Proposal: %s\n' "${PROPOSAL_ID:-<none>}"
 
     while IFS= read -r line || [[ -n "${line}" ]]; do
       if [[ "${in_block}" -eq 0 ]]; then
@@ -378,7 +470,7 @@ generate_enforce() {
       local func_name="check_${rule_id//-/_}"
 
       if [[ "${pre_type}" == "custom-script" ]]; then
-        # Custom-script type: call the script with timeout wrapper
+        # Custom-script type: call the script with timeout + network isolation
         local script_path
         script_path="$(yq '.enforce."pre-tool-use".script' "${block_file}")"
         script_path="${script_path//\"/}"
@@ -388,7 +480,12 @@ generate_enforce() {
 ${func_name}() {
   local file_path=\"\$1\"
   local rc=0
-  timeout 10 ${script_path} \"\${file_path}\" || rc=\$?
+  if command -v unshare &>/dev/null; then
+    timeout 10 unshare --net ${script_path} \"\${file_path}\" || rc=\$?
+  else
+    # unshare not available — run without network isolation
+    timeout 10 ${script_path} \"\${file_path}\" || rc=\$?
+  fi
   if [[ \${rc} -ne 0 ]]; then
     log_violation \"${rule_id}\" \"${pre_action}\" \"pre-tool-use\" \"\${file_path}\"
     return ${exit_code}
@@ -469,6 +566,53 @@ ${func_name}() {
     return 0  # semgrep not installed — skip gracefully
   fi
   if semgrep --config ${rule_path} --quiet \"\${file_path}\" 2>/dev/null | grep -q .; then
+    log_violation \"${rule_id}\" \"${post_action}\" \"post-tool-use\" \"\${file_path}\"
+    return ${exit_code}
+  fi
+  return 0
+}
+"
+      elif [[ "${post_type}" == "eslint" ]]; then
+        # ESLint type: run eslint if installed, skip gracefully if not
+        local rule_path
+        rule_path="$(yq '.enforce."post-tool-use"."rule-path"' "${block_file}")"
+        rule_path="${rule_path//\"/}"
+
+        post_rules="${post_rules}
+# Rule: ${rule_id} (${severity}, ${post_action}, eslint)
+${func_name}() {
+  local file_path=\"\$1\"
+  if ! command -v eslint &>/dev/null; then
+    return 0  # eslint not installed — skip gracefully
+  fi
+  if ! echo \"\${file_path}\" | grep -qE '\\.(js|ts|jsx|tsx|vue|mjs|cjs)$'; then
+    return 0  # not a JS/TS file — skip
+  fi
+  if ! eslint --no-eslintrc --config ${rule_path} --quiet \"\${file_path}\" 2>/dev/null; then
+    log_violation \"${rule_id}\" \"${post_action}\" \"post-tool-use\" \"\${file_path}\"
+    return ${exit_code}
+  fi
+  return 0
+}
+"
+      elif [[ "${post_type}" == "custom-script" ]]; then
+        # Custom-script type at post-tool-use
+        local script_path
+        script_path="$(yq '.enforce."post-tool-use".script' "${block_file}")"
+        script_path="${script_path//\"/}"
+
+        post_rules="${post_rules}
+# Rule: ${rule_id} (${severity}, ${post_action}, custom-script)
+${func_name}() {
+  local file_path=\"\$1\"
+  local rc=0
+  if command -v unshare &>/dev/null; then
+    timeout 10 unshare --net ${script_path} \"\${file_path}\" || rc=\$?
+  else
+    # unshare not available — run without network isolation
+    timeout 10 ${script_path} \"\${file_path}\" || rc=\$?
+  fi
+  if [[ \${rc} -ne 0 ]]; then
     log_violation \"${rule_id}\" \"${post_action}\" \"post-tool-use\" \"\${file_path}\"
     return ${exit_code}
   fi
@@ -633,6 +777,7 @@ ENFORCE_DISPATCH
       rule_id="${rule_id//\"/}"
       local func_name="check_${rule_id//-/_}"
       printf '      rc=0; %s "${file_path}" || rc=$?\n' "${func_name}" >> "${out_file}"
+      printf '      if [[ ${rc} -eq 0 ]]; then log_pass "%s" "pre-tool-use" "${file_path}"; fi\n' "${rule_id}" >> "${out_file}"
       printf '      [[ ${rc} -gt ${max_exit} ]] && max_exit=${rc}\n' >> "${out_file}"
     fi
   done
@@ -654,6 +799,7 @@ ENFORCE_MID
       rule_id="${rule_id//\"/}"
       local func_name="check_${rule_id//-/_}"
       printf '      rc=0; %s "${file_path}" || rc=$?\n' "${func_name}" >> "${out_file}"
+      printf '      if [[ ${rc} -eq 0 ]]; then log_pass "%s" "post-tool-use" "${file_path}"; fi\n' "${rule_id}" >> "${out_file}"
       printf '      [[ ${rc} -gt ${max_exit} ]] && max_exit=${rc}\n' >> "${out_file}"
     fi
   done
@@ -665,11 +811,6 @@ ENFORCE_MID
       exit 1
       ;;
   esac
-
-  # Log pass if no violations
-  if [[ ${max_exit} -eq 0 ]]; then
-    log_pass "all" "${point}" "${file_path}"
-  fi
 
   exit ${max_exit}
 }
@@ -852,11 +993,11 @@ generate_coverage() {
   # Count total rules in prose by counting numbered rule headings: "N. **..." or "### Rule N"
   # We look for lines like "### Rule N" or "**No ..." preceded by a number in the heading
   # The fixture uses "### Rule N" headings — count those
-  local total_rules
-  total_rules=$(grep -cE '^### Rule [0-9]+' "${floor_file}" 2>/dev/null || echo "0")
+  local total_rules=0
+  total_rules=$(grep -cE '^### Rule [0-9]+' "${floor_file}" 2>/dev/null) || true
   # Fallback: also try "^[0-9]+\. \*\*" numbered list style
   if [[ "${total_rules}" -eq 0 ]]; then
-    total_rules=$(grep -cE '^[0-9]+\. \*\*' "${floor_file}" 2>/dev/null || echo "0")
+    total_rules=$(grep -cE '^[0-9]+\. \*\*' "${floor_file}" 2>/dev/null) || true
   fi
 
   # Count enforcement blocks
@@ -1114,6 +1255,36 @@ case "${MODE}" in
 
     # Generate manifest
     generate_manifest "${FLOOR_FILE}" "${OUTPUT_DIR}" "${PROPOSAL_ID}"
+
+    # Warn about orphan semgrep/eslint rule files not referenced by any enforcement block
+    if [[ "${block_count}" -gt 0 ]]; then
+      # Collect all referenced rule-path values
+      referenced_paths=""
+      for block_file in "${OUTPUT_DIR}"/block-*.yaml; do
+        [[ -f "${block_file}" ]] || continue
+        orphan_keys="$(yq '.enforce | keys | .[]' "${block_file}" 2>/dev/null || true)"
+        while IFS= read -r o_ekey; do
+          o_ekey="${o_ekey//\"/}"
+          [[ -z "${o_ekey}" ]] && continue
+          o_rp="$(yq ".enforce.\"${o_ekey}\".\"rule-path\"" "${block_file}" 2>/dev/null)"
+          o_rp="${o_rp//\"/}"
+          if [[ "${o_rp}" != "null" && -n "${o_rp}" ]]; then
+            referenced_paths="${referenced_paths}|${o_rp}"
+          fi
+        done <<< "${orphan_keys}"
+      done
+
+      # Find semgrep/eslint files that aren't referenced
+      for rule_dir in .claude/compliance/semgrep .claude/compliance/eslint; do
+        [[ -d "${rule_dir}" ]] || continue
+        for rule_file in "${rule_dir}"/*; do
+          [[ -f "${rule_file}" ]] || continue
+          if [[ "${referenced_paths}" != *"|${rule_file}"* ]]; then
+            echo "WARNING: unreferenced rule file: ${rule_file}" >&2
+          fi
+        done
+      done
+    fi
 
     echo "Compiled ${block_count} rule(s) to ${OUTPUT_DIR} (proposal: ${PROPOSAL_ID:-<none>})"
     ;;

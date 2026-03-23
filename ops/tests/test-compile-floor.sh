@@ -542,6 +542,121 @@ custom_clean_exit=0
 assert_exit "custom-script: clean file → exit 0 (passes)" 0 "${custom_clean_exit}"
 
 # ---------------------------------------------------------------------------
+# Section: New Validation Gaps (C1, C2, X6)
+# ---------------------------------------------------------------------------
+
+echo ""
+echo "=== New Validation ==="
+
+# C1: Check type at wrong enforcement point (file-pattern at post-tool-use)
+val_wrongpoint_exit=0
+"${COMPILER}" --validate-only "${FIXTURES}/floor-invalid-wrong-point.md" >/dev/null 2>&1 || val_wrongpoint_exit=$?
+assert_exit "file-pattern at post-tool-use rejected (exit 2)" 2 "${val_wrongpoint_exit}"
+
+# X6: skip field rejected
+val_skip_exit=0
+"${COMPILER}" --validate-only "${FIXTURES}/floor-invalid-skip.md" >/dev/null 2>&1 || val_skip_exit=$?
+assert_exit "skip field rejected (exit 2)" 2 "${val_skip_exit}"
+
+# X6: override field rejected
+val_override_exit=0
+"${COMPILER}" --validate-only "${FIXTURES}/floor-invalid-override.md" >/dev/null 2>&1 || val_override_exit=$?
+assert_exit "override field rejected (exit 2)" 2 "${val_override_exit}"
+
+# C2: rule-path inside enforcement point validated (missing file)
+val_missingrp_exit=0
+"${COMPILER}" --validate-only "${FIXTURES}/floor-invalid-missing-rulepath.md" >/dev/null 2>&1 || val_missingrp_exit=$?
+assert_exit "missing rule-path file rejected (exit 2)" 2 "${val_missingrp_exit}"
+
+# ---------------------------------------------------------------------------
+# Section: ESLint Enforcement
+# ---------------------------------------------------------------------------
+
+echo ""
+echo "=== ESLint Enforcement ==="
+
+ESLINT_DIR="${TMPDIR_ROOT}/eslint"
+mkdir -p "${ESLINT_DIR}"
+
+eslint_compile_exit=0
+"${COMPILER}" "${FIXTURES}/floor-with-eslint.md" "${ESLINT_DIR}" >/dev/null 2>&1 || eslint_compile_exit=$?
+assert_exit "eslint fixture compiles exit 0" 0 "${eslint_compile_exit}"
+
+assert_file_exists "eslint enforce.sh exists" "${ESLINT_DIR}/enforce.sh"
+assert_contains "enforce.sh contains eslint invocation" \
+  "${ESLINT_DIR}/enforce.sh" "eslint"
+assert_contains "enforce.sh contains no-eval eslint rule" \
+  "${ESLINT_DIR}/enforce.sh" "no.eval"
+
+# ---------------------------------------------------------------------------
+# Section: Per-rule Pass Logging (C9)
+# ---------------------------------------------------------------------------
+
+echo ""
+echo "=== Per-rule Pass Logging ==="
+
+PASSLOG_DIR="${TMPDIR_ROOT}/passlog"
+mkdir -p "${PASSLOG_DIR}"
+
+passlog_compile_exit=0
+"${COMPILER}" --generate-enforce "${FIXTURES}/floor-valid.md" "${PASSLOG_DIR}" >/dev/null 2>&1 || passlog_compile_exit=$?
+assert_exit "generate-enforce for pass logging exits 0" 0 "${passlog_compile_exit}"
+
+# enforce.sh should contain per-rule log_pass calls (not just "all")
+assert_contains "enforce.sh has per-rule log_pass for no-hardcoded-secrets" \
+  "${PASSLOG_DIR}/enforce.sh" 'log_pass "no-hardcoded-secrets"'
+assert_contains "enforce.sh has per-rule log_pass for no-console-log" \
+  "${PASSLOG_DIR}/enforce.sh" 'log_pass "no-console-log"'
+assert_not_contains "enforce.sh does not have aggregate log_pass all" \
+  "${PASSLOG_DIR}/enforce.sh" 'log_pass "all"'
+
+# ---------------------------------------------------------------------------
+# Section: Network Isolation (C6)
+# ---------------------------------------------------------------------------
+
+echo ""
+echo "=== Network Isolation ==="
+
+NETISO_DIR="${TMPDIR_ROOT}/netiso"
+mkdir -p "${NETISO_DIR}"
+
+netiso_compile_exit=0
+"${COMPILER}" "${FIXTURES}/floor-with-custom-script.md" "${NETISO_DIR}" >/dev/null 2>&1 || netiso_compile_exit=$?
+assert_exit "custom-script with network isolation compiles exit 0" 0 "${netiso_compile_exit}"
+
+assert_contains "enforce.sh contains unshare --net" \
+  "${NETISO_DIR}/enforce.sh" "unshare --net"
+
+# ---------------------------------------------------------------------------
+# Section: Line Numbers in Errors (C4)
+# ---------------------------------------------------------------------------
+
+echo ""
+echo "=== Error Context ==="
+
+# Validation errors should include line numbers
+val_errctx_output=""
+val_errctx_output=$("${COMPILER}" --validate-only "${FIXTURES}/floor-invalid-wrong-point.md" 2>&1 || true)
+TOTAL=$((TOTAL + 1))
+if echo "${val_errctx_output}" | grep -q "line"; then
+  echo -e "  ${GREEN}PASS${NC} validation error includes line number"
+  PASS=$((PASS + 1))
+else
+  echo -e "  ${RED}FAIL${NC} validation error should include line number, got: ${val_errctx_output}"
+  FAIL=$((FAIL + 1))
+fi
+
+# Validation errors should include rule id
+TOTAL=$((TOTAL + 1))
+if echo "${val_errctx_output}" | grep -q "wrong-point-test"; then
+  echo -e "  ${GREEN}PASS${NC} validation error includes rule id"
+  PASS=$((PASS + 1))
+else
+  echo -e "  ${RED}FAIL${NC} validation error should include rule id, got: ${val_errctx_output}"
+  FAIL=$((FAIL + 1))
+fi
+
+# ---------------------------------------------------------------------------
 # Section: End-to-End
 # ---------------------------------------------------------------------------
 

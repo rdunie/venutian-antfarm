@@ -91,7 +91,7 @@
           },
           {
             "type": "command",
-            "command": "[ -f .claude/compliance/floor-checksum.sha256 ] && [ -f compliance-floor.md ] && { EXPECTED=$(head -1 .claude/compliance/floor-checksum.sha256); ACTUAL=$(sha256sum compliance-floor.md | cut -d' ' -f1); [ \"$EXPECTED\" = \"$ACTUAL\" ] && echo '[CO] Compliance floor integrity check passed.' || echo '[CO] Compliance floor integrity check FAILED. Unauthorized modification detected. Run /compliance status to investigate.'; } || true"
+            "command": "[ -f .claude/compliance/compiled/manifest.sha256 ] && [ -f compliance-floor.md ] && { EXPECTED=$(grep '^source:' .claude/compliance/compiled/manifest.sha256 | cut -d' ' -f2); ACTUAL=$(sha256sum compliance-floor.md | cut -d' ' -f1); [ \"$EXPECTED\" = \"$ACTUAL\" ] && echo '[CO] Compliance artifacts in sync.' || echo '[CO] WARNING: Compliance floor changed but artifacts not recompiled. Run ops/compile-floor.sh or /compliance apply.'; } || true"
           }
         ]
       }

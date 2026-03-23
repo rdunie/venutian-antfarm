@@ -33,6 +33,54 @@ enforce:
 
 5. **No data leaks through logs or external services.** Sensitive data must not appear in log output, error messages, LLM prompts, or data sent to third-party services.
 
+## Enforcement Block Examples
+
+The five check types available in enforcement blocks. Use these as reference when adding enforcement to your rules.
+
+### content-pattern — regex match on file content
+
+```
+enforce:
+  post-tool-use:
+    type: content-pattern
+    patterns: ['console\.log', 'console\.debug']
+    action: warn
+```
+
+### semgrep — AST-level code analysis
+
+```
+enforce:
+  post-tool-use:
+    type: semgrep
+    rule-id: no-eval
+    rule-path: .claude/compliance/semgrep/no-eval.yaml
+    action: block
+```
+
+### eslint — JS/TS linting rule
+
+```
+enforce:
+  post-tool-use:
+    type: eslint
+    rule-id: no-any
+    rule-path: .claude/compliance/eslint/no-any.json
+    action: warn
+```
+
+### custom-script — user-provided validation
+
+```
+enforce:
+  pre-tool-use:
+    type: custom-script
+    script: ops/checks/validate-migrations.sh
+    action: block
+```
+
+Custom scripts must: exit 0 (pass), 1 (warn), or 2 (block); complete within 10 seconds; not access the network; live within the repository.
+
 ## Enforcement
 
 Rules with an `enforcement` block are processed by the compliance floor compiler (`ops/compile-floor.sh`). The compiler:
