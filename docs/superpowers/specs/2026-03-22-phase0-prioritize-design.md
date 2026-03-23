@@ -29,6 +29,8 @@ Without this, the fleet risks working on the next item in queue by inertia rathe
 
 Phase 0 is added before the existing 9 phases, making the lifecycle 10 phases total. The existing phases retain their numbering (1-9). Phase 0 runs **per-iteration** by default, while Phases 1-9 run per-item.
 
+An **iteration** is defined as the interval between two Phase 0 triage runs. It is not a fixed time period or a fixed number of items — it is bounded by triage events. The first iteration begins at the start of the project (or when Phase 0 is adopted). Subsequent iterations begin when the PO runs triage again, typically after a batch of items has been accepted. The PO uses judgment to determine when the current iteration's work is substantially complete and a new triage is warranted.
+
 | Phase             | What Happens                                                       | Who Leads                    | Cadence       |
 | ----------------- | ------------------------------------------------------------------ | ---------------------------- | ------------- |
 | **0. Prioritize** | Triage the backlog: add, drop, reorder items. Write triage report. | PO leads, SA + SM contribute | Per-iteration |
@@ -47,13 +49,17 @@ The iteration cadence is configurable in `fleet-config.json`:
 
 Valid values:
 
-| Value           | When Phase 0 runs                              |
-| --------------- | ---------------------------------------------- |
-| `per-iteration` | Once before each batch of work items (default) |
-| `per-session`   | At the start of each session                   |
-| `per-item`      | Before every item enters Groom                 |
+| Value           | When Phase 0 runs                                                     |
+| --------------- | --------------------------------------------------------------------- |
+| `per-iteration` | Once per iteration — PO determines when a batch is complete (default) |
+| `per-session`   | At the start of each session                                          |
+| `per-item`      | Before every item enters Groom                                        |
 
-The PO checks the cadence setting and determines whether Phase 0 is due. If the cadence is `per-iteration`, Phase 0 runs when the previous iteration's items have been accepted (or at the start of the first iteration).
+When `prioritize_cadence` is absent from `fleet-config.json`, the default is `per-iteration`.
+
+### How the PO determines "last triage"
+
+The PO determines when the last triage occurred by checking the most recent `triage-YYYY-MM-DD.md` file in `docs/plans/`. The file's date suffix is the triage date. If no triage file exists, this is the first triage. All "since last triage" references in signal collection (Section 2) and triage reports (Section 3) use this date as the baseline.
 
 ---
 
@@ -70,7 +76,7 @@ The PO collects these signals before beginning triage:
 | Completed items         | `ops/metrics-log.sh` event log         | Items accepted since last triage                                                                   |
 | High-severity findings  | `.claude/findings/register.md`         | Findings with severity > normal                                                                    |
 | Blocked items           | Tier files + event log                 | Items with `task-blocked` and no corresponding `task-unblocked`                                    |
-| Stale items             | Tier files                             | Items unchanged for > 2 iterations                                                                 |
+| Stale items             | Tier files + triage history            | Items unchanged since the previous triage (present in last triage report with no status change)    |
 | Untracked user requests | Session context                        | User requests not yet in a tier file                                                               |
 | Compliance events       | `ops/metrics-log.sh` compliance events | Violations or new rules since last triage                                                          |
 | Build rejections        | `ops/metrics-log.sh` event log         | Items rejected at build (`item-rejected-at-build`) — patterns may indicate systemic backlog issues |
@@ -106,7 +112,7 @@ The PO writes a triage report to `docs/plans/triage-YYYY-MM-DD.md`. This is the 
 
 - Blocked items: [list or "none"]
 - High-severity findings: [list or "none"]
-- Stale items (> 2 iterations unchanged): [list or "none"]
+- Stale items (unchanged since last triage): [list or "none"]
 - Compliance events: [list or "none"]
 - Build rejections: [list or "none"]
 
@@ -125,12 +131,16 @@ Items recommended for Groom (Phase 1):
 ## Needs User Decision
 
 - [Item or question requiring user input]
+
+## User Decisions (recorded during guided input)
+
+- [Decision]: [user's choice] — [rationale if provided]
 ```
 
 ### Report Lifecycle
 
 - One report per triage. Reports accumulate in `docs/plans/` and provide a history of prioritization decisions.
-- Reports are not updated after creation — they are point-in-time snapshots.
+- The report is finalized at the end of Phase 0, after all user decisions from guided input have been recorded. Until then, it may be updated with user decision outcomes.
 - The PO references the most recent triage report when deciding what to groom next.
 
 ---
@@ -160,7 +170,7 @@ After presenting the summary, if there are items in "What needs you," the PO off
 
 > "There are N items that need your input. Want me to walk you through them?"
 
-If the user accepts, the PO presents each decision sequentially — one per message — with context and options. The PO records decisions in the triage report and updates tier files accordingly.
+If the user accepts, the PO presents each decision sequentially — one per message — with context and options. The PO records user decisions in the "User Decisions" section of the triage report and updates tier files accordingly.
 
 ---
 
@@ -197,17 +207,30 @@ ops/metrics-log.sh backlog-triaged \
 
 This enables tracking of triage frequency and scope over time — useful for SM during Checkpoint (Phase 9) to assess whether triage cadence is appropriate.
 
+**Implementation note:** `ops/metrics-log.sh` must be extended to accept the `backlog-triaged` event type with the flags above (`--items-reviewed`, `--items-added`, `--items-dropped`, `--items-reordered`).
+
 ---
 
 ## Section 8: Integration Points
 
 ### `/po` Skill
 
-The `/po` skill gains a `triage` subcommand that triggers Phase 0. The PO can also run Phase 0 as part of `/po status` when the cadence indicates it's due.
+The `/po` skill gains a `triage` subcommand that triggers Phase 0. This **replaces** the existing `/po prioritize` subcommand — triage is the full Phase 0 workflow (signal collection, assessment, report, user summary), while the old prioritize was limited to WSJF rescoring. Any WSJF recalculation becomes part of the triage assessment rather than a standalone operation.
 
 ### SessionStart Hook
 
-When `prioritize_cadence` is `per-session`, the SessionStart hook prompts: `[PO] Backlog triage is due. Run /po triage to review priorities.`
+When `prioritize_cadence` is `per-session`, the SessionStart hook prompts for triage. The hook reads `fleet-config.json` using `jq` (consistent with existing hooks that read fleet config):
+
+```bash
+[ -f fleet-config.json ] && command -v jq &>/dev/null && {
+  CADENCE=$(jq -r '.prioritize_cadence // "per-iteration"' fleet-config.json 2>/dev/null)
+  [ "$CADENCE" = "per-session" ] && echo '[PO] Backlog triage is due. Run /po triage to review priorities.'
+} || true
+```
+
+When `prioritize_cadence` is absent from `fleet-config.json`, the hook defaults to `per-iteration` and does not prompt. This makes the hook safe to include before an implementer configures the cadence.
+
+For `per-iteration` cadence, the PO determines when triage is due based on judgment (no SessionStart prompt).
 
 ### COLLABORATION.md
 
@@ -217,16 +240,32 @@ The work item lifecycle table is updated to include Phase 0. The description of 
 
 The workflow section references Phase 0 as the entry point: "Prioritize before grooming."
 
+### `templates/fleet-config.json`
+
+The fleet configuration template is updated with the new key and its default:
+
+```json
+{
+  "prioritize_cadence": "per-iteration"
+}
+```
+
 ---
 
 ## Resolved Design Decisions
 
 1. **Phase 0, not Phase 1:** Prioritize is numbered 0 to signal it runs per-iteration (not per-item) and is a pre-cycle step. Existing phase numbers are preserved to avoid cascading renumbering across the codebase.
 
-2. **Triage report location:** Reports live in `docs/plans/` alongside tier files, not in `.claude/findings/`. They are about the backlog, not about process observations. Findings discovered during triage go to the findings register separately.
+2. **Iteration defined by triage events:** An iteration is the interval between two triage runs, not a fixed time period. This avoids introducing calendar-based mechanics into a framework that operates on work-completion cadence. The PO uses judgment to determine when a batch is complete.
 
-3. **Configurable cadence:** Default is `per-iteration`. Implementers can change to `per-session` (more frequent) or `per-item` (most frequent) based on their project's pace and complexity.
+3. **Triage report location:** Reports live in `docs/plans/` alongside tier files, not in `.claude/findings/`. They are about the backlog, not about process observations. Findings discovered during triage go to the findings register separately.
 
-4. **Combined signal + judgment approach:** Automated signals flag items for attention, but the PO owns the prioritization decision. This prevents both oversight (signals catch what the PO might miss) and rigidity (PO can override signals with context).
+4. **Configurable cadence:** Default is `per-iteration`. Implementers can change to `per-session` (more frequent) or `per-item` (most frequent) based on their project's pace and complexity.
 
-5. **Summary is conversational, not a file:** The user sees a 2-5 sentence summary in the session. The full triage report is the persistent artifact for traceability.
+5. **Combined signal + judgment approach:** Automated signals flag items for attention, but the PO owns the prioritization decision. This prevents both oversight (signals catch what the PO might miss) and rigidity (PO can override signals with context).
+
+6. **Summary is conversational, not a file:** The user sees a 2-5 sentence summary in the session. The full triage report is the persistent artifact for traceability.
+
+7. **`/po triage` replaces `/po prioritize`:** The triage subcommand subsumes the old prioritize functionality. WSJF rescoring becomes part of triage rather than a standalone operation. This avoids overlapping commands with unclear boundaries.
+
+8. **Report finalized at end of Phase 0:** The triage report is not an immutable snapshot at creation — it is finalized at the end of Phase 0, after user decisions from guided input are recorded. This avoids the contradiction of "never updated" vs. recording user input.
