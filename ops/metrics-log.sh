@@ -41,6 +41,7 @@ TOKENS="" TURNS="" DURATION="" MODEL="" TASK=""
 PROPOSAL="" SCOPE="" METHOD="" CHANGE_TYPE=""
 BRANCH="" PR=""
 TOPIC="" BY="" TRIGGER="" ACTION="" ITEMS=""
+RULE_ID="" ENFORCEMENT_POINT="" FILE_PATH_ARG=""
 POSITIONAL=()
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -69,6 +70,9 @@ while [[ $# -gt 0 ]]; do
     --trigger) TRIGGER="$2"; shift 2 ;;
     --action) ACTION="$2"; shift 2 ;;
     --items) ITEMS="$2"; shift 2 ;;
+    --rule-id) RULE_ID="$2"; shift 2 ;;
+    --enforcement-point) ENFORCEMENT_POINT="$2"; shift 2 ;;
+    --file) FILE_PATH_ARG="$2"; shift 2 ;;
     *) POSITIONAL+=("$1"); shift ;;
   esac
 done
@@ -250,8 +254,17 @@ case "$EVENT_TYPE" in
 
   compliance-violation)
     emit_event "$(jq -cn --arg ts "$TS" --arg event "$EVENT_TYPE" \
-       --arg source "$SOURCE" --arg agent "$AGENT" \
-       '{"ts":$ts,"event":$event,"source":$source,"agent":$agent}')"
+       --arg rule_id "$RULE_ID" --arg severity "$SEVERITY" \
+       --arg enforcement_point "$ENFORCEMENT_POINT" --arg file "$FILE_PATH_ARG" \
+       --arg action "$ACTION" --arg source "$SOURCE" --arg agent "$AGENT" \
+       '{"ts":$ts,"event":$event,"rule_id":$rule_id,"severity":$severity,"enforcement_point":$enforcement_point,"file":$file,"action":$action,"source":$source,"agent":$agent} | with_entries(select(.value != ""))')"
+    ;;
+
+  compliance-pass)
+    emit_event "$(jq -cn --arg ts "$TS" --arg event "$EVENT_TYPE" \
+       --arg rule_id "$RULE_ID" --arg enforcement_point "$ENFORCEMENT_POINT" \
+       --arg file "$FILE_PATH_ARG" --arg agent "$AGENT" \
+       '{"ts":$ts,"event":$event,"rule_id":$rule_id,"enforcement_point":$enforcement_point,"file":$file,"agent":$agent} | with_entries(select(.value != ""))')"
     ;;
 
   compliance-reverted)
@@ -312,7 +325,7 @@ case "$EVENT_TYPE" in
     echo "             task-restarted task-discarded task-blocked task-unblocked" >&2
     echo "             agent-invoked regression-run" >&2
     echo "             compliance-proposed compliance-approved compliance-rejected" >&2
-    echo "             compliance-applied compliance-violation compliance-reverted" >&2
+    echo "             compliance-applied compliance-violation compliance-pass compliance-reverted" >&2
     echo "             branch-created pr-opened pr-merged" >&2
     echo "             guidance-published ceo-autonomy-granted ceo-autonomy-violation knowledge-distributed" >&2
     exit 1

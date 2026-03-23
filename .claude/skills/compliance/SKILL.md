@@ -43,9 +43,10 @@ Manage the compliance program through the Compliance Officer. All changes to the
 1. Verify proposal status is "approved".
 2. Create sentinel: `.claude/compliance/.applying` with proposal ID and timestamp.
 3. Apply the change to `compliance-floor.md` or `.claude/compliance/targets.md`.
-4. Update checksum: regenerate `.claude/compliance/floor-checksum.sha256` with SHA-256 hash and current git commit ref.
-5. Append entry to `.claude/compliance/change-log.md`.
-6. Remove sentinel. Log `compliance-applied` event. Update proposal to "applied".
+4. **Run `ops/compile-floor.sh --proposal <id>`** — if compilation fails (exit 2), revert via `git checkout -- compliance-floor.md`, remove sentinel, report error. The apply is atomic.
+5. Update checksum: regenerate `.claude/compliance/floor-checksum.sha256`.
+6. Append entry to `.claude/compliance/change-log.md`.
+7. Remove sentinel. Log `compliance-applied` event. Update proposal to "applied".
 
 ## Workflow: Audit
 

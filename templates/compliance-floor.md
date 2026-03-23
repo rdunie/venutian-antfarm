@@ -14,6 +14,17 @@ Keep it to 3-5 rules. Each rule should be:
 
 1. **No hardcoded secrets.** All credentials, API keys, and tokens must be managed through environment variables or a secrets manager. Never committed to version control.
 
+```enforcement
+version: 1
+id: no-hardcoded-secrets
+severity: blocking
+enforce:
+  pre-tool-use:
+    type: file-pattern
+    patterns: ['\.env$', 'secrets?\.yaml$', '\.pem$', '\.key$']
+    action: block
+```
+
 2. **Authentication on every endpoint.** No API endpoint is accessible without authentication. No anonymous access to data-modifying operations.
 
 3. **All data changes are auditable.** Every create, update, and delete operation must produce an audit trail (who, what, when, from where).
@@ -22,26 +33,107 @@ Keep it to 3-5 rules. Each rule should be:
 
 5. **No data leaks through logs or external services.** Sensitive data must not appear in log output, error messages, LLM prompts, or data sent to third-party services.
 
+## Enforcement Block Examples
+
+The five check types available in enforcement blocks. Use these as reference when adding enforcement to your rules.
+
+### content-pattern — regex match on file content
+
+```
+enforce:
+  post-tool-use:
+    type: content-pattern
+    patterns: ['console\.log', 'console\.debug']
+    action: warn
+```
+
+### semgrep — AST-level code analysis
+
+```
+enforce:
+  post-tool-use:
+    type: semgrep
+    rule-id: no-eval
+    rule-path: .claude/compliance/semgrep/no-eval.yaml
+    action: block
+```
+
+### eslint — JS/TS linting rule
+
+```
+enforce:
+  post-tool-use:
+    type: eslint
+    rule-id: no-any
+    rule-path: .claude/compliance/eslint/no-any.json
+    action: warn
+```
+
+### custom-script — user-provided validation
+
+```
+enforce:
+  pre-tool-use:
+    type: custom-script
+    script: ops/checks/validate-migrations.sh
+    action: block
+```
+
+Custom scripts must: exit 0 (pass), 1 (warn), or 2 (block); complete within 10 seconds; not access the network; live within the repository.
+
 ## Enforcement
 
-Where possible, enforce compliance floor rules through hooks in `.claude/settings.json`:
+Rules with an `enforcement` block are processed by the compliance floor compiler (`ops/compile-floor.sh`). The compiler:
+
+1. **Extracts** each `enforcement` block and validates its schema (version, id, severity, enforce points).
+2. **Generates** `enforce.sh` — a standalone hook script with deterministic file-pattern checks for all rules that declare `pre-tool-use` or `post-tool-use` enforcement.
+3. **Writes** a `manifest.sha256` linking the source floor to generated artifacts (tamper-evident).
+4. **Reports** coverage — which rules are enforced mechanically vs. judgment-only.
+
+Run the compiler after every compliance change:
+
+```bash
+ops/compile-floor.sh --dry-run compliance-floor.md     # preview, no writes
+ops/compile-floor.sh --proposal <id> compliance-floor.md .claude/compliance/artifacts/
+```
+
+Rules without an `enforcement` block are judgment-only: agents and reviewers are responsible for verifying conformance. Add enforcement blocks incrementally as your rules mature.
+
+## Implementer Setup
+
+After compiling, wire the generated artifacts into your Claude Code hook configuration. Add these two entries to `.claude/settings.json`:
 
 ```json
 {
-  "hooks": {
-    "PreToolUse": [
-      {
-        "matcher": "Edit|Write",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "echo \"$CLAUDE_FILE_PATH\" | grep -qE '(\\.env|secrets?\\.yaml)$' && echo 'BLOCKED: Cannot edit sensitive file' && exit 2 || exit 0"
-          }
-        ]
-      }
-    ]
-  }
+  "PreToolUse": [
+    {
+      "matcher": "Edit|Write",
+      "hooks": [
+        {
+          "type": "command",
+          "command": ".claude/compliance/compiled/enforce.sh pre-tool-use \"$CLAUDE_FILE_PATH\""
+        }
+      ]
+    }
+  ],
+  "PostToolUse": [
+    {
+      "matcher": "Edit|Write",
+      "hooks": [
+        {
+          "type": "command",
+          "command": ".claude/compliance/compiled/enforce.sh post-tool-use \"$CLAUDE_FILE_PATH\""
+        }
+      ]
+    }
+  ]
 }
 ```
 
-Hook enforcement is deterministic and zero-cost (no LLM tokens). Use it for rules that can be checked with simple file/pattern matching. Use agent memory and review processes for rules that require judgment.
+Add a `SessionStart` staleness check to warn when `compliance-floor.md` has changed since the last compile:
+
+```bash
+[ -f .claude/compliance/compiled/manifest.sha256 ] && [ -f compliance-floor.md ] && { EXPECTED=$(grep '^source:' .claude/compliance/compiled/manifest.sha256 | cut -d' ' -f2); ACTUAL=$(sha256sum compliance-floor.md | cut -d' ' -f1); [ "$EXPECTED" = "$ACTUAL" ] && echo '[CO] Compliance artifacts in sync.' || echo '[CO] WARNING: Compliance floor changed but artifacts not recompiled. Run ops/compile-floor.sh or /compliance apply.'; } || true
+```
+
+This script exits cleanly (`|| true`) when no compiled artifacts exist yet, so it is safe to include before the first compile run.

@@ -95,6 +95,16 @@ ops/deploy.sh <env> <component> [--type planned|hotfix]
 
 Implementers replace `ops/deploy.sh` with their deployment logic. The contract: exit 0 = success, exit 1 = failure. stdout should include deployment URL or identifier.
 
+### Compliance Compiler
+
+```bash
+ops/compile-floor.sh                              # Compile floor → artifacts
+ops/compile-floor.sh --dry-run                     # Validate without writing
+ops/compile-floor.sh --verify                      # Check artifacts match source
+ops/compile-floor.sh --proposal 003                # Tag artifacts with proposal ID
+ops/tests/test-compile-floor.sh                    # Run compiler tests
+```
+
 ### Validation
 
 ```bash
