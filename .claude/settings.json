@@ -92,6 +92,10 @@
           {
             "type": "command",
             "command": "[ -f .claude/compliance/compiled/manifest.sha256 ] && [ -f compliance-floor.md ] && { EXPECTED=$(grep '^source:' .claude/compliance/compiled/manifest.sha256 | cut -d' ' -f2); ACTUAL=$(sha256sum compliance-floor.md | cut -d' ' -f1); [ \"$EXPECTED\" = \"$ACTUAL\" ] && echo '[CO] Compliance artifacts in sync.' || echo '[CO] WARNING: Compliance floor changed but artifacts not recompiled. Run ops/compile-floor.sh or /compliance apply.'; } || true"
+          },
+          {
+            "type": "command",
+            "command": "[ -f fleet-config.json ] && command -v jq &>/dev/null && { CADENCE=$(jq -r '.prioritize_cadence // \"per-iteration\"' fleet-config.json 2>/dev/null); [ \"$CADENCE\" = \"per-session\" ] && echo '[PO] Backlog triage is due. Run /po triage to review priorities.'; } || true"
           }
         ]
       }
