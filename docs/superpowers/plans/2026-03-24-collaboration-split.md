@@ -95,11 +95,11 @@ This is the largest task — extracting all 15 sub-files from the monolith. Each
 | `ethos.md`                 | 5-18                               | Guiding Ethos                                                                                      |
 | `resource-stewardship.md`  | 19-45                              | Resource Stewardship                                                                               |
 | `fleet-structure.md`       | 46-114                             | Agent Fleet Structure (all 4 tiers + triad)                                                        |
-| `pace-control.md`          | 115-151                            | Pace Control (definitions, rules, info needs)                                                      |
-| `principles.md`            | 178-298                            | Core Principles 1-11                                                                               |
-| `metrics.md`               | 295-338                            | DORA + flow quality + event logging table                                                          |
+| `pace-control.md`          | 115-151, 340-353                   | Pace Control (definitions, rules, info needs) + Autonomy Model (full version; condensed in base)   |
+| `principles.md`            | 178-294                            | Core Principles 1-10 (Principle 11 is in metrics.md)                                               |
+| `metrics.md`               | 295-338                            | Principle 11 (Measure Delivery Performance) + DORA + flow quality + event logging table            |
 | `handoffs.md`              | 376-399                            | Handoff Protocol + Completion                                                                      |
-| `coordination.md`          | 152-177                            | Coordination Architecture                                                                          |
+| `coordination.md`          | 152-177, 401-410                   | Coordination Architecture + Parallel vs. Sequential Work                                           |
 | `lifecycle.md`             | 452-470, 526-534, 538-598, 599-611 | Lifecycle table, Team Retro, Periodic Regression intro, Milestone Release                          |
 | `deployment.md`            | 471-525                            | Deployment Progression, Deployment Failures, Acceptance Failure                                    |
 | `regression.md`            | 535-598                            | Periodic Regression Testing (full)                                                                 |
@@ -107,6 +107,10 @@ This is the largest task — extracting all 15 sub-files from the monolith. Each
 | `compliance-governance.md` | 625-710                            | Compliance Floor, Hierarchy, Governance Collaboration, CEO Pace, Cx Memory, Knowledge Distribution |
 | `learning.md`              | 241-260, 712-756                   | Findings (from Principles), Learning Collective, Memory Integration                                |
 | `escalation.md`            | 613-624, 757-793                   | Conflict Resolution, Escalation Rules, Success Criteria, Deferred Concerns                         |
+
+**Content that moves directly to profiles (not extracted to sub-files):**
+
+- Lines 354-374 (Model Tiering + Thinking-Time Caps) → inlined in `profiles/triad.md` in Task 3. Excluded from Task 1 coverage check.
 
 Note: Some content appears in multiple mappings (e.g., findings urgency table). During extraction, assign each block to exactly one file. The `lifecycle.md` file gets the lifecycle table + milestone release dispatch. `regression.md` gets the full regression testing section. `learning.md` gets the findings section from Core Principles (§7 Learning Through Findings) plus the Learning Collective and Memory Integration sections.
 
@@ -139,7 +143,7 @@ split=$(cat .claude/protocol/*.md | grep -cvE '^\s*$|^#|^---')
 echo "Original: $original  Split: $split"
 ```
 
-Expected: `split` should be >= `original` (some lines may appear in multiple files due to the lifecycle/regression/learning overlap). If `split` is significantly less than `original`, content was missed.
+Expected: `split` should be close to `original` minus ~20 lines (Model Tiering, lines 354-374, moves to profiles in Task 3). Some lines may appear in multiple files due to the lifecycle/regression/learning overlap. If `split` is significantly less than `original - 20`, content was missed.
 
 - [ ] **Step 4: Commit**
 
@@ -596,10 +600,10 @@ Expected: All tests pass. Zero regressions.
 git add ops/lib/compiler-utils.sh ops/compile-floor.sh
 git commit -m "feat: add shared compiler utilities library
 
-Extract shared API (parse_frontmatter, compile_log, emit_header,
-generate_manifest, verify_manifest) into ops/lib/compiler-utils.sh.
-Refactor compile-floor.sh to source the shared library.
-No functional changes to compliance compilation."
+Add shared compiler utilities (parse_frontmatter, compile_log,
+emit_header, generate_manifest, verify_manifest) to ops/lib/.
+compile-floor.sh sources the library for new functions only;
+manifest function convergence deferred to future refactor."
 ```
 
 ---
@@ -834,9 +838,9 @@ fi
 compiled=0
 for agent_file in "$AGENTS_DIR"/*.md; do
   [[ -f "$agent_file" ]] || continue
-  local_name=$(parse_frontmatter "$agent_file" "name")
+  iter_name=$(parse_frontmatter "$agent_file" "name")
 
-  if [[ -n "$SINGLE_AGENT" && "$local_name" != "$SINGLE_AGENT" ]]; then
+  if [[ -n "$SINGLE_AGENT" && "$iter_name" != "$SINGLE_AGENT" ]]; then
     continue
   fi
 
@@ -990,11 +994,176 @@ security-reviewer, governance for cx-role."
 
 ---
 
-## Task 7: Rewrite COLLABORATION.md as Hub Index
+## Task 7: Add Protocol Change Governance Content
+
+**Files:**
+
+- Modify: `.claude/protocol/compliance-governance.md`
+- Modify: `.claude/protocol/base.md`
+
+The spec defines new governance content (SM as Protocol Guardian, Floor-Change Proposals, Pace Governs Escalation Autonomy) that doesn't exist in the current COLLABORATION.md. This must be written into the protocol files.
+
+- [ ] **Step 1: Add Protocol Change Governance section to compliance-governance.md**
+
+Append the following to `.claude/protocol/compliance-governance.md`:
+
+```markdown
+## Protocol Change Governance
+
+### SM as Protocol Guardian
+
+The Scrum Master owns protocol profiles and coordinates sub-file changes with these constraints:
+
+- SM must not make or adopt changes that violate the compliance floor
+- SM must not permit suggestions from any agent that would violate the floor to be adopted
+
+### Floor-Change Proposals (SM as Filter)
+
+When a suggestion requires a change to the compliance floor:
+
+1. **SM evaluates:** Does this bring value? What risks does it introduce? Would the Cx executive team accept those risks? Are there mitigations that would make it acceptable?
+2. **SM seeks triad consensus** (PO + SA + SM) on whether to escalate to the executive team
+3. **Triad agrees** → SM checks pace (see below). If pace permits autonomous escalation, SM escalates to Cx executive team via the governance collaboration pattern. If pace requires user approval, SM presents the triad's recommendation to the user first.
+4. **Triad disagrees** → User decides whether to escalate (at all paces)
+
+### Pace Governs Escalation Autonomy
+
+All protocol change escalation is subject to the current fleet pace:
+
+| Pace      | Escalation Behavior                                                                                     |
+| --------- | ------------------------------------------------------------------------------------------------------- |
+| **Crawl** | All escalations require user approval before reaching the executive team. No autonomous escalation.     |
+| **Walk**  | Standard flow: triad consensus gates escalation. User decides on triad disagreement.                    |
+| **Run**   | Triad may escalate non-floor protocol changes autonomously. Floor changes still require user awareness. |
+| **Fly**   | Triad may escalate autonomously. User is informed after the fact for non-floor changes.                 |
+
+The compliance floor is never subject to autonomous change — even at Fly, floor changes require user approval per the existing compliance change control process.
+
+### Non-Floor Protocol Changes
+
+- **Sub-file content changes:** Domain owner makes the change, SM reviews for floor compliance
+- **Profile restructuring** (what's inlined vs referenced): SM owns, CO reviews if compliance-relevant content is affected
+- **Base.md changes:** CO is guardian, follows `/compliance propose`, user approval required
+```
+
+- [ ] **Step 2: Add ownership table to base.md**
+
+Append to `.claude/protocol/base.md`:
+
+```markdown
+## Protocol Ownership
+
+| Artifact                 | Owner                        | Change Control                                        |
+| ------------------------ | ---------------------------- | ----------------------------------------------------- |
+| `base.md`                | Compliance Officer           | `/compliance propose`, user approval required         |
+| `profiles/*.md`          | Scrum Master                 | SM owns; CO reviews if compliance content is affected |
+| Sub-files                | Domain owner of that content | Domain owner changes; SM reviews for floor compliance |
+| `COLLABORATION.md` (hub) | Scrum Master                 | Updated when sub-files are added/removed              |
+
+Full governance model: `.claude/protocol/compliance-governance.md` § Protocol Change Governance
+```
+
+- [ ] **Step 3: Recompile and verify**
+
+Run: `ops/compile-protocol.sh`
+Expected: All agents recompile with updated content.
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add .claude/protocol/compliance-governance.md .claude/protocol/base.md
+git commit -m "feat: add protocol change governance and ownership model
+
+New content from the spec: SM as protocol guardian, floor-change
+proposal flow, pace-governed escalation autonomy table, ownership
+table in base.md."
+```
+
+---
+
+## Task 8: Update Cross-References (~33 files)
+
+**Files:**
+
+- Modify: `.claude/skills/deploy/SKILL.md`
+- Modify: `.claude/skills/findings/SKILL.md`
+- Modify: `.claude/skills/handoff/SKILL.md`
+- Modify: `.claude/skills/onboard/SKILL.md`
+- Modify: `.claude/skills/pace/SKILL.md`
+- Modify: `.claude/skills/po/SKILL.md`
+- Modify: `.claude/skills/retro/SKILL.md`
+- Modify: `CLAUDE.md`
+- Modify: `docs/GETTING-STARTED.md`
+- Modify: `docs/AGENT-FLEET-PATTERN.md`
+- Modify: `docs/COLLABORATION-MODEL.md`
+- Modify: `.claude/compliance/targets.md`
+- Modify: `.claude/DOCUMENTATION-STYLE.md`
+- Modify: `templates/agents/cx-role.md`
+- Modify: `ops/test-example.sh`
+- Modify: `docs/plans/roadmap-index.md`
+- Modify: `README.md`
+
+Every reference to `.claude/COLLABORATION.md` or `COLLABORATION.md` gets rewritten to the specific sub-file.
+
+- [ ] **Step 1: Find all references**
+
+Run: `grep -rn 'COLLABORATION\.md' --include='*.md' --include='*.sh' --include='*.json' | grep -v 'protocol/\|specs/\|plans/'`
+
+This shows every file that still points to the old monolith (excluding protocol sub-files, specs, and plans).
+
+- [ ] **Step 2: Update skill files (7 files)**
+
+For each skill, find lines referencing `COLLABORATION.md § <section>` and replace with the specific protocol sub-file path. Common patterns:
+
+- `COLLABORATION.md § Work Item Lifecycle` → `.claude/protocol/lifecycle.md`
+- `COLLABORATION.md § Pace Control` → `.claude/protocol/pace-control.md`
+- `COLLABORATION.md § Compliance Floor` → `.claude/protocol/compliance-governance.md`
+- `COLLABORATION.md § Handoff Protocol` → `.claude/protocol/handoffs.md`
+- `COLLABORATION.md` (generic) → `.claude/protocol/base.md` or the most relevant sub-file
+
+- [ ] **Step 3: Update CLAUDE.md**
+
+Key changes:
+
+- Directory structure section: add `protocol/` with brief description
+- Commands section: add `compile-protocol.sh` commands
+- Reference Documents: update COLLABORATION.md description to "Hub index (navigation only)"
+- Add `.claude/protocol/base.md` as "Protocol base (universal agent rules)"
+- Workflow section: update lifecycle reference
+
+- [ ] **Step 4: Update docs/ files**
+
+Update `GETTING-STARTED.md`, `AGENT-FLEET-PATTERN.md`, `COLLABORATION-MODEL.md` with new paths.
+
+- [ ] **Step 5: Update remaining files**
+
+Update `compliance/targets.md`, `DOCUMENTATION-STYLE.md`, `templates/agents/cx-role.md`, `ops/test-example.sh`, `docs/plans/roadmap-index.md`, `README.md`.
+
+- [ ] **Step 6: Verify no stale references remain**
+
+Run: `grep -rn 'COLLABORATION\.md' --include='*.md' --include='*.sh' --include='*.json' | grep -v 'protocol/\|specs/\|plans/\|COLLABORATION\.md:\|collab-sync-check\|settings\.json'`
+
+Expected: Zero results. Note: `ops/hooks/collab-sync-check.sh` and `.claude/settings.json` are updated in Task 10, so they are excluded from this check.
+
+- [ ] **Step 7: Commit**
+
+```bash
+git add .claude/skills/ CLAUDE.md docs/ .claude/compliance/ .claude/DOCUMENTATION-STYLE.md templates/ ops/test-example.sh README.md
+git commit -m "refactor: update all cross-references from COLLABORATION.md to protocol/
+
+Rewrite ~33 file references to point to specific protocol sub-files.
+No file should reference the hub except for human navigation contexts."
+```
+
+---
+
+## Task 9: Rewrite COLLABORATION.md as Hub Index
 
 **Files:**
 
 - Modify: `.claude/COLLABORATION.md`
+
+**Note:** This task runs AFTER cross-reference updates (Task 8) to avoid a window where the monolith is gutted but references still point to it. If interrupted between Task 8 and Task 9, agents see the old monolith (safe) with updated references pointing to protocol/ (also safe since sub-files exist from Task 1).
 
 - [ ] **Step 1: Replace COLLABORATION.md with hub content**
 
@@ -1046,7 +1215,7 @@ Universal rules for all agents in this fleet. This file is the navigation index 
 
 ## Ownership
 
-See `docs/superpowers/specs/2026-03-22-collaboration-split-design.md` § Ownership Model for who owns each file and the change control process.
+See `.claude/protocol/base.md` § Protocol Ownership for the ownership table, and `.claude/protocol/compliance-governance.md` § Protocol Change Governance for the full governance model.
 
 ## Compilation
 
@@ -1071,84 +1240,7 @@ and is compiled into agent contexts by ops/compile-protocol.sh."
 
 ---
 
-## Task 8: Update Cross-References (~33 files)
-
-**Files:**
-
-- Modify: `.claude/skills/deploy/SKILL.md`
-- Modify: `.claude/skills/findings/SKILL.md`
-- Modify: `.claude/skills/handoff/SKILL.md`
-- Modify: `.claude/skills/onboard/SKILL.md`
-- Modify: `.claude/skills/pace/SKILL.md`
-- Modify: `.claude/skills/po/SKILL.md`
-- Modify: `.claude/skills/retro/SKILL.md`
-- Modify: `CLAUDE.md`
-- Modify: `docs/GETTING-STARTED.md`
-- Modify: `docs/AGENT-FLEET-PATTERN.md`
-- Modify: `docs/COLLABORATION-MODEL.md`
-- Modify: `.claude/compliance/targets.md`
-- Modify: `.claude/DOCUMENTATION-STYLE.md`
-- Modify: `templates/agents/cx-role.md`
-- Modify: `ops/test-example.sh`
-- Modify: `docs/plans/roadmap-index.md`
-- Modify: `README.md`
-- Modify: `LICENSE`
-
-Every reference to `.claude/COLLABORATION.md` or `COLLABORATION.md` gets rewritten to the specific sub-file.
-
-- [ ] **Step 1: Find all references**
-
-Run: `grep -rn 'COLLABORATION\.md' --include='*.md' --include='*.sh' --include='*.json' | grep -v 'protocol/\|specs/\|plans/'`
-
-This shows every file that still points to the old monolith (excluding protocol sub-files, specs, and plans).
-
-- [ ] **Step 2: Update skill files (7 files)**
-
-For each skill, find lines referencing `COLLABORATION.md § <section>` and replace with the specific protocol sub-file path. Common patterns:
-
-- `COLLABORATION.md § Work Item Lifecycle` → `.claude/protocol/lifecycle.md`
-- `COLLABORATION.md § Pace Control` → `.claude/protocol/pace-control.md`
-- `COLLABORATION.md § Compliance Floor` → `.claude/protocol/compliance-governance.md`
-- `COLLABORATION.md § Handoff Protocol` → `.claude/protocol/handoffs.md`
-- `COLLABORATION.md` (generic) → `.claude/protocol/base.md` or the most relevant sub-file
-
-- [ ] **Step 3: Update CLAUDE.md**
-
-Key changes:
-
-- Directory structure section: add `protocol/` with brief description
-- Commands section: add `compile-protocol.sh` commands
-- Reference Documents: update COLLABORATION.md description to "Hub index (navigation only)"
-- Add `.claude/protocol/base.md` as "Protocol base (universal agent rules)"
-- Workflow section: update lifecycle reference
-
-- [ ] **Step 4: Update docs/ files**
-
-Update `GETTING-STARTED.md`, `AGENT-FLEET-PATTERN.md`, `COLLABORATION-MODEL.md` with new paths.
-
-- [ ] **Step 5: Update remaining files**
-
-Update `compliance/targets.md`, `DOCUMENTATION-STYLE.md`, `templates/agents/cx-role.md`, `ops/test-example.sh`, `docs/plans/roadmap-index.md`, `README.md`, `LICENSE`.
-
-- [ ] **Step 6: Verify no stale references remain**
-
-Run: `grep -rn 'COLLABORATION\.md' --include='*.md' --include='*.sh' --include='*.json' | grep -v 'protocol/\|specs/\|plans/\|COLLABORATION\.md:'`
-
-Expected: Zero results (no files reference the old monolith except the hub itself, specs, and plans).
-
-- [ ] **Step 7: Commit**
-
-```bash
-git add -A
-git commit -m "refactor: update all cross-references from COLLABORATION.md to protocol/
-
-Rewrite ~33 file references to point to specific protocol sub-files.
-No file should reference the hub except for human navigation contexts."
-```
-
----
-
-## Task 9: Rewrite collab-sync-check.sh Hook
+## Task 10: Rewrite collab-sync-check.sh Hook
 
 **Files:**
 
@@ -1233,7 +1325,7 @@ compiler artifacts."
 
 ---
 
-## Task 10: Remove Deferred Concern #3 and Final Validation
+## Task 11: Remove Deferred Concern #3 and Final Validation
 
 **Files:**
 
