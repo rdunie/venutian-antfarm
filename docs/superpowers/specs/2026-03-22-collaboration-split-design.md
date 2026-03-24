@@ -35,7 +35,8 @@ Split COLLABORATION.md into `.claude/protocol/` with a three-tier loading model.
     principles.md                     # Tier 2: core principles 1-11
     metrics.md                        # Tier 2: DORA + flow quality + event logging table
     handoffs.md                       # Tier 2: handoff protocol + completion format
-    lifecycle.md                      # Tier 2: 10-phase lifecycle + ad-hoc item rule
+    coordination.md                   # Tier 2: coordination architecture (working state vs published view)
+    lifecycle.md                      # Tier 2: 10-phase lifecycle + ad-hoc item rule + milestone release
     deployment.md                     # Tier 2: deployment progression + failures + acceptance failure
     regression.md                     # Tier 2: periodic regression testing + screenshot evidence
     branching.md                      # Tier 2: branch lifecycle, PRs, env discipline, fix ownership
@@ -68,17 +69,19 @@ Contains condensed versions of:
 
 Hybrid files that inline small content (<~20 lines) and reference larger sub-files. Each profile is tailored to a category of agent.
 
+**How references work:** References in profile files are markdown links of the form `See [Topic](../sub-file.md)`. Agents read the linked file when the current task requires that topic. There is no automated resolution — agents exercise judgment about when to load a referenced sub-file based on the task at hand.
+
 **`profiles/triad.md`** — loaded by: product-owner, solution-architect, scrum-master
 
 - Inlines: handoff format (~25 lines), model tiering table (~15 lines)
-- References: lifecycle, deployment, metrics, pace-control, branching, regression, fleet-structure, learning
+- References: lifecycle, deployment, metrics, pace-control, branching, regression, fleet-structure, learning, coordination
 
 **`profiles/governance.md`** — loaded by: compliance-officer, ciso, ceo, cto, cfo, coo, cko
 
 - Inlines: escalation rules table (~10 lines), governance collaboration pattern summary (~15 lines)
-- References: compliance-governance, metrics, pace-control, fleet-structure, learning
+- References: compliance-governance, metrics, pace-control, fleet-structure, learning, escalation
 
-**`profiles/specialist.md`** — loaded by: app-defined domain specialists
+**`profiles/specialist.md`** — loaded by: app-defined domain specialists (no harness agents use this profile; it exists for project-level agents defined via templates)
 
 - Inlines: handoff format (~25 lines), branching conventions (~15 lines)
 - References: lifecycle, deployment, regression, metrics
@@ -88,28 +91,35 @@ Hybrid files that inline small content (<~20 lines) and reference larger sub-fil
 - Inlines: handoff format (~25 lines)
 - References: metrics, compliance-governance, learning, lifecycle
 
-**Duplication note:** Handoff format appears in 3 profiles. This is intentional under the "agent reliability" DRY exception — it's small (~25 lines) and critical to get right.
+**Template-only agents** (e.g., security-reviewer) do not have harness agent definitions. App-defined agents based on templates should declare `protocol.profile` in their frontmatter. Harness templates will include the appropriate default (e.g., `protocol.profile: cross-cutting` for security-reviewer).
 
-### Tier 2: Sub-Files (14 files)
+**Output agents** (doc-quality, training-enablement, stakeholder-comms) are defined per-project. They should use `protocol.profile: specialist` unless a project creates a dedicated output profile. Output agents primarily consume documentation, so the specialist profile (with lifecycle and deployment references) provides sufficient context.
+
+**Duplication note:** Handoff format appears in 3 profiles. This is intentional under the "agent reliability" DRY exception — it's small (~25 lines) and critical to get right. The standalone `handoffs.md` sub-file exists as the source of truth for the handoff format — profiles inline a copy for context efficiency, and `handoffs.md` is the canonical reference when the format is updated.
+
+**Unreferenced sub-files:** `ethos.md`, `resource-stewardship.md`, and `principles.md` are not referenced by any profile because their content is condensed in `base.md`. The full versions exist as reference material, loadable via `protocol.additional` when an agent needs the complete text.
+
+### Tier 2: Sub-Files (15 files)
 
 Each sub-file covers one cohesive topic. Available for on-demand loading via profile references or `protocol.additional` in agent frontmatter.
 
-| File                       | ~Lines | Content                                                                                |
-| -------------------------- | ------ | -------------------------------------------------------------------------------------- |
-| `ethos.md`                 | 18     | Full guiding ethos                                                                     |
-| `resource-stewardship.md`  | 27     | Resource stewardship + budget management table                                         |
-| `fleet-structure.md`       | 70     | All 4 agent tiers + triad collaboration dynamics                                       |
-| `pace-control.md`          | 40     | Pace definitions, rules, information needs tracker                                     |
-| `principles.md`            | 100    | Core Principles 1-11 (full explanations)                                               |
-| `metrics.md`               | 40     | DORA + flow quality metrics + "who logs what" event table                              |
-| `handoffs.md`              | 25     | Handoff protocol + completion format                                                   |
-| `lifecycle.md`             | 50     | 10-phase lifecycle table + ad-hoc item rule                                            |
-| `deployment.md`            | 50     | Deployment progression, deployment failures, acceptance failure                        |
-| `regression.md`            | 60     | Periodic regression testing, screenshot evidence, scope monitoring                     |
-| `branching.md`             | 35     | Branch lifecycle, PR-native code review, environment discipline, fix ownership         |
-| `compliance-governance.md` | 90     | Compliance floor, hierarchy, governance collaboration, CEO pace, Cx memory             |
-| `learning.md`              | 70     | Findings, learning collective, suggestions, memory integration, knowledge distribution |
-| `escalation.md`            | 30     | Conflict resolution, escalation rules, success criteria, deferred concerns             |
+| File                       | ~Lines | Content                                                                                     |
+| -------------------------- | ------ | ------------------------------------------------------------------------------------------- |
+| `ethos.md`                 | 18     | Full guiding ethos                                                                          |
+| `resource-stewardship.md`  | 27     | Resource stewardship + budget management table                                              |
+| `fleet-structure.md`       | 70     | All 4 agent tiers + triad collaboration dynamics                                            |
+| `pace-control.md`          | 40     | Pace definitions, rules, information needs tracker                                          |
+| `principles.md`            | 100    | Core Principles 1-11 (full explanations)                                                    |
+| `metrics.md`               | 40     | DORA + flow quality metrics + "who logs what" event table                                   |
+| `handoffs.md`              | 25     | Handoff protocol + completion format                                                        |
+| `coordination.md`          | 25     | Two-layer coordination architecture (working state vs published view), write-lock awareness |
+| `lifecycle.md`             | 55     | 10-phase lifecycle table + ad-hoc item rule + milestone release dispatch                    |
+| `deployment.md`            | 50     | Deployment progression, deployment failures, acceptance failure                             |
+| `regression.md`            | 60     | Periodic regression testing, screenshot evidence, scope monitoring                          |
+| `branching.md`             | 35     | Branch lifecycle, PR-native code review, environment discipline, fix ownership              |
+| `compliance-governance.md` | 90     | Compliance floor, hierarchy, governance collaboration, CEO pace, Cx memory                  |
+| `learning.md`              | 70     | Findings, learning collective, suggestions, memory integration, knowledge distribution      |
+| `escalation.md`            | 30     | Conflict resolution, escalation rules, success criteria, deferred concerns                  |
 
 ## Agent Frontmatter
 
@@ -136,7 +146,12 @@ protocol:
 - `protocol.additional` adds extra sub-files beyond what the profile references. Inheritable, overridable.
 - `protocol.exclude` is **not supported**. You can swap profiles or add files, never remove base or subtract from a profile.
 
-**Inheritance:** Follows the existing agent inheritance mechanism. If an app agent doesn't declare `protocol`, it inherits from the harness agent. If it declares `protocol`, it overrides.
+**Inheritance:** Follows the existing agent inheritance mechanism. If an app agent doesn't declare `protocol`, it inherits from the harness agent. If it declares `protocol`, it overrides at the field level:
+
+- `protocol.profile` uses **replace** semantics — declaring it replaces the inherited profile entirely.
+- `protocol.additional` uses **replace** semantics — declaring it replaces the inherited list entirely. To extend the inherited list, the app agent must include all desired entries (inherited + new).
+
+This is consistent with the existing "app fields override harness fields of the same name" rule. No merge semantics are introduced.
 
 ```yaml
 ---
@@ -144,6 +159,7 @@ extends: harness/scrum-master
 protocol:
   additional:
     - regression # SM doesn't normally load this, but this project needs it
+    # If harness SM had additional entries, they must be re-listed here
 ---
 ```
 
@@ -159,7 +175,7 @@ No protocol content lives in the hub. Agents never load it — they go through `
 
 ## Cross-Reference Migration
 
-All 35 files that currently reference COLLABORATION.md are updated to point to specific sub-files:
+All files that currently reference COLLABORATION.md (~33 files, excluding self-references) are updated to point to specific sub-files:
 
 - **Agent definitions (13 files):** Add `protocol.profile` frontmatter. Rewrite prose references to specific sub-files.
 - **Skills (7 files):** Rewrite section references to sub-file paths.
@@ -167,7 +183,7 @@ All 35 files that currently reference COLLABORATION.md are updated to point to s
 - **docs/ files (3 files):** `GETTING-STARTED.md`, `AGENT-FLEET-PATTERN.md`, `COLLABORATION-MODEL.md` update cross-links.
 - **Other (9 files):** `settings.json`, `ops/hooks/collab-sync-check.sh`, templates, `compliance/targets.md`, `DOCUMENTATION-STYLE.md` update references.
 
-**Migration rule:** Every reference becomes a direct link to the most specific sub-file. No reference should point to the hub. Deferred concern #3 (COLLABORATION.md length) is removed as resolved.
+**Migration rule:** Every reference becomes a direct link to the most specific sub-file. No reference should point to the hub. Upon completion, deferred concern #3 (COLLABORATION.md length) is removed as resolved.
 
 ## Ownership Model
 
@@ -212,3 +228,17 @@ When a suggestion requires a change to the compliance floor:
 | Cross-cutting agent | ~12,300             | ~1,700 (base + profile) | ~86%    |
 
 Sub-files loaded on-demand add ~200-800 tokens each, only when needed for the current task.
+
+## Line Count Expansion
+
+The split intentionally increases the total line count from ~792 to ~1050-1100 lines across all files. This expansion comes from:
+
+- Condensed summaries in `base.md` that duplicate sub-file content at a higher level
+- Handoff format inlined in 3 profiles (~50 extra lines)
+- File headers, frontmatter, and navigation links in each sub-file
+
+This tradeoff is acceptable because no single agent loads more than ~20% of the total. The metric that matters is per-agent token cost, not total line count across all files.
+
+## Implementation Notes
+
+Implementation ordering, phasing strategy, validation approach, and rollback plan are outside the scope of this spec and will be defined in the implementation plan. The spec defines the target state; the plan defines how to get there.
