@@ -110,7 +110,7 @@ Append-only markdown, grouped by subject agent:
 
 **Protection model** (mirrors compliance floor):
 
-- **PreToolUse hook** blocks Edit/Write to `.claude/rewards/ledger.md` unless the sentinel file exists (same bypass pattern as compliance floor)
+- **PreToolUse hook** blocks Edit/Write to `.claude/rewards/ledger.md` unless the sentinel file `.claude/rewards/.issuing` exists (same bypass pattern as compliance floor's `.claude/compliance/.applying`)
 - **Checksum file** at `.claude/rewards/ledger-checksum.sha256` — verified on SessionStart by the CO
 - **Tampering response** — revert from git, log `compliance-violation`, issue a reprimand to the tampering agent (if identifiable)
 
@@ -134,16 +134,24 @@ ops/rewards-log.sh kudo \
 
 # Query an agent's profile (read-only)
 ops/rewards-log.sh profile <agent>
+# Output:
+#   backend-specialist: 3 kudos, 1 reprimand, 1 tension (open)
+#   By domain: delivery (2K), security (1R, 1T), architecture (1K)
+#   Recent: K-005 [kudo] 2026-03-24 — PO / delivery
+#           R-003 [reprimand] 2026-03-22 — CISO / security
+#           T-001 [tension] 2026-03-22 — open
 
 # Query open tensions
 ops/rewards-log.sh tensions [--item <id>]
+# Output:
+#   T-001: K-001 vs R-001 — item 42 / backend-specialist — open
 ```
 
 The script:
 
 1. Assigns the next ID (R-NNN / K-NNN / T-NNN)
 2. Appends to the ledger under the subject's section (creates section if new)
-3. Emits `reward-issued` or `reprimand-issued` event via `ops/metrics-log.sh`
+3. Emits a `reward-issued` event via `ops/metrics-log.sh` (with `type` field distinguishing kudo vs reprimand)
 4. Checks for conflicts (same item + subject, opposing signal types) — auto-generates tension entry + findings register entry
 5. Updates the checksum
 
@@ -219,22 +227,22 @@ During retros (Phase 8), review the subject agent's behavioral profile via `ops/
 
 ### Modified Files
 
-| File                                   | Change                                                 |
-| -------------------------------------- | ------------------------------------------------------ |
-| `ops/metrics-log.sh`                   | Add `reward-issued` and `tension-detected` event types |
-| `.claude/settings.json`                | Add PreToolUse hooks for ledger protection             |
-| `.claude/agents/compliance-officer.md` | Add §7 Ledger Guardianship                             |
-| `.claude/agents/ciso.md`               | Add §Behavioral Feedback                               |
-| `.claude/agents/ceo.md`                | Add §Behavioral Feedback                               |
-| `.claude/agents/cto.md`                | Add §Behavioral Feedback                               |
-| `.claude/agents/cfo.md`                | Add §Behavioral Feedback                               |
-| `.claude/agents/coo.md`                | Add §Behavioral Feedback                               |
-| `.claude/agents/cko.md`                | Add §Behavioral Feedback                               |
-| `.claude/agents/product-owner.md`      | Add §Behavioral Feedback                               |
-| `.claude/agents/solution-architect.md` | Add §Behavioral Feedback                               |
-| `.claude/agents/scrum-master.md`       | Add §Behavioral Profile Review                         |
-| `CLAUDE.md`                            | Document `ops/rewards-log.sh` in Commands section      |
-| `templates/fleet-config.json`          | Add `rewards` section (placeholder for #25)            |
+| File                                   | Change                                                                         |
+| -------------------------------------- | ------------------------------------------------------------------------------ |
+| `ops/metrics-log.sh`                   | Add `reward-issued` and `tension-detected` event types                         |
+| `.claude/settings.json`                | Add PreToolUse hooks for ledger protection                                     |
+| `.claude/agents/compliance-officer.md` | Add §7 Ledger Guardianship                                                     |
+| `.claude/agents/ciso.md`               | Add §Behavioral Feedback                                                       |
+| `.claude/agents/ceo.md`                | Add §Behavioral Feedback                                                       |
+| `.claude/agents/cto.md`                | Add §Behavioral Feedback                                                       |
+| `.claude/agents/cfo.md`                | Add §Behavioral Feedback                                                       |
+| `.claude/agents/coo.md`                | Add §Behavioral Feedback                                                       |
+| `.claude/agents/cko.md`                | Add §Behavioral Feedback                                                       |
+| `.claude/agents/product-owner.md`      | Add §Behavioral Feedback                                                       |
+| `.claude/agents/solution-architect.md` | Add §Behavioral Feedback                                                       |
+| `.claude/agents/scrum-master.md`       | Add §Behavioral Profile Review                                                 |
+| `CLAUDE.md`                            | Document `ops/rewards-log.sh` in Commands section                              |
+| `templates/fleet-config.json`          | Add `rewards: {}` section (empty object, placeholder for #25 weighting config) |
 
 ### Not Changed (Intentionally)
 
