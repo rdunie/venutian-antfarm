@@ -335,6 +335,60 @@ METRICS_LOG_FILE="$TMPDIR/metrics/events.jsonl" \
 EXIT_CODE=$?
 assert_exit "reprimand without --severity fails" 1 "$EXIT_CODE"
 
+# ── Test: profile query ─────────────────────────────────────────────
+echo ""
+echo "=== Profile query ==="
+setup_ledger
+
+REWARDS_LEDGER="$TMPDIR/rewards/ledger.md" \
+REWARDS_CHECKSUM="$TMPDIR/rewards/ledger-checksum.sha256" \
+FINDINGS_REGISTER="$TMPDIR/findings/register.md" \
+METRICS_LOG_FILE="$TMPDIR/metrics/events.jsonl" \
+  "$REWARDS_LOG" reprimand \
+    --issuer ciso --subject test-agent --domain security \
+    --severity high --item 10 \
+    --description "Test reprimand" --evidence "Test evidence"
+
+PROFILE_OUTPUT=$(REWARDS_LEDGER="$TMPDIR/rewards/ledger.md" \
+  "$REWARDS_LOG" profile test-agent)
+
+TOTAL=$((TOTAL + 1))
+if echo "$PROFILE_OUTPUT" | grep -q "1 reprimand"; then
+  echo -e "  ${GREEN}PASS${NC} profile shows reprimand count"
+  PASS=$((PASS + 1))
+else
+  echo -e "  ${RED}FAIL${NC} profile should show 1 reprimand, got: $PROFILE_OUTPUT"
+  FAIL=$((FAIL + 1))
+fi
+
+NO_PROFILE=$(REWARDS_LEDGER="$TMPDIR/rewards/ledger.md" \
+  "$REWARDS_LOG" profile nonexistent-agent)
+
+TOTAL=$((TOTAL + 1))
+if echo "$NO_PROFILE" | grep -q "no behavioral signals"; then
+  echo -e "  ${GREEN}PASS${NC} profile handles unknown agent"
+  PASS=$((PASS + 1))
+else
+  echo -e "  ${RED}FAIL${NC} profile should say no signals for unknown agent"
+  FAIL=$((FAIL + 1))
+fi
+
+# ── Test: tensions query ───────────────────────────────────────────────
+echo ""
+echo "=== Tensions query ==="
+
+TENSIONS_OUTPUT=$(REWARDS_LEDGER="$TMPDIR/rewards/ledger.md" \
+  "$REWARDS_LOG" tensions)
+
+TOTAL=$((TOTAL + 1))
+if echo "$TENSIONS_OUTPUT" | grep -q "(none)"; then
+  echo -e "  ${GREEN}PASS${NC} tensions shows none when no tensions exist"
+  PASS=$((PASS + 1))
+else
+  echo -e "  ${RED}FAIL${NC} tensions should show none, got: $TENSIONS_OUTPUT"
+  FAIL=$((FAIL + 1))
+fi
+
 # ── Summary ────────────────────────────────────────────────────────────
 echo ""
 echo "========================================"
@@ -609,12 +663,10 @@ EOF
       exit 0
     fi
 
-    # Count signals
-    local kudos reprimands tensions
+    # Count signals (no 'local' — we're in a case block, not a function)
     kudos=$(sed -n "/^## ${SUBJECT}$/,/^## [^#]/p" "$LEDGER" | grep -c "\\[kudo\\]" || echo 0)
     reprimands=$(sed -n "/^## ${SUBJECT}$/,/^## [^#]/p" "$LEDGER" | grep -c "\\[reprimand\\]" || echo 0)
     tensions=$(sed -n "/^## ${SUBJECT}$/,/^## [^#]/p" "$LEDGER" | grep -c "\\[tension\\]" || echo 0)
-    local open_tensions
     open_tensions=$(sed -n "/^## ${SUBJECT}$/,/^## [^#]/p" "$LEDGER" | grep -c "Status:\\*\\* open" || echo 0)
 
     echo "${SUBJECT}: ${kudos} kudos, ${reprimands} reprimands, ${tensions} tensions (${open_tensions} open)"
@@ -913,14 +965,12 @@ ops/rewards-log.sh tensions [--item <id>]
 ```
 ````
 
-````
-
 - [ ] **Step 3: Commit**
 
 ```bash
 git add templates/fleet-config.json CLAUDE.md
 git commit -m "docs: add rewards-log.sh commands and fleet-config rewards placeholder"
-````
+```
 
 ---
 
