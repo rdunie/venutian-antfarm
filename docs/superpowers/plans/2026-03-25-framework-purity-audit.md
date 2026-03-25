@@ -288,7 +288,16 @@ Add "(created at onboarding)" comments to the runtime directories:
 │   └── metrics/                     # Event log (created at onboarding)
 ```
 
-- [ ] **Step 3: Update Quick Start**
+- [ ] **Step 3: Update Key Files section**
+
+Add "(created at onboarding)" to runtime artifact entries in the Key Files section:
+
+```markdown
+- **`.claude/findings/register.md`** -- Findings register where notable events are recorded during work. Created at onboarding from `templates/findings/register.md`.
+- **`.claude/metrics/events.jsonl`** -- Event log (append-only, written by `ops/metrics-log.sh`, never directly). Created at onboarding.
+```
+
+- [ ] **Step 4: Update Quick Start**
 
 Add onboarding reference after the existing cp commands:
 
@@ -299,7 +308,7 @@ cp templates/compliance-floor.md compliance-floor.md # define non-negotiable rul
 # See examples/ for progressive working references
 ```
 
-- [ ] **Step 4: Update templates/ in Directory Structure**
+- [ ] **Step 5: Update templates/ in Directory Structure**
 
 Update the templates tree to show the new subdirectories:
 
@@ -314,14 +323,14 @@ Update the templates tree to show the new subdirectories:
 │   └── rewards/                     # Rewards runtime templates
 ```
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 6: Commit**
 
 ```bash
 git add CLAUDE.md
 git commit -m "docs: update CLAUDE.md for framework purity changes
 
-Add onboarding comments to directory tree, add /onboard reference to
-quick start, update templates/ tree with new subdirectories.
+Update Key Files, directory tree, quick start, and templates/ tree
+to reflect onboarding-created runtime artifacts.
 
 Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com>"
 ```
