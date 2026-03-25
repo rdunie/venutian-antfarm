@@ -6,7 +6,7 @@
 
 ## Problem
 
-The framework repo ships with 13 runtime artifacts in `.claude/` that should only exist after onboarding. These are empty-but-initialized files (compliance targets, change logs, findings registers, executive briefs, etc.) that live in runtime locations instead of `templates/`. This violates the framework-purity boundary: the repo IS the product, not an implementation.
+The framework repo ships with 18 runtime artifacts in `.claude/` (6 content files + 12 scaffolding stubs) that should only exist after onboarding. These are empty-but-initialized files (compliance targets, change logs, findings registers, executive briefs, etc.) that live in runtime locations instead of `templates/`. This violates the framework-purity boundary: the repo IS the product, not an implementation.
 
 ## Goals
 
