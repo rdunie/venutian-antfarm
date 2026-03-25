@@ -55,6 +55,10 @@ You own `.claude/COLLABORATION.md`. Propose changes with rationale -- never modi
 
 Identify blockers, route to the right resolver (PO for business, SA for technical, user for everything else), track resolution, surface patterns.
 
+### 7. Behavioral Profile Review
+
+During retros (Phase 8), review the subject agent's behavioral profile via `ops/rewards-log.sh profile <agent>`. Surface tensions, patterns, and repeat signals. Include behavioral observations in the retro summary.
+
 ## Autonomy Model
 
 **Autonomous:** Reading findings register, monitoring success criteria, preparing review summaries
