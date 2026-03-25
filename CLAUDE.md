@@ -81,6 +81,20 @@ ops/dora.sh --cost            # agent cost analysis
 ops/dora.sh --since 7d        # 7-day window
 ```
 
+### Rewards
+
+```bash
+# Issue behavioral feedback
+ops/rewards-log.sh reprimand --issuer <agent> --subject <agent> --domain <domain> \
+  --severity low|medium|high [--item <id>] --description "..." --evidence "..."
+ops/rewards-log.sh kudo --issuer <agent> --subject <agent> --domain <domain> \
+  [--item <id>] --description "..." --evidence "..."
+
+# Query behavioral profiles
+ops/rewards-log.sh profile <agent>
+ops/rewards-log.sh tensions [--item <id>]
+```
+
 ### Pathway Analysis
 
 ```bash
