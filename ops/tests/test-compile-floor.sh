@@ -216,11 +216,11 @@ prose_exit=0
 "$COMPILER" --prose-only "$FIXTURES/floor-valid.md" "$PROSEDIR" >/dev/null 2>&1 || prose_exit=$?
 assert_exit "prose generation exits 0" 0 $prose_exit
 
-assert_file_exists "prose file generated" "$PROSEDIR/compliance-floor.prose.md"
-assert_not_contains "prose has no enforcement blocks" "$PROSEDIR/compliance-floor.prose.md" '```enforcement'
-assert_contains "prose retains rule 1 text" "$PROSEDIR/compliance-floor.prose.md" "No hardcoded secrets"
-assert_contains "prose retains rule 2 text" "$PROSEDIR/compliance-floor.prose.md" "No console.log"
-assert_contains "prose retains rule 3 text" "$PROSEDIR/compliance-floor.prose.md" "All data changes are auditable"
+assert_file_exists "prose file generated" "$PROSEDIR/floor-valid.prose.md"
+assert_not_contains "prose has no enforcement blocks" "$PROSEDIR/floor-valid.prose.md" '```enforcement'
+assert_contains "prose retains rule 1 text" "$PROSEDIR/floor-valid.prose.md" "No hardcoded secrets"
+assert_contains "prose retains rule 2 text" "$PROSEDIR/floor-valid.prose.md" "No console.log"
+assert_contains "prose retains rule 3 text" "$PROSEDIR/floor-valid.prose.md" "All data changes are auditable"
 
 # ---------------------------------------------------------------------------
 # Section: enforce.sh Generation
@@ -672,7 +672,7 @@ e2e_compile_exit=0
 assert_exit "e2e: full compile with --proposal e2e-001 exits 0" 0 "${e2e_compile_exit}"
 
 # Step 2: Assert all artifacts exist
-assert_file_exists "e2e: prose file exists" "${E2E_DIR}/compliance-floor.prose.md"
+assert_file_exists "e2e: prose file exists" "${E2E_DIR}/floor-valid.prose.md"
 assert_file_exists "e2e: enforce.sh exists" "${E2E_DIR}/enforce.sh"
 assert_file_exists "e2e: manifest.sha256 exists" "${E2E_DIR}/manifest.sha256"
 assert_file_exists "e2e: semgrep-rules.yaml exists" "${E2E_DIR}/semgrep-rules.yaml"
@@ -700,6 +700,125 @@ assert_exit "e2e: recompile with --proposal e2e-002 exits 0" 0 "${e2e_recompile_
 e2e_verify_final_exit=0
 "${COMPILER}" --verify "${FIXTURES}/floor-valid.md" "${E2E_DIR}" >/dev/null 2>&1 || e2e_verify_final_exit=$?
 assert_exit "e2e: --verify after recompile exits 0" 0 "${e2e_verify_final_exit}"
+
+# ---------------------------------------------------------------------------
+# Section: Fleet-Config Default Resolution
+# ---------------------------------------------------------------------------
+
+echo ""
+echo "=== Fleet-Config Default Resolution ==="
+
+FCDIR="${TMPDIR_ROOT}/fleet-config-test"
+mkdir -p "${FCDIR}/floors"
+
+# Create a minimal fleet-config.json
+cat > "${FCDIR}/fleet-config.json" <<'FCEOF'
+{
+  "floors": {
+    "compliance": {
+      "file": "floors/compliance.md",
+      "compiled_dir": ".claude/floors/compliance/compiled"
+    }
+  }
+}
+FCEOF
+
+# Copy valid fixture as the floor file
+cp "${FIXTURES}/floor-valid.md" "${FCDIR}/floors/compliance.md"
+
+# Run compiler from inside the FCDIR (so it finds fleet-config.json)
+pushd "${FCDIR}" >/dev/null
+fc_compile_exit=0
+"${COMPILER}" >/dev/null 2>&1 || fc_compile_exit=$?
+popd >/dev/null
+assert_exit "fleet-config: compile with fleet-config.json exits 0" 0 "${fc_compile_exit}"
+
+# Check that the output went to the fleet-config-specified directory
+assert_file_exists "fleet-config: enforce.sh in fleet-config dir" "${FCDIR}/.claude/floors/compliance/compiled/enforce.sh"
+assert_file_exists "fleet-config: prose in fleet-config dir" "${FCDIR}/.claude/floors/compliance/compiled/compliance.prose.md"
+
+# ---------------------------------------------------------------------------
+# Section: Floor-Agnostic Prose Naming
+# ---------------------------------------------------------------------------
+
+echo ""
+echo "=== Floor-Agnostic Prose Naming ==="
+
+AGNOSTIC_DIR="${TMPDIR_ROOT}/agnostic"
+mkdir -p "${AGNOSTIC_DIR}"
+
+# Compile with a non-standard floor file name
+agnostic_exit=0
+"${COMPILER}" "${FIXTURES}/floor-valid.md" "${AGNOSTIC_DIR}" >/dev/null 2>&1 || agnostic_exit=$?
+assert_exit "agnostic: compile exits 0" 0 "${agnostic_exit}"
+
+# Prose file should be named after the input file, not hardcoded
+assert_file_exists "agnostic: floor-valid.prose.md exists" "${AGNOSTIC_DIR}/floor-valid.prose.md"
+assert_file_not_exists "agnostic: no compliance-floor.prose.md" "${AGNOSTIC_DIR}/compliance-floor.prose.md"
+
+# Manifest should reference floor-valid.prose.md
+assert_contains "agnostic: manifest references floor-valid.prose.md" \
+  "${AGNOSTIC_DIR}/manifest.sha256" "floor-valid\\.prose\\.md:"
+
+# ---------------------------------------------------------------------------
+# Section: --all Flag (compile-all)
+# ---------------------------------------------------------------------------
+
+echo ""
+echo "=== --all Flag ==="
+
+ALLDIR="${TMPDIR_ROOT}/all-test"
+mkdir -p "${ALLDIR}/floors"
+
+# Create fleet-config.json with two floors
+cat > "${ALLDIR}/fleet-config.json" <<'ALLEOF'
+{
+  "floors": {
+    "compliance": {
+      "file": "floors/compliance.md",
+      "compiled_dir": ".claude/floors/compliance/compiled"
+    },
+    "behavioral": {
+      "file": "floors/behavioral.md",
+      "compiled_dir": ".claude/floors/behavioral/compiled"
+    }
+  }
+}
+ALLEOF
+
+# Copy valid fixture as both floor files
+cp "${FIXTURES}/floor-valid.md" "${ALLDIR}/floors/compliance.md"
+cp "${FIXTURES}/floor-valid.md" "${ALLDIR}/floors/behavioral.md"
+
+# Run --all from inside the test dir
+pushd "${ALLDIR}" >/dev/null
+all_compile_exit=0
+"${COMPILER}" --all >/dev/null 2>&1 || all_compile_exit=$?
+popd >/dev/null
+assert_exit "--all: compile exits 0" 0 "${all_compile_exit}"
+
+# Check artifacts exist for both floors
+assert_file_exists "--all: compliance enforce.sh" "${ALLDIR}/.claude/floors/compliance/compiled/enforce.sh"
+assert_file_exists "--all: compliance prose" "${ALLDIR}/.claude/floors/compliance/compiled/compliance.prose.md"
+assert_file_exists "--all: behavioral enforce.sh" "${ALLDIR}/.claude/floors/behavioral/compiled/enforce.sh"
+assert_file_exists "--all: behavioral prose" "${ALLDIR}/.claude/floors/behavioral/compiled/behavioral.prose.md"
+
+# Test --all with missing floor file (should warn and skip, not fail)
+rm "${ALLDIR}/floors/behavioral.md"
+pushd "${ALLDIR}" >/dev/null
+all_skip_exit=0
+all_skip_output=$("${COMPILER}" --all 2>&1) || all_skip_exit=$?
+popd >/dev/null
+assert_exit "--all: skips missing floor without failing" 0 "${all_skip_exit}"
+
+TOTAL=$((TOTAL + 1))
+if echo "${all_skip_output}" | grep -q "WARNING.*behavioral"; then
+  echo -e "  ${GREEN}PASS${NC} --all: warns about missing behavioral floor"
+  PASS=$((PASS + 1))
+else
+  echo -e "  ${RED}FAIL${NC} --all: should warn about missing behavioral floor"
+  FAIL=$((FAIL + 1))
+fi
 
 # ---------------------------------------------------------------------------
 # Results summary
