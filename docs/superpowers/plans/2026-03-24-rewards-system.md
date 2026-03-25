@@ -4,22 +4,25 @@
 
 **Goal:** Add a behavioral feedback system (kudos, reprimands, tension detection) so governance and leadership agents can shape agent behavior over time.
 
-**Architecture:** Ledger-first approach — a protected markdown file (`.claude/rewards/ledger.md`) is the primary artifact, managed exclusively through `ops/rewards-log.sh`. Metrics events provide the audit trail. Hook + checksum protection mirrors the compliance floor pattern.
+**Architecture:** Ledger-first approach — a protected markdown file (`.claude/rewards/ledger.md`) is the runtime artifact, managed exclusively through `ops/rewards-log.sh`. The framework ships the template and tooling; the live ledger is created during onboarding. Metrics events provide the audit trail. Hook + checksum protection mirrors the compliance floor pattern.
 
 **Tech Stack:** Bash (helper script), jq (JSON event construction), sha256sum (integrity checks), existing hook infrastructure.
 
 **Spec:** `docs/superpowers/specs/2026-03-24-rewards-system-design.md`
 
+**Framework purity:** The framework repo ships tooling (`ops/rewards-log.sh`), templates (`templates/rewards/`), agent definitions, and docs. Live runtime artifacts (ledger, checksum, sentinel, hooks) are created during onboarding, not checked into the framework repo. See #27 for the broader artifact cleanup.
+
+**Development:** All implementation work happens in a git worktree. All testing happens in sandboxes (temp dirs).
+
 ---
 
-### Task 1: Scaffold ledger files and template
+### Task 1: Create ledger template
 
 **Files:**
 
-- Create: `.claude/rewards/ledger.md`
 - Create: `templates/rewards/ledger.md`
 
-- [ ] **Step 1: Create the rewards directory and ledger file**
+- [ ] **Step 1: Create the template ledger**
 
 ```markdown
 # Behavioral Ledger
@@ -27,33 +30,13 @@
 <!-- Append-only. Managed by ops/rewards-log.sh. Do not edit directly. -->
 ```
 
-Write this to `.claude/rewards/ledger.md`.
+Write this to `templates/rewards/ledger.md`. This is what onboarding copies to `.claude/rewards/ledger.md`.
 
-- [ ] **Step 2: Create the template ledger**
-
-Copy the same content to `templates/rewards/ledger.md`. This is what new projects start with.
-
-- [ ] **Step 3: Add sentinel file to .gitignore**
-
-Add this line to `.gitignore` after the existing compliance sentinel entry:
-
-```
-# Rewards sentinel file (transient, never committed)
-.claude/rewards/.issuing
-```
-
-- [ ] **Step 4: Generate the initial checksum**
+- [ ] **Step 2: Commit**
 
 ```bash
-sha256sum .claude/rewards/ledger.md > .claude/rewards/ledger-checksum.sha256
-```
-
-- [ ] **Step 5: Commit**
-
-```bash
-git add .claude/rewards/ledger.md .claude/rewards/ledger-checksum.sha256 \
-  templates/rewards/ledger.md .gitignore
-git commit -m "feat: scaffold rewards ledger and template"
+git add templates/rewards/ledger.md
+git commit -m "feat: add rewards ledger template"
 ```
 
 ---
@@ -739,21 +722,24 @@ git commit -m "feat: add rewards-log.sh with reprimand, kudo, tension detection,
 
 ---
 
-### Task 4: Add hook protection for the ledger
+### Task 4: Document prescribed hooks for onboarding
 
 **Files:**
 
-- Modify: `.claude/settings.json`
+- Create: `templates/rewards/hooks.md`
 
-**Important:** Per CLAUDE.md gotchas, use Write (full rewrite) for `settings.json`, not Edit.
+The framework does NOT modify `.claude/settings.json` directly for rewards protection. Instead, we document the prescribed hooks so the onboarding process (#27) can install them alongside other runtime controls.
 
-- [ ] **Step 1: Read current settings.json**
+- [ ] **Step 1: Create the hooks documentation**
 
-Read the file to get the current content.
+Write `templates/rewards/hooks.md`:
 
-- [ ] **Step 2: Add PreToolUse hook for ledger file protection**
+````markdown
+# Rewards Ledger — Prescribed Hooks
 
-Add a new entry in the `PreToolUse` → `Edit|Write` hooks array (after the compliance floor protection hook):
+Add these to your `.claude/settings.json` during onboarding.
+
+## PreToolUse (Edit|Write) — Ledger file protection
 
 ```json
 {
@@ -761,10 +747,9 @@ Add a new entry in the `PreToolUse` → `Edit|Write` hooks array (after the comp
   "command": "echo \"$CLAUDE_FILE_PATH\" | grep -qE 'rewards/ledger\\.md$|rewards/ledger-checksum' && { [ -f .claude/rewards/.issuing ] && find .claude/rewards/.issuing -mmin -1 -print -quit 2>/dev/null | grep -q . && exit 0 || echo 'BLOCKED: Rewards ledger is protected. Use ops/rewards-log.sh to issue feedback.' && exit 2; } || exit 0"
 }
 ```
+````
 
-- [ ] **Step 3: Add PreToolUse hook for direct ledger writes via Bash**
-
-Add to the `PreToolUse` → `Bash` hooks array:
+## PreToolUse (Bash) — Block direct ledger writes
 
 ```json
 {
@@ -773,9 +758,7 @@ Add to the `PreToolUse` → `Bash` hooks array:
 }
 ```
 
-- [ ] **Step 4: Add SessionStart hook for checksum verification**
-
-Add to the `SessionStart` hooks array:
+## SessionStart — Checksum verification
 
 ```json
 {
@@ -784,24 +767,21 @@ Add to the `SessionStart` hooks array:
 }
 ```
 
-- [ ] **Step 5: Write the complete settings.json**
+## .gitignore entry
 
-Use the Write tool to write the full updated `settings.json`.
-
-- [ ] **Step 6: Validate JSON**
-
-```bash
-cat .claude/settings.json | jq . > /dev/null
+```
+# Rewards sentinel file (transient, never committed)
+.claude/rewards/.issuing
 ```
 
-Expected: exit 0 (valid JSON).
+````
 
-- [ ] **Step 7: Commit**
+- [ ] **Step 2: Commit**
 
 ```bash
-git add .claude/settings.json
-git commit -m "feat: add hook protection for rewards ledger"
-```
+git add templates/rewards/hooks.md
+git commit -m "docs: add prescribed hooks for rewards ledger protection"
+````
 
 ---
 
@@ -974,9 +954,9 @@ git commit -m "docs: add rewards-log.sh commands and fleet-config rewards placeh
 
 ---
 
-### Task 9: End-to-end validation
+### Task 9: End-to-end validation (sandbox)
 
-**Files:** None modified — validation only.
+**Files:** None modified — validation only. All testing in temp directories.
 
 - [ ] **Step 1: Run the full test suite**
 
@@ -995,21 +975,25 @@ bash -n ops/metrics-log.sh
 
 Expected: clean parse for both.
 
-- [ ] **Step 3: Validate settings.json**
+- [ ] **Step 3: Smoke test end-to-end in a sandbox**
 
-```bash
-cat .claude/settings.json | jq . > /dev/null
-```
-
-Expected: exit 0.
-
-- [ ] **Step 4: Smoke test end-to-end in a temp directory**
+Uses the template to create a sandbox environment, same as onboarding would:
 
 ```bash
 TMPDIR=$(mktemp -d)
 mkdir -p "$TMPDIR/rewards" "$TMPDIR/findings" "$TMPDIR/metrics"
-cp .claude/rewards/ledger.md "$TMPDIR/rewards/"
-cp .claude/findings/register.md "$TMPDIR/findings/"
+cp templates/rewards/ledger.md "$TMPDIR/rewards/"
+cat > "$TMPDIR/findings/register.md" <<'EOF'
+# Findings Register
+
+## Active Findings
+
+(none yet)
+
+## Resolved Findings
+
+(none yet)
+EOF
 touch "$TMPDIR/metrics/events.jsonl"
 
 REWARDS_LEDGER="$TMPDIR/rewards/ledger.md" \
@@ -1037,17 +1021,12 @@ REWARDS_CHECKSUM="$TMPDIR/rewards/ledger-checksum.sha256" \
 REWARDS_LEDGER="$TMPDIR/rewards/ledger.md" \
   ops/rewards-log.sh tensions
 
+# Verify checksum is consistent
+EXPECTED=$(sha256sum "$TMPDIR/rewards/ledger.md" | cut -d' ' -f1)
+ACTUAL=$(cut -d' ' -f1 "$TMPDIR/rewards/ledger-checksum.sha256")
+[ "$EXPECTED" = "$ACTUAL" ] && echo "Checksum OK" || echo "Checksum MISMATCH"
+
 rm -rf "$TMPDIR"
 ```
 
-Expected: Reprimand issued, kudo issued, tension auto-detected, profile shows 1K/1R/1T, tensions shows 1 open.
-
-- [ ] **Step 5: Verify checksum protection works**
-
-```bash
-sha256sum .claude/rewards/ledger.md > /tmp/expected-checksum.txt
-diff <(cut -d' ' -f1 /tmp/expected-checksum.txt) <(cut -d' ' -f1 .claude/rewards/ledger-checksum.sha256)
-rm /tmp/expected-checksum.txt
-```
-
-Expected: no diff (checksum matches).
+Expected: Reprimand issued, kudo issued, tension auto-detected, profile shows 1K/1R/1T, tensions shows 1 open, checksum OK.
