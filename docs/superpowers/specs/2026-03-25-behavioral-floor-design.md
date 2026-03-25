@@ -73,11 +73,13 @@ Each floor guardian (CRO for compliance, COO for behavioral):
 - **Reverts unauthorized changes** and issues reprimands
 - **Produces conformance reports** for their floor at retros
 
-For compliance floor changes, the CRO is both guardian and risk facilitator.
+For compliance floor changes, the CRO is both guardian and risk facilitator — see note below on how this special case works.
 
 ### 3. Consultation Process
 
-When a floor change is proposed:
+When a floor change is proposed, the consultation runs as a **subagent dispatch** so multi-round Cx discussion doesn't pollute the main conversation context.
+
+**Standard case (guardian ≠ CRO, e.g., behavioral floor):**
 
 1. **Floor guardian receives proposal**
 2. **Guardian dispatches CRO as a subagent** with the proposal
@@ -90,6 +92,10 @@ When a floor change is proposed:
 4. **CRO subagent returns:** consolidated risk assessment, each Cx position, recommendation
 5. **Only the compact result enters the main context** — round-by-round discussion stays in the subagent and is dropped
 6. **Guardian presents to user** with full context (risk assessment, Cx positions, recommendation)
+
+**Special case (guardian = CRO, i.e., compliance floor):**
+
+The CRO cannot dispatch itself. Instead, the CRO dispatches the consultation as a **generic consultation subagent** — a subagent that runs the same multi-round Cx facilitation process with the CRO's facilitation prompt but without the CRO as the orchestrating agent. The CRO provides its own domain position (compliance impact) as input alongside the proposal. The subagent facilitates rounds among the other Cx agents and returns the consolidated result. The CRO then acts as guardian with the result.
 
 **Context efficiency:** The entire multi-round consultation is a single subagent dispatch. The main conversation context sees only: one dispatch + one structured result. This prevents governance chatter from displacing working context.
 
@@ -126,7 +132,7 @@ ops/compile-floor.sh [options] [floor-file] [output-dir]
 ```
 
 **Changes:**
-- Default floor file: read from `fleet-config.json` floors list (fall back to `floors/compliance.md`)
+- Default floor file: read from `fleet-config.json` floors list. If `fleet-config.json` is absent or has no `floors` section, fall back to `floors/compliance.md` → `.claude/floors/compliance/compiled/` (backward compatible with minimal setups).
 - Default output dir: derived from floor name (e.g., `floors/compliance.md` → `.claude/floors/compliance/compiled/`)
 - New `--all` flag: compiles all active floors declared in `fleet-config.json`
 
@@ -141,7 +147,7 @@ ops/compile-floor.sh [options] [floor-file] [output-dir]
 │   └── floor-checksum.sha256
 ```
 
-**Migration:** `compliance-floor.md` (at repo root) → `floors/compliance.md`. Existing implementers need a one-time migration (documented in release notes).
+**Migration:** `compliance-floor.md` (at repo root) → `floors/compliance.md`. Existing implementers need a one-time migration (documented in release notes). Existing compiled artifacts are not migrated — implementers re-run `compile-floor.sh --all` after migration to regenerate them in the new locations.
 
 ### 6. Fleet Config and Hook Changes
 
@@ -218,7 +224,7 @@ Adding a new floor is config — declare it, assign a guardian, specify the comp
 
 - CISO, CEO, CTO, CFO, CKO agents — already participate in consultation, no role change
 - SM — process facilitation unchanged
-- Rewards system — consumes floor signals, no change needed
+- Rewards system (planned, #13) — design already accounts for multi-floor signals
 - Compliance auditor — reads fleet-config to discover active floors, checks all of them
 
 ## Related Issues
