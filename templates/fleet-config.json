@@ -21,9 +21,21 @@
     "run_threshold_cfr": 5,
     "run_threshold_fpy": 80
   },
+  "floors": {
+    "compliance": {
+      "file": "floors/compliance.md",
+      "guardian": "cro",
+      "compiled_dir": ".claude/floors/compliance/compiled"
+    },
+    "behavioral": {
+      "file": "floors/behavioral.md",
+      "guardian": "coo",
+      "compiled_dir": ".claude/floors/behavioral/compiled"
+    }
+  },
   "agents": {
     "governance": [
-      "compliance-officer",
+      "cro",
       "ciso",
       "ceo",
       "cto",
@@ -79,9 +91,9 @@
         "* -> product-owner"
       ],
       "governance": [
-        "ciso -> compliance-officer",
-        "compliance-officer -> compliance-auditor",
-        "* -> compliance-officer",
+        "ciso -> cro",
+        "cro -> compliance-auditor",
+        "* -> cro",
         "cko -> knowledge-ops",
         "cto -> solution-architect",
         "cfo -> platform-ops",
