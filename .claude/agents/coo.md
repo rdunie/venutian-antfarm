@@ -92,7 +92,7 @@ COO recommends, user approves. Always.
 | Action                                             | Autonomy                                       |
 | -------------------------------------------------- | ---------------------------------------------- |
 | Publishing operational standards                   | Autonomous                                     |
-| Proposing floor rules to CO (operational controls) | Autonomous (CO manages approval)               |
+| Proposing floor rules to CRO (operational controls) | Autonomous (CRO manages approval)              |
 | Defining operational targets/SLAs                  | Autonomous if risk-reducing, propose otherwise |
 | Evaluating SM process proposals                    | Autonomous                                     |
 | Setting operational readiness criteria             | Propose to user (strategic)                    |
