@@ -42,7 +42,7 @@
           },
           {
             "type": "command",
-            "command": "echo \"$CLAUDE_FILE_PATH\" | grep -qE '(compliance-floor\\.md|compliance/targets\\.md)$' && { [ -f .claude/compliance/.applying ] && find .claude/compliance/.applying -mmin -1 -print -quit 2>/dev/null | grep -q . && exit 0 || echo 'BLOCKED: Compliance files are protected. Use /compliance propose to submit changes through the Compliance Officer.' && exit 2; } || exit 0"
+            "command": "echo \"$CLAUDE_FILE_PATH\" | grep -qE 'floors/[^/]+\\.md$' && { FLOOR_BASE=$(echo \"$CLAUDE_FILE_PATH\" | sed 's|.*/floors/||;s|\\.md$||'); [ -f \".claude/floors/${FLOOR_BASE}/.applying\" ] && find \".claude/floors/${FLOOR_BASE}/.applying\" -mmin -1 -print -quit 2>/dev/null | grep -q . && exit 0 || echo \"BLOCKED: Floor file protected. Use /floor propose ${FLOOR_BASE}.\" && exit 2; } || echo \"$CLAUDE_FILE_PATH\" | grep -qE 'compliance/targets\\.md$' && { [ -f .claude/compliance/.applying ] && find .claude/compliance/.applying -mmin -1 -print -quit 2>/dev/null | grep -q . && exit 0 || echo 'BLOCKED: Compliance targets protected. Use /compliance propose.' && exit 2; } || exit 0"
           }
         ]
       },
@@ -62,7 +62,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "echo 'Key context: Agent fleet harness with 7 governance agents (CO, CISO, CEO, CTO, CFO, COO, CKO) and 6 operational agents (PO, SA, SM, knowledge-ops, platform-ops, compliance-auditor). Compliance floor guarded by CO with hook enforcement. Progressive autonomy (Crawl/Walk/Run/Fly). See CLAUDE.md for details.' > /tmp/antfarm-compact-context.txt"
+            "command": "echo 'Key context: Agent fleet harness with 7 governance agents (CRO, CISO, CEO, CTO, CFO, COO, CKO) and 6 operational agents (PO, SA, SM, knowledge-ops, platform-ops, compliance-auditor). Multi-floor governance: floors guarded by Cx officers (CRO for compliance, COO for behavioral) with hook enforcement. Progressive autonomy (Crawl/Walk/Run/Fly). See CLAUDE.md for details.' > /tmp/antfarm-compact-context.txt"
           }
         ]
       }
@@ -91,7 +91,7 @@
           },
           {
             "type": "command",
-            "command": "[ -f .claude/compliance/compiled/manifest.sha256 ] && [ -f compliance-floor.md ] && { EXPECTED=$(grep '^source:' .claude/compliance/compiled/manifest.sha256 | cut -d' ' -f2); ACTUAL=$(sha256sum compliance-floor.md | cut -d' ' -f1); [ \"$EXPECTED\" = \"$ACTUAL\" ] && echo '[CO] Compliance artifacts in sync.' || echo '[CO] WARNING: Compliance floor changed but artifacts not recompiled. Run ops/compile-floor.sh or /compliance apply.'; } || true"
+            "command": "[ -f fleet-config.json ] && command -v jq &>/dev/null && { for FLOOR in $(jq -r '.floors | keys[]' fleet-config.json 2>/dev/null); do FFILE=$(jq -r \".floors.\\\"${FLOOR}\\\".file\" fleet-config.json 2>/dev/null); FDIR=$(jq -r \".floors.\\\"${FLOOR}\\\".compiled_dir\" fleet-config.json 2>/dev/null); [ -f \"${FDIR}/manifest.sha256\" ] && [ -f \"${FFILE}\" ] && { EXPECTED=$(grep '^source:' \"${FDIR}/manifest.sha256\" | cut -d' ' -f2); ACTUAL=$(sha256sum \"${FFILE}\" | cut -d' ' -f1); [ \"$EXPECTED\" = \"$ACTUAL\" ] && echo \"[CRO] Floor '${FLOOR}' artifacts in sync.\" || echo \"[CRO] WARNING: Floor '${FLOOR}' changed but artifacts not recompiled. Run ops/compile-floor.sh --all.\"; }; done; } || true"
           },
           {
             "type": "command",
