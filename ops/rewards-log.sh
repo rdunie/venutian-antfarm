@@ -270,10 +270,10 @@ case "$SUBCOMMAND" in
     fi
 
     # Count signals (no 'local' — we're in a case block, not a function)
-    kudos=$(sed -n "/^## ${SUBJECT}$/,/^## [^#]/p" "$LEDGER" | grep -c "\\[kudo\\]" || echo 0)
-    reprimands=$(sed -n "/^## ${SUBJECT}$/,/^## [^#]/p" "$LEDGER" | grep -c "\\[reprimand\\]" || echo 0)
-    tensions_count=$(grep -c "Opposing feedback on item .* for ${SUBJECT}" "$LEDGER" 2>/dev/null || echo 0)
-    open_tensions=$(grep -A2 "Opposing feedback on item .* for ${SUBJECT}" "$LEDGER" 2>/dev/null | grep -c "Status:\\*\\* open" || echo 0)
+    kudos=$(sed -n "/^## ${SUBJECT}$/,/^## [^#]/p" "$LEDGER" | grep -c "\\[kudo\\]" || true)
+    reprimands=$(sed -n "/^## ${SUBJECT}$/,/^## [^#]/p" "$LEDGER" | grep -c "\\[reprimand\\]" || true)
+    tensions_count=$(grep -c "Opposing feedback on item .* for ${SUBJECT}" "$LEDGER" 2>/dev/null || true)
+    open_tensions=$(grep -A2 "Opposing feedback on item .* for ${SUBJECT}" "$LEDGER" 2>/dev/null | grep -c "Status:\\*\\* open" || true)
 
     echo "${SUBJECT}: ${kudos} kudos, ${reprimands} reprimands, ${tensions_count} tensions (${open_tensions} open)"
 
@@ -297,23 +297,25 @@ case "$SUBCOMMAND" in
   tensions)
     # Show open tensions, optionally filtered by item
     echo "Open tensions:"
-    if [[ -n "$ITEM" ]]; then
-      matches=$(grep "\\[tension\\].*item-${ITEM}" "$LEDGER" 2>/dev/null || true)
-      if [[ -n "$matches" ]]; then
-        echo "$matches" | while IFS= read -r line; do
-          echo "  ${line#\#\#\# }"
-        done
-      else
-        echo "  (none)"
+    tension_count=0
+    # Read the ledger line by line, track tension headers and their status
+    current_tension=""
+    while IFS= read -r line; do
+      if [[ "$line" =~ ^###\ T-[0-9]+\ \[tension\] ]]; then
+        current_tension="$line"
+      elif [[ -n "$current_tension" ]] && [[ "$line" == "**Status:** open" ]]; then
+        # This tension is open — apply item filter if specified
+        if [[ -z "$ITEM" ]] || echo "$current_tension" | grep -q "item-${ITEM}"; then
+          echo "  ${current_tension#\#\#\# }"
+          tension_count=$((tension_count + 1))
+        fi
+        current_tension=""
+      elif [[ -n "$current_tension" ]] && [[ "$line" =~ ^### ]]; then
+        # Hit next entry without finding open status — skip
+        current_tension=""
       fi
-    else
-      tension_count=0
-      while IFS= read -r line; do
-        echo "  ${line#\#\#\# }"
-        tension_count=$((tension_count + 1))
-      done < <(grep "\\[tension\\]" "$LEDGER" 2>/dev/null || true)
-      [[ "$tension_count" -eq 0 ]] && echo "  (none)"
-    fi
+    done < "$LEDGER"
+    if [[ "$tension_count" -eq 0 ]]; then echo "  (none)"; fi
     ;;
 
   *)

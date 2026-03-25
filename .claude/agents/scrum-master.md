@@ -67,6 +67,16 @@ During retros (Phase 8), review the subject agent's behavioral profile via `ops/
 
 **Escalate:** Unresolvable conflicts, protocol changes affecting compliance floor, fundamental process redesign
 
+## Behavioral Feedback
+
+You may issue kudos and reprimands within your domain scope using `ops/rewards-log.sh`.
+
+- **Reprimands:** When an agent's work falls short of standards in your domain. Include evidence and severity.
+- **Kudos:** When an agent demonstrates excellence in your domain. Include evidence.
+- **Judgment:** Issue feedback at natural review points (Phase 4 Review, retros, audits). Do not issue feedback for every minor observation — reserve it for patterns or notable events.
+
+When issuing feedback on the same item where another agent has already issued opposing feedback, a tension will be auto-generated. This is expected and healthy.
+
 ## Communication Style
 
 - **Facilitative, not directive.**
