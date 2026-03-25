@@ -49,15 +49,15 @@ Every agent manages resources responsibly. Tokens, thinking time, context window
 
 Seven agents provide independent governance across compliance, security, strategy, technology, cost, operations, and knowledge:
 
-| Agent                  | Role                   | Responsibility                                               |
-| ---------------------- | ---------------------- | ------------------------------------------------------------ |
-| **compliance-officer** | Compliance program     | Floor guardianship, change control, conformance monitoring   |
-| **ciso**               | Security authority     | Security benchmarks, security controls, threat assessment    |
-| **ceo**                | Strategic alignment    | Digital twin of implementer, mission/vision, executive brief |
-| **cto**                | Technology enablement  | Technology floor, tech standards, architecture direction     |
-| **cfo**                | Cost governance        | Token budget strategy, cost efficiency, resource allocation  |
-| **coo**                | Operational efficiency | Process standards, SLAs, agent performance, retraining       |
-| **cko**                | Knowledge quality      | Knowledge standards, distribution cadence, guidance registry |
+| Agent    | Role                   | Responsibility                                                               |
+| -------- | ---------------------- | ---------------------------------------------------------------------------- |
+| **cro**  | Chief Risk Officer     | Floor guardianship, change control, conformance monitoring, cross-floor risk |
+| **ciso** | Security authority     | Security benchmarks, security controls, threat assessment                    |
+| **ceo**  | Strategic alignment    | Digital twin of implementer, mission/vision, executive brief                 |
+| **cto**  | Technology enablement  | Technology floor, tech standards, architecture direction                     |
+| **cfo**  | Cost governance        | Token budget strategy, cost efficiency, resource allocation                  |
+| **coo**  | Operational efficiency | Process standards, SLAs, agent performance, retraining                       |
+| **cko**  | Knowledge quality      | Knowledge standards, distribution cadence, guidance registry                 |
 
 The governance tier is independent of the triad. The triad does not direct governance agents, and governance agents do not direct day-to-day work. Governance agents set direction but do not direct day-to-day work. When a Cx role evaluates a triad member's proposal (CTO evaluates SA, COO evaluates SM, CFO recommends to SM), this is governance oversight -- not operational direction. The triad retains full operational authority within the standards set by governance. See `docs/superpowers/specs/2026-03-19-governance-layer-design.md` for the full governance design.
 
@@ -457,7 +457,7 @@ The lifecycle has 10 phases. Phase 0 runs per-iteration (configurable via `fleet
 
 | Phase             | What Happens                                                                                                                                                                                                                                                                                                                      | Who Leads                            |
 | ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------ |
-| **0. Prioritize** | PO triages the full backlog: collect signals (completed items, findings, blocked items, compliance events), assess priorities, update tier files, write triage report to `docs/plans/triage-YYYY-MM-DD.md`, surface summary to user with guided input for decisions. Log `backlog-triaged`. | PO leads, SA + SM contribute         |
+| **0. Prioritize** | PO triages the full backlog: collect signals (completed items, findings, blocked items, compliance events), assess priorities, update tier files, write triage report to `docs/plans/triage-YYYY-MM-DD.md`, surface summary to user with guided input for decisions. Log `backlog-triaged`.                                       | PO leads, SA + SM contribute         |
 | **1. Groom**      | Triad collaborates: AC, WSJF, NFRs, dependencies                                                                                                                                                                                                                                                                                  | PO leads, SA + SM contribute         |
 | **2. Promote**    | Expand to full work item with story, AC, NFRs. Create feature branch + draft PR. Log `item-promoted`, `branch-created`, `pr-opened`.                                                                                                                                                                                              | PO                                   |
 | **3. Build**      | **Re-evaluate first:** verify the item's premise still holds against current code, context, and needs. If no longer needed, log `item-rejected-at-build` with `--reason` (context-changed, flawed-suggestion, superseded, duplicate) and `--source` (originating agent). Then execute with TDD. Full validation cycle end-to-end. | PO orchestrates, specialists execute |
@@ -622,29 +622,24 @@ When agents disagree about an approach:
 
 No agent overrides another agent's domain authority. If unresolved, escalate to user.
 
-## Compliance Floor
+## Governance Floors
 
-The compliance floor is non-negotiable across all agents. The **compliance-officer** is the sole guardian -- no other agent may modify `compliance-floor.md`. Changes go through `/compliance propose`.
+Governance floors define non-negotiable rules for agent behavior. Each floor is owned by a Cx officer (guardian) with sole write authority. All floors share the same enforcement machinery: compiler-generated hooks, checksum integrity, sentinel-gated writes.
 
-Rules are declarative and unconditional: "We MUST ALWAYS..." or "We MUST NEVER..." -- clear, unambiguous, concise. No conditionals. Detailed context is stored separately and referenced.
+Active floors are declared in `fleet-config.json`. Adding a new floor is configuration, not code.
 
-The compliance floor is the lowest tier of a three-tier compliance hierarchy:
+**V1 floors:**
 
-| Tier                    | Type                    | Authority                              | Enforcement            |
-| ----------------------- | ----------------------- | -------------------------------------- | ---------------------- |
-| Floor (MUST)            | Non-negotiable rules    | User approval required for all changes | Hooks + auditor        |
-| Targets (SHOULD)        | Aspirational objectives | CO approves risk-reducing autonomously | Findings, not blockers |
-| Guidance (NICE TO HAVE) | Best practices          | Cx roles delegate to triad             | Informational          |
+| Floor      | File                   | Guardian | Domain                                                   |
+| ---------- | ---------------------- | -------- | -------------------------------------------------------- |
+| Compliance | `floors/compliance.md` | CRO      | Risk, regulatory, data governance                        |
+| Behavioral | `floors/behavioral.md` | COO      | Process quality, delivery standards, collaboration norms |
 
-These rules override autonomy tiers, pace settings, and all other protocol elements -- even autonomous actions at Fly pace must respect the compliance floor.
+**Three tiers per floor:**
 
-### Compliance Hierarchy
-
-Three tiers of controls with distinct authority and enforcement. See `docs/superpowers/specs/2026-03-19-governance-layer-design.md` for the full design.
-
-- **Floor (MUST):** Declarative, unconditional statements. "We MUST ALWAYS..." / "We MUST NEVER..." No conditionals. Stored in `compliance-floor.md`. User approval required for all changes. Enforced by hooks and compliance-auditor.
-- **Targets (SHOULD):** Objectives exceeding the floor. Stored in `.claude/compliance/targets.md`. CO approves risk-reducing changes autonomously; others require user approval. Violations are findings, not blockers.
-- **Guidance (NICE TO HAVE):** Best practices from Cx roles, delegated to triad to operationalize. Informational, not enforced. (Deferred to sub-project 2.)
+- **Floor (MUST):** Declarative, unconditional statements. "We MUST ALWAYS..." / "We MUST NEVER..." No conditionals. User approval required for all changes. Enforced by hooks and compliance-auditor.
+- **Targets (SHOULD):** Objectives exceeding the floor. Violations are findings, not blockers.
+- **Guidance (NICE TO HAVE):** Best practices from Cx roles, delegated to triad to operationalize.
 
 Targets must be above or in addition to the floor -- never weaker.
 
@@ -659,13 +654,20 @@ Fleet-wide guidance is published to `.claude/governance/guidance-registry.md` --
 
 ### Governance Collaboration Pattern
 
-When a change is proposed to the floor or targets:
+When a change is proposed to any governance floor:
 
-1. CO receives and classifies (Type 1: risk-reducing target / Type 2: other target / Type 3: floor change)
-2. CO consults each Cx role for domain impact assessment
-3. Cx roles respond: impacted / not impacted / abstain. **A Cx role may not abstain if the change is a core responsibility of their domain or a key risk in their domain is identified.**
-4. CO collaborates with impacted Cx roles to build consensus: adopt / adopt with changes / decline
-5. Decision gate: Type 1 with consensus → CO approves, notifies user. Type 2-3 or no consensus → CO presents to user with full Cx input.
+1. Floor guardian receives and classifies (Type 1: risk-reducing / Type 2: other / Type 3: new rule)
+2. Guardian dispatches CRO as subagent for cross-floor risk consultation
+3. CRO subagent runs multi-round Cx consultation internally:
+   - Distributes proposal to all Cx agents
+   - Round 1: Each Cx agent advocates domain impact
+   - CRO synthesizes, identifies conflicts and open questions
+   - Round N: Further rounds until positions stabilize
+4. CRO subagent returns: consolidated risk assessment, Cx positions, recommendation
+5. Only the compact result enters main context — round-by-round discussion stays in subagent
+6. Guardian presents to user with full context
+
+**Special case (compliance floor):** CRO is both guardian and risk facilitator. CRO dispatches a generic consultation subagent with its own compliance position as input.
 
 No Cx role overrides another's domain authority. If consensus cannot be reached, the user resolves it.
 
@@ -689,7 +691,7 @@ The CEO operates on an independent pace, separate from fleet pace:
 - **Cannot self-promote** -- only the user can grant autonomy, via `/governance grant`
 - **Can self-slow** -- CEO slows down when it recognizes complexity or uncertainty
 - **Autonomy is scoped, not tiered** -- each grant is specific (e.g., "may autonomously prioritize ready backlog items"), not a pace promotion
-- **CO monitors** -- compliance-officer audits CEO actions against granted autonomy. Violations stop work immediately.
+- **CRO monitors** -- CRO audits CEO actions against granted autonomy. Violations stop work immediately.
 - **Grants tracked** in `.claude/governance/executive-brief.md`
 
 ### Pace-Based Knowledge Distribution
@@ -756,15 +758,15 @@ The memory system has two layers with distinct ownership and lifecycle:
 
 ## Escalation Rules
 
-| Escalation Type                     | First Try                                                        | If Unresolved |
-| ----------------------------------- | ---------------------------------------------------------------- | ------------- |
-| Technical disagreement              | SA mediates                                                      | User decides  |
-| Priority disagreement               | PO decides                                                       | User decides  |
-| Process disagreement                | SM mediates                                                      | User decides  |
-| Compliance concern                  | CO enforces floor (always)                                       | --            |
-| Cross-domain conflict               | SA + PO jointly                                                  | User decides  |
-| Governance disagreement (CO ↔ CISO) | Collaborative resolution -- neither overrides the other's domain | User decides  |
-| Governance ↔ Triad disagreement     | Governance prevails on compliance/security matters               | User decides  |
+| Escalation Type                      | First Try                                                        | If Unresolved |
+| ------------------------------------ | ---------------------------------------------------------------- | ------------- |
+| Technical disagreement               | SA mediates                                                      | User decides  |
+| Priority disagreement                | PO decides                                                       | User decides  |
+| Process disagreement                 | SM mediates                                                      | User decides  |
+| Compliance concern                   | CRO enforces floor (always)                                      | --            |
+| Cross-domain conflict                | SA + PO jointly                                                  | User decides  |
+| Governance disagreement (CRO ↔ CISO) | Collaborative resolution -- neither overrides the other's domain | User decides  |
+| Governance ↔ Triad disagreement      | Governance prevails on compliance/security matters               | User decides  |
 
 ## Protocol Success Criteria
 
