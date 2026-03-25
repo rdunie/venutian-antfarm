@@ -200,15 +200,15 @@ case "$SUBCOMMAND" in
     fi
 
     # Append reprimand entry
-    cat >> "$LEDGER" <<EOF
-
-### ${local_id} [reprimand] ${ts} — ${ISSUER} / ${DOMAIN}
-
-**Severity:** ${SEVERITY}
-$([ -n "$ITEM" ] && echo "**Item:** ${ITEM}")
-**Description:** ${DESCRIPTION}
-**Evidence:** ${EVIDENCE}
-EOF
+    {
+      echo ""
+      echo "### ${local_id} [reprimand] ${ts} — ${ISSUER} / ${DOMAIN}"
+      echo ""
+      echo "**Severity:** ${SEVERITY}"
+      [[ -n "$ITEM" ]] && echo "**Item:** ${ITEM}"
+      echo "**Description:** ${DESCRIPTION}"
+      echo "**Evidence:** ${EVIDENCE}"
+    } >> "$LEDGER"
 
     # Emit metric event
     "$SCRIPT_DIR/metrics-log.sh" reward-issued \
@@ -239,14 +239,14 @@ EOF
       echo "## ${SUBJECT}" >> "$LEDGER"
     fi
 
-    cat >> "$LEDGER" <<EOF
-
-### ${local_id} [kudo] ${ts} — ${ISSUER} / ${DOMAIN}
-
-$([ -n "$ITEM" ] && echo "**Item:** ${ITEM}")
-**Description:** ${DESCRIPTION}
-**Evidence:** ${EVIDENCE}
-EOF
+    {
+      echo ""
+      echo "### ${local_id} [kudo] ${ts} — ${ISSUER} / ${DOMAIN}"
+      echo ""
+      [[ -n "$ITEM" ]] && echo "**Item:** ${ITEM}"
+      echo "**Description:** ${DESCRIPTION}"
+      echo "**Evidence:** ${EVIDENCE}"
+    } >> "$LEDGER"
 
     "$SCRIPT_DIR/metrics-log.sh" reward-issued \
       --type kudo --from "$ISSUER" --subject "$SUBJECT" \
@@ -280,7 +280,7 @@ EOF
     # By domain
     echo "By domain:"
     sed -n "/^## ${SUBJECT}$/,/^## [^#]/p" "$LEDGER" | \
-      grep -oP '— \w+ / \K\w+' | sort | uniq -c | sort -rn | \
+      grep -o '— [a-zA-Z_-]* / [a-zA-Z_-]*' | sed 's/.* \/ //' | sort | uniq -c | sort -rn | \
       while read -r count domain; do
         echo "  ${domain} (${count})"
       done
