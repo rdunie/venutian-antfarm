@@ -43,6 +43,7 @@ BRANCH="" PR=""
 TOPIC="" BY="" TRIGGER="" ACTION="" ITEMS=""
 ITEMS_REVIEWED="" ITEMS_ADDED="" ITEMS_DROPPED="" ITEMS_REORDERED=""
 RULE_ID="" ENFORCEMENT_POINT="" FILE_PATH_ARG=""
+REWARD_ID_ARG="" SUBJECT="" DESCRIPTION=""
 POSITIONAL=()
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -78,6 +79,9 @@ while [[ $# -gt 0 ]]; do
     --items-added) ITEMS_ADDED="$2"; shift 2 ;;
     --items-dropped) ITEMS_DROPPED="$2"; shift 2 ;;
     --items-reordered) ITEMS_REORDERED="$2"; shift 2 ;;
+    --reward-id) REWARD_ID_ARG="$2"; shift 2 ;;
+    --subject) SUBJECT="$2"; shift 2 ;;
+    --description) DESCRIPTION="$2"; shift 2 ;;
     *) POSITIONAL+=("$1"); shift ;;
   esac
 done
@@ -331,6 +335,25 @@ case "$EVENT_TYPE" in
        '{"ts":$ts,"event":$event,"items_reviewed":$items_reviewed,"items_added":$items_added,"items_dropped":$items_dropped,"items_reordered":$items_reordered,"agent":$agent} | with_entries(select(.value != ""))')"
     ;;
 
+  reward-issued)
+    if [[ -z "$DEPLOY_TYPE" ]]; then
+      echo "ERROR: reward-issued requires --type (kudo|reprimand)" >&2
+      exit 1
+    fi
+    emit_event "$(jq -cn --arg ts "$TS" --arg event "$EVENT_TYPE" \
+       --arg type "$DEPLOY_TYPE" --arg issuer "$FROM" --arg subject "$SUBJECT" \
+       --arg domain "$SCOPE" --arg severity "$SEVERITY" \
+       --arg item "$ITEM" --arg reward_id "$REWARD_ID_ARG" --arg agent "$AGENT" \
+       '{"ts":$ts,"event":$event,"type":$type,"issuer":$issuer,"subject":$subject,"domain":$domain,"severity":$severity,"item":$item,"reward_id":$reward_id,"agent":$agent} | with_entries(select(.value != ""))')"
+    ;;
+
+  tension-detected)
+    emit_event "$(jq -cn --arg ts "$TS" --arg event "$EVENT_TYPE" \
+       --arg reward_ids "$DESCRIPTION" --arg item "$ITEM" \
+       --arg subject "$SUBJECT" --arg agent "$AGENT" \
+       '{"ts":$ts,"event":$event,"reward_ids":$reward_ids,"item":$item,"subject":$subject,"agent":$agent} | with_entries(select(.value != ""))')"
+    ;;
+
   *)
     echo "ERROR: unknown event type '$EVENT_TYPE'" >&2
     echo "Valid types: item-promoted item-accepted ext-deployed bug-found bug-fixed" >&2
@@ -341,6 +364,7 @@ case "$EVENT_TYPE" in
     echo "             compliance-applied compliance-violation compliance-pass compliance-reverted" >&2
     echo "             branch-created pr-opened pr-merged" >&2
     echo "             guidance-published ceo-autonomy-granted ceo-autonomy-violation knowledge-distributed backlog-triaged" >&2
+    echo "             reward-issued tension-detected" >&2
     exit 1
     ;;
 esac
