@@ -2,23 +2,29 @@
 set -euo pipefail
 
 # ---------------------------------------------------------------------------
-# compile-floor.sh — Compliance floor compiler
+# compile-floor.sh — Governance floor compiler
 #
-# Extracts ```enforcement blocks from a Markdown compliance floor file,
-# validates them, and (in future tasks) generates hook configuration.
+# Extracts ```enforcement blocks from a Markdown floor file, validates them,
+# and generates enforcement artifacts (enforce.sh, prose, semgrep, eslint).
 #
 # Usage:
 #   compile-floor.sh [options] [floor-file] [output-dir]
 #
 # Options:
-#   --dry-run         Show what would be done without writing files (planned)
-#   --verify          Verify artifacts against manifest.sha256 (exit 0=clean, 1=drift)
-#   --extract-only    Extract blocks and write YAML files, then stop
-#   --proposal <id>   Set proposal ID embedded in manifest (full compile mode)
+#   --dry-run           Show what would be done without writing files
+#   --verify            Verify artifacts against manifest.sha256 (exit 0=clean, 1=drift)
+#   --extract-only      Extract blocks and write YAML files, then stop
+#   --validate-only     Extract and validate blocks without generating artifacts
+#   --prose-only        Generate prose floor only (strip enforcement blocks)
+#   --generate-enforce  Generate enforce.sh only
+#   --proposal <id>     Set proposal ID embedded in manifest (full compile mode)
+#   --floor <name>      Resolve defaults from fleet-config.json for named floor
+#   --all               Compile all floors declared in fleet-config.json
 #
-# Defaults:
-#   floor-file  compliance-floor.md
-#   output-dir  .claude/compliance/compiled
+# Defaults (resolved in order):
+#   1. fleet-config.json floors.<name>.file / compiled_dir (if present)
+#   2. floors/compliance.md → .claude/floors/compliance/compiled
+#   3. compliance-floor.md → .claude/compliance/compiled (legacy fallback)
 # ---------------------------------------------------------------------------
 
 # ---------------------------------------------------------------------------
