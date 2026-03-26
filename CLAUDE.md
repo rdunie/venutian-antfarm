@@ -12,7 +12,7 @@ cp templates/floors/compliance.md floors/compliance.md # define non-negotiable r
 # See examples/ for progressive working references
 ```
 
-**Prerequisites:** Claude Code CLI, Git, Bash, jq (optional).
+**Prerequisites:** Claude Code CLI, Git, Bash, gomplate v4+, jq (optional).
 
 ## Directory Structure
 
@@ -42,6 +42,10 @@ cp templates/floors/compliance.md floors/compliance.md # define non-negotiable r
 │   ├── dora.sh                      # DORA + flow quality dashboard
 │   ├── pathways.sh                  # Agent pathway analysis
 │   ├── deploy.sh                    # Deploy contract (implementers override)
+│   ├── compiler/                    # Compiler templates and schema
+│   │   ├── schema.yaml
+│   │   ├── validate.sh
+│   │   └── templates/               # Gomplate templates for artifacts
 │   └── hooks/                       # Git/tool hooks
 ├── templates/
 │   ├── fleet-config.json            # Fleet configuration template
@@ -208,6 +212,7 @@ Active hooks that affect every session:
 - **Editing `settings.json`**: Use Write (full rewrite) instead of Edit for `settings.json` — complex escaped strings in hook commands cause JSON validation failures with partial edits.
 - **Multi-floor governance**: Floors are declared in `fleet-config.json`. Each has a guardian (Cx officer) with sole write authority. The CRO facilitates cross-floor risk assessment when any floor changes.
 - **CO → CRO rename**: The Compliance Officer is now the Chief Risk Officer (CRO). Agent file is `.claude/agents/cro.md`.
+- **Compiler uses gomplate templates**: `ops/compile-floor.sh` orchestrates, `ops/compiler/templates/` contains gomplate templates for artifact generation, `ops/compiler/validate.sh` handles schema-driven validation. If gomplate is not installed, the compiler exits with install instructions.
 
 ## Anti-Patterns
 
