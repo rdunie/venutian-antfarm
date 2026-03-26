@@ -158,6 +158,12 @@ if ! command -v yq &>/dev/null; then
   exit 2
 fi
 
+if ! command -v gomplate &>/dev/null; then
+  echo "ERROR: gomplate v4+ is required but not installed." >&2
+  echo "Install with: brew install gomplate  OR  go install github.com/hairyhenderson/gomplate/v4@latest" >&2
+  exit 2
+fi
+
 # ---------------------------------------------------------------------------
 # extract_blocks — parse enforcement fences from a Markdown file
 #
