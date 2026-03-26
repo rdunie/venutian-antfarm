@@ -9,6 +9,7 @@ A SaaS platform with frontend, backend, and a security reviewer who gates deploy
 - Compliance rules that **mandate agent involvement** (not just technical constraints)
 - **Three-environment promotion** — dev → staging → prod
 - How `ops/pathways.sh` catches undeclared communication between agents
+- **Enforcement blocks** in the compliance floor that the compiler extracts into hook rules
 
 ## Structure
 
@@ -21,7 +22,8 @@ A SaaS platform with frontend, backend, and a security reviewer who gates deploy
 │   │   └── security-reviewer.md     # Gates staging/prod (extends harness)
 │   └── overrides/
 │       └── scrum-master.md          # Retro cadence override
-├── compliance-floor.md              # 4 rules including security review gate
+├── floors/
+│   └── compliance.md              # 5 rules + 2 enforcement blocks (secrets, metrics)
 ├── fleet-config.json                # 2 specialists + 1 reviewer, cross-team pathways
 └── ops/
     └── deploy.sh                    # Three-env deploy stub
