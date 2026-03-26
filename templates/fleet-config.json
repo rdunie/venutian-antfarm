@@ -21,16 +21,20 @@
     "run_threshold_cfr": 5,
     "run_threshold_fpy": 80
   },
+  "floors": {
+    "compliance": {
+      "file": "floors/compliance.md",
+      "guardian": "cro",
+      "compiled_dir": ".claude/floors/compliance/compiled"
+    },
+    "behavioral": {
+      "file": "floors/behavioral.md",
+      "guardian": "coo",
+      "compiled_dir": ".claude/floors/behavioral/compiled"
+    }
+  },
   "agents": {
-    "governance": [
-      "compliance-officer",
-      "ciso",
-      "ceo",
-      "cto",
-      "cfo",
-      "coo",
-      "cko"
-    ],
+    "governance": ["cro", "ciso", "ceo", "cto", "cfo", "coo", "cko"],
     "core": [
       "product-owner",
       "solution-architect",
@@ -55,6 +59,8 @@
     },
     "note": "Items between knowledge distributions per pace. 0 = on-demand/retro only."
   },
+  "rewards": {},
+  "rewards_note": "Placeholder for adaptive weighting configuration (see #25). Currently unused — v1 uses unweighted signals.",
   "prioritize_cadence": "per-iteration",
   "prioritize_cadence_note": "When Phase 0 (Prioritize) runs. Options: per-iteration (default), per-session, per-item.",
   "pathways": {
@@ -77,9 +83,9 @@
         "* -> product-owner"
       ],
       "governance": [
-        "ciso -> compliance-officer",
-        "compliance-officer -> compliance-auditor",
-        "* -> compliance-officer",
+        "ciso -> cro",
+        "cro -> compliance-auditor",
+        "* -> cro",
         "cko -> knowledge-ops",
         "cto -> solution-architect",
         "cfo -> platform-ops",
