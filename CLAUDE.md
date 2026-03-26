@@ -232,4 +232,8 @@ Never implement:
 - `docs/COLLABORATION-MODEL.md` -- Visual collaboration model with Mermaid diagrams
 - `docs/AGENT-FLEET-PATTERN.md` -- Full pattern specification
 - `docs/GETTING-STARTED.md` -- Onboarding guide
+- `docs/GOVERNANCE-FLOORS.md` -- Multi-floor governance pattern guide
+- `docs/COMPILER-GUIDE.md` -- Compliance floor compiler and enforcement block reference
+- `docs/METRICS-GUIDE.md` -- Metrics events and DORA dashboard guide
+- `docs/PATHWAY-ANALYSIS.md` -- Agent communication pathway analysis
 - `docs/plans/roadmap-index.md` -- Backlog structure
