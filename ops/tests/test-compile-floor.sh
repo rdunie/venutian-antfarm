@@ -91,6 +91,20 @@ assert_not_contains() {
   fi
 }
 
+assert_output_contains() {
+  local label="$1"
+  local output="$2"
+  local expected="$3"
+  TOTAL=$((TOTAL + 1))
+  if echo "${output}" | grep -qi "${expected}"; then
+    echo -e "  ${GREEN}PASS${NC} ${label}"
+    PASS=$((PASS + 1))
+  else
+    echo -e "  ${RED}FAIL${NC} ${label} — expected output to contain '${expected}'"
+    FAIL=$((FAIL + 1))
+  fi
+}
+
 # ---------------------------------------------------------------------------
 # Dependency check
 # ---------------------------------------------------------------------------
@@ -819,6 +833,68 @@ else
   echo -e "  ${RED}FAIL${NC} --all: should warn about missing behavioral floor"
   FAIL=$((FAIL + 1))
 fi
+
+# ---------------------------------------------------------------------------
+# Section: Pre-Flight Checks
+# ---------------------------------------------------------------------------
+
+echo ""
+echo "=== Pre-Flight Checks ==="
+
+# Test A: First compile (expected) — no compiled dir exists yet
+PFDIR_A="${TMPDIR_ROOT}/preflight-a"
+mkdir -p "${PFDIR_A}/floors"
+cat > "${PFDIR_A}/fleet-config.json" <<'PFAEOF'
+{
+  "floors": {
+    "compliance": {
+      "file": "floors/compliance.md",
+      "compiled_dir": ".claude/floors/compliance/compiled"
+    }
+  }
+}
+PFAEOF
+cp "${FIXTURES}/floor-valid.md" "${PFDIR_A}/floors/compliance.md"
+
+pushd "${PFDIR_A}" >/dev/null
+pfa_output=$("${COMPILER}" 2>&1) || true
+pfa_exit=$?
+popd >/dev/null
+assert_exit "preflight-a: first compile exits 0" 0 "${pfa_exit}"
+assert_output_contains "preflight-a: output mentions first compile" "${pfa_output}" "first compile"
+assert_file_exists "preflight-a: manifest created" "${PFDIR_A}/.claude/floors/compliance/compiled/manifest.sha256"
+
+# Test B: Unexpected — delete enforce.sh, recompile
+rm -f "${PFDIR_A}/.claude/floors/compliance/compiled/enforce.sh"
+pushd "${PFDIR_A}" >/dev/null
+pfb_output=$("${COMPILER}" 2>&1) || true
+pfb_exit=$?
+popd >/dev/null
+assert_exit "preflight-b: recompile after deleting enforce.sh exits 0" 0 "${pfb_exit}"
+assert_output_contains "preflight-b: output mentions WARNING" "${pfb_output}" "WARNING"
+
+# Test C: Unexpected — delete manifest, leave artifacts
+rm -f "${PFDIR_A}/.claude/floors/compliance/compiled/manifest.sha256"
+pushd "${PFDIR_A}" >/dev/null
+pfc_output=$("${COMPILER}" 2>&1) || true
+pfc_exit=$?
+popd >/dev/null
+assert_exit "preflight-c: recompile after deleting manifest exits 0" 0 "${pfc_exit}"
+assert_output_contains "preflight-c: output mentions WARNING" "${pfc_output}" "WARNING"
+
+# Test D: Expected — edit floor file (source hash mismatch)
+# First do a clean compile
+pushd "${PFDIR_A}" >/dev/null
+"${COMPILER}" >/dev/null 2>&1 || true
+popd >/dev/null
+# Now modify the floor file
+echo "# additional rule" >> "${PFDIR_A}/floors/compliance.md"
+pushd "${PFDIR_A}" >/dev/null
+pfd_output=$("${COMPILER}" 2>&1) || true
+pfd_exit=$?
+popd >/dev/null
+assert_exit "preflight-d: recompile after editing floor exits 0" 0 "${pfd_exit}"
+assert_output_contains "preflight-d: output mentions source has changed" "${pfd_output}" "source has changed"
 
 # ---------------------------------------------------------------------------
 # Results summary
