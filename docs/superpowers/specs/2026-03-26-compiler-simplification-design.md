@@ -49,7 +49,7 @@ The schema defines:
 
 - **Required fields:** `version` (must equal 1), `id` (non-empty string), `severity` (enum: `blocking` | `warning`)
 - **Forbidden top-level fields:** `bypass`, `skip`, `override`
-- **Enforcement structure:** At least one of `pre-tool-use` or `post-tool-use` under `enforce`
+- **Enforcement structure:** At least one of `pre-tool-use` or `post-tool-use` under `enforce` (a block with only `ci` enforcement is intentionally invalid — `ci` is a supplementary point, not a standalone one)
 - **Check type validity per enforcement point:**
   - `file-pattern` → `pre-tool-use` only
   - `content-pattern` → `pre-tool-use` or `post-tool-use`
@@ -86,9 +86,19 @@ Between extraction and generation, the orchestrator builds a single JSON context
         "pre-tool-use": {
           "type": "file-pattern",
           "action": "block",
-          "patterns": ["\\.env$", "secrets?\\.yaml$"]
+          "exit_code": 2,
+          "patterns": ["\\.env$", "secrets?\\.yaml$"],
+          "patterns_joined": "\\.env$|secrets?\\.yaml$"
+        },
+        "post-tool-use": {
+          "type": "content-pattern",
+          "action": "warn",
+          "exit_code": 1,
+          "patterns": ["TODO|FIXME"],
+          "patterns_joined": "TODO|FIXME"
         }
-      }
+      },
+      "func_name": "check_no_secrets_in_code"
     }
   ],
   "stats": {
@@ -96,10 +106,12 @@ Between extraction and generation, the orchestrator builds a single JSON context
     "block_count": 3,
     "judgment_count": 2
   },
+  "coverage_path": "docs/compliance-coverage.md",
   "hashes": {
     "source": "abc123...",
     "prose": "def456...",
-    "enforce": "ghi789..."
+    "enforce": "ghi789...",
+    "coverage": "jkl012..."
   }
 }
 ```
@@ -111,13 +123,14 @@ The context is built by a `prepare_context` function in the orchestrator (~40-50
 Each generator function is replaced by a gomplate template. The orchestrator invokes gomplate with the context JSON as a datasource.
 
 **Invocation pattern:**
+
 ```bash
 gomplate -d ctx="file://${context_file}?type=application/json" \
   -f "ops/compiler/templates/enforce.sh.tmpl" \
   -o "${OUTPUT_DIR}/enforce.sh"
 ```
 
-#### `enforce.sh.tmpl` (~100-120 lines)
+#### `enforce.sh.tmpl` (~140-160 lines)
 
 The biggest win. Replaces ~400 lines of bash string concatenation. The template:
 
@@ -126,11 +139,21 @@ The biggest win. Replaces ~400 lines of bash string concatenation. The template:
 3. Iterates over blocks to emit per-rule check functions:
    - For each block with `pre-tool-use`: emit a check function based on type (file-pattern, content-pattern, custom-script)
    - For each block with `post-tool-use`: emit a check function based on type (semgrep, eslint, content-pattern, custom-script)
+   - Each function uses pre-computed `exit_code` (2 for block, 1 for warn) and `patterns_joined` from context
 4. Emits the dispatcher `case` block:
-   - `pre-tool-use)`: floor file protection logic + calls to pre check functions
+   - `pre-tool-use)`: **floor file protection logic (~70 lines of static-but-interpolated bash)** — this is the most complex part of the template. It emits case arms for:
+     - `floors/*.md` / `*/floors/*.md` — sentinel-gated blocking (`.claude/floors/<name>/.applying`)
+     - Legacy `compliance-floor.md` / `*/compliance-floor.md` — sentinel-gated blocking
+     - `.claude/floors/*/compiled/*` — warn about generated files
+     - `.claude/compliance/*` — sentinel-gated blocking (legacy)
+     - `ops/compile-floor.sh` — warn about compiler modification
+     - `.claude/agents/cro.md`, `.claude/agents/compliance-auditor.md` — warn about compliance agent modification
+   - After protection logic: calls to pre check functions
    - `post-tool-use)`: calls to post check functions
 
-The generated bash is identical to current output.
+The `FLOOR_NAME` and `FLOOR_FILE` variables from the context are interpolated into the protection logic. The generated bash must be identical to current output — test against the existing enforce.sh generation tests.
+
+**This is the riskiest template.** The protection logic is the most fragile part because it mixes static bash with template interpolation. Implement this template last (migration step 9) and diff the generated output against the old generator's output to verify byte-for-byte equivalence.
 
 #### `prose.md.tmpl` (~10 lines)
 
@@ -142,9 +165,11 @@ Reads the floor file, strips enforcement fences, adds a generated header referen
 
 Emits the coverage table from block metadata (id, severity, enforcement points, check types, status). Uses gomplate `range` over blocks. Emits summary stats from context.
 
-#### `manifest.sha256.tmpl` (~10 lines)
+**Note:** Coverage is the one artifact that writes to a configurable external path (`COVERAGE_PATH` env var, default: `docs/compliance-coverage.md`) rather than inside the output directory. The orchestrator passes this path to gomplate's `-o` flag instead of `${OUTPUT_DIR}/...`. The context includes `coverage_path` so the manifest template can conditionally include the coverage hash (only when the path resolves inside the output directory — matching current behavior).
 
-Emits source hash, proposal ID, and per-artifact hashes from the context `hashes` object.
+#### `manifest.sha256.tmpl` (~15 lines)
+
+Emits source hash, proposal ID, and per-artifact hashes from the context `hashes` object. Conditionally includes the coverage hash only when `coverage_path` resolves inside the output directory (matching current `generate_manifest` behavior).
 
 #### `semgrep-rules.yaml.tmpl` (~20 lines)
 
@@ -157,6 +182,7 @@ Iterates over blocks, finds eslint-typed enforcement points, emits a JSON object
 ### 4. Orchestrator (`ops/compile-floor.sh`)
 
 Retains:
+
 - Argument parsing and mode dispatch (~150 lines)
 - `resolve_defaults` function (~20 lines)
 - `extract_blocks` function (~50 lines — markdown fence parsing, not a templating concern)
@@ -164,14 +190,22 @@ Retains:
 - Mode dispatch logic (compile, verify, dry-run, extract-only, validate-only, prose-only, generate-enforce, compile-all)
 
 Delegates to:
+
 - `ops/compiler/validate.sh` for block validation
 - `gomplate` with templates for all artifact generation
 
-**Dependency check:** At startup, verify gomplate is installed. If not:
+Also retains (not templated):
+
+- **Orphan rule-file warning** — after compilation, scans `.claude/compliance/semgrep` and `.claude/compliance/eslint` for unreferenced rule files. Stays as inline orchestrator code.
+- **`dry-run` mode formatting** — iterates blocks and prints a summary without writing files. Not a template candidate since it produces terminal output, not file artifacts.
+
+**Dependency check:** At startup, verify gomplate v4+ is installed (v4 changed datasource syntax from v3). If not:
+
 ```
 ERROR: gomplate is required but not installed.
 Install with: brew install gomplate  OR  go install github.com/hairyhenderson/gomplate/v4@latest
 ```
+
 Exit 2. No fallback — gomplate is required.
 
 ### 5. `verify_manifest` Function
@@ -195,13 +229,13 @@ Incremental, test-driven. Each step must pass all 111 tests before proceeding.
 
 ### Line Count Estimate
 
-| Component | Current | After |
-|-----------|---------|-------|
-| `compile-floor.sh` | 1558 | ~300-400 |
-| `validate.sh` | (inline) | ~80-100 |
-| `schema.yaml` | — | ~40 |
-| Templates (6 files) | (inline) | ~200 total |
-| **Total** | **1558** | **~620-740** |
+| Component           | Current  | After        |
+| ------------------- | -------- | ------------ |
+| `compile-floor.sh`  | 1558     | ~300-400     |
+| `validate.sh`       | (inline) | ~80-100      |
+| `schema.yaml`       | —        | ~40          |
+| Templates (6 files) | (inline) | ~200 total   |
+| **Total**           | **1558** | **~620-740** |
 
 ~55% reduction in total lines. The remaining code is more readable (templates look like their output, schema is declarative, orchestrator is flow control only).
 
@@ -210,6 +244,7 @@ Incremental, test-driven. Each step must pass all 111 tests before proceeding.
 **New required dependency:** `gomplate` (single static binary, ~15MB, no runtime dependencies)
 
 Installation options:
+
 - `brew install gomplate` (macOS/Linux)
 - `go install github.com/hairyhenderson/gomplate/v4@latest` (requires Go)
 - Download binary from GitHub releases
@@ -229,30 +264,30 @@ Installation options:
 
 ### New Files
 
-| File | Purpose |
-|------|---------|
-| `ops/compiler/schema.yaml` | Declarative enforcement block schema |
-| `ops/compiler/validate.sh` | Schema-driven block validation |
-| `ops/compiler/templates/enforce.sh.tmpl` | Gomplate template for enforce.sh |
-| `ops/compiler/templates/prose.md.tmpl` | Gomplate template for prose floor |
-| `ops/compiler/templates/coverage.md.tmpl` | Gomplate template for coverage report |
-| `ops/compiler/templates/manifest.sha256.tmpl` | Gomplate template for manifest |
-| `ops/compiler/templates/semgrep-rules.yaml.tmpl` | Gomplate template for semgrep config |
-| `ops/compiler/templates/eslint-rules.json.tmpl` | Gomplate template for eslint config |
+| File                                             | Purpose                               |
+| ------------------------------------------------ | ------------------------------------- |
+| `ops/compiler/schema.yaml`                       | Declarative enforcement block schema  |
+| `ops/compiler/validate.sh`                       | Schema-driven block validation        |
+| `ops/compiler/templates/enforce.sh.tmpl`         | Gomplate template for enforce.sh      |
+| `ops/compiler/templates/prose.md.tmpl`           | Gomplate template for prose floor     |
+| `ops/compiler/templates/coverage.md.tmpl`        | Gomplate template for coverage report |
+| `ops/compiler/templates/manifest.sha256.tmpl`    | Gomplate template for manifest        |
+| `ops/compiler/templates/semgrep-rules.yaml.tmpl` | Gomplate template for semgrep config  |
+| `ops/compiler/templates/eslint-rules.json.tmpl`  | Gomplate template for eslint config   |
 
 ### Modified Files
 
-| File | Change |
-|------|--------|
+| File                   | Change                                                                                       |
+| ---------------------- | -------------------------------------------------------------------------------------------- |
 | `ops/compile-floor.sh` | Replace inline generators with gomplate calls, add `prepare_context`, add gomplate dep check |
-| `CLAUDE.md` | Document gomplate dependency in Prerequisites, update compiler section |
+| `CLAUDE.md`            | Document gomplate dependency in Prerequisites, update compiler section                       |
 
 ### Not Changed
 
-| File | Reason |
-|------|--------|
+| File                              | Reason                                                     |
+| --------------------------------- | ---------------------------------------------------------- |
 | `ops/tests/test-compile-floor.sh` | Tests verify behavior, not internals — must pass unchanged |
-| `ops/tests/fixtures/*` | Test inputs unchanged |
+| `ops/tests/fixtures/*`            | Test inputs unchanged                                      |
 
 ## Related Issues
 
