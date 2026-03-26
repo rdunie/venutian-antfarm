@@ -26,7 +26,7 @@ Add PostHog analytics to track feature usage patterns across the platform.
 
 ## Recommendation
 
-Pending CISO and CO review. Recommend proceeding only after BAA is signed and event property allowlist is defined and reviewed.
+Pending CISO and CRO review. Recommend proceeding only after BAA is signed and event property allowlist is defined and reviewed.
 PROPOSAL
 
 echo "Seeded compliance proposal: .claude/compliance/proposals/001-add-analytics.md"

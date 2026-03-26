@@ -22,9 +22,9 @@ Report any missing prerequisites before proceeding.
 
 ### Step 2: Compliance Floor
 
-Check if `compliance-floor.md` exists at project root.
+Check if `floors/compliance.md` exists at project root.
 
-- **If missing:** Copy from `templates/compliance-floor.md` and ask the user to define 3-5 non-negotiable rules for their domain. Provide examples:
+- **If missing:** Copy from `templates/floors/compliance.md` and ask the user to define 3-5 non-negotiable rules for their domain. Provide examples:
   - E-commerce: "No credit card numbers stored outside the payment processor"
   - Healthcare: "No PHI transmitted without encryption"
   - SaaS: "Tenant data isolation enforced on every query"
@@ -34,14 +34,31 @@ Check if `compliance-floor.md` exists at project root.
 
 After the compliance floor is defined:
 
-1. **CO takes guardianship.** Generate initial checksum:
+1. **CRO takes guardianship.** Generate initial checksum:
    ```bash
-   mkdir -p .claude/compliance
-   sha256sum compliance-floor.md | cut -d' ' -f1 > .claude/compliance/floor-checksum.sha256
-   echo "$(git rev-parse HEAD)" >> .claude/compliance/floor-checksum.sha256
+   mkdir -p .claude/floors/compliance
+   sha256sum floors/compliance.md | cut -d' ' -f1 > .claude/floors/compliance/floor-checksum.sha256
+   echo "$(git rev-parse HEAD)" >> .claude/floors/compliance/floor-checksum.sha256
    ```
 2. **CISO security review.** Dispatch the CISO agent to evaluate whether the floor adequately covers security for the project's domain. The CISO may propose additions via `/compliance propose`.
-3. **Process proposals.** If the CISO proposed additions, the CO processes them through the standard change control process. User approves the final floor.
+3. **Process proposals.** If the CISO proposed additions, the CRO processes them through the standard change control process. User approves the final floor.
+
+### Step 2c: Behavioral Floor Setup
+
+Ask the user if they want to define behavioral rules for their team.
+
+- **If yes:** Copy from `templates/floors/behavioral.md` to `floors/behavioral.md`. Walk the user through example behavioral rules:
+  - "We MUST ALWAYS run full validation before handoff"
+  - "We MUST NEVER skip the findings loop on notable events"
+  - "We MUST ALWAYS confirm intent before designing for non-trivial tasks"
+- Help the user define 2-4 behavioral rules appropriate for their team's workflow.
+- Generate initial checksum:
+  ```bash
+  mkdir -p .claude/floors/behavioral
+  sha256sum floors/behavioral.md | cut -d' ' -f1 > .claude/floors/behavioral/floor-checksum.sha256
+  echo "$(git rev-parse HEAD)" >> .claude/floors/behavioral/floor-checksum.sha256
+  ```
+- **If no:** Skip. The behavioral floor can be added later via `/behavioral propose`.
 
 ### Step 3: Fleet Configuration
 
@@ -98,8 +115,9 @@ Print a checklist of what was set up:
 - [x] Specialist agent added: <name>
 - [x] First backlog item created
 - [x] Validation passed
-- [x] Compliance floor guardianship activated (CO + checksum)
+- [x] Compliance floor guardianship activated (CRO + checksum)
 - [x] Security review completed (CISO)
+- [ ] Behavioral floor defined (optional)
 
 Next steps:
 - Run `/po` to see your status overview

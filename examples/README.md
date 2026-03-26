@@ -10,13 +10,13 @@ Progressive examples that teach the Venutian Antfarm framework from first setup 
 
 ## Progression
 
-| Example                                             | Focus                                         | Specialists                  | Compliance Rules | Pace  | Setup Hook                 |
-| --------------------------------------------------- | --------------------------------------------- | ---------------------------- | ---------------- | ----- | -------------------------- |
-| [01-getting-started](01-getting-started/)           | Full lifecycle, minimum useful config         | 1 (developer)                | 3                | Crawl | —                          |
-| [02-ecommerce](02-ecommerce/)                       | Multi-specialist, inheritance, overrides      | 2 (frontend + backend)       | 5                | Crawl | —                          |
-| [03-multi-team](03-multi-team/)                     | Review gates, cross-team pathways             | 2 + 1 reviewer               | 4                | Crawl | —                          |
-| [04-compliance-heavy](04-compliance-heavy/)         | Regulated domain, thick floor, CO override    | 1 + 1 reviewer               | 7                | Crawl | Seeds compliance proposals |
-| [05-operational-maturity](05-operational-maturity/) | Mature fleet, tuned cadences, metrics history | 3 (frontend + backend + e2e) | 5                | Walk  | Seeds metrics events       |
+| Example                                             | Focus                           | Specialists                  | Compliance Rules | Enforcement Blocks | Floors                  | Pace  | Setup Hook                     |
+| --------------------------------------------------- | ------------------------------- | ---------------------------- | ---------------- | ------------------ | ----------------------- | ----- | ------------------------------ |
+| [01-getting-started](01-getting-started/)           | Full lifecycle, minimum config  | 1 (developer)                | 3                | 0                  | compliance              | Crawl | —                              |
+| [02-ecommerce](02-ecommerce/)                       | Multi-specialist, inheritance   | 2 (frontend + backend)       | 5                | 0                  | compliance              | Crawl | —                              |
+| [03-multi-team](03-multi-team/)                     | Review gates, enforcement intro | 2 + 1 reviewer               | 4                | 2                  | compliance              | Crawl | —                              |
+| [04-compliance-heavy](04-compliance-heavy/)         | Regulated domain, thick floor   | 1 + 1 reviewer               | 7                | 3                  | compliance              | Crawl | Seeds proposals                |
+| [05-operational-maturity](05-operational-maturity/) | Mature fleet, multi-floor       | 3 (frontend + backend + e2e) | 5+2              | 4                  | compliance + behavioral | Walk  | Seeds metrics, compiles floors |
 
 ## How to Test Any Example
 

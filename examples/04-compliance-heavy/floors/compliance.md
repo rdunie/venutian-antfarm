@@ -6,11 +6,49 @@ Non-negotiable rules that override all autonomy tiers, pace settings, and proces
 
 1. **All PHI is encrypted.** Protected Health Information must be encrypted at rest (AES-256) and in transit (TLS 1.2+). No plaintext PHI in any storage layer, message queue, or API response.
 
+```enforcement
+version: 1
+id: no-phi-in-config
+severity: blocking
+enforce:
+  pre-tool-use:
+    type: file-pattern
+    action: block
+    patterns:
+      - '\.env$'
+      - 'secrets?\.yaml$'
+      - 'phi-config'
+```
+
 2. **Minimum necessary access.** Every data access must be scoped to the minimum data required for the operation. No bulk PHI exports without explicit authorization and audit trail.
 
 3. **Audit every PHI access.** Every read, write, or delete of PHI produces an immutable audit log entry: who, what, when, why, from where. Audit logs are retained for 6 years minimum.
 
+```enforcement
+version: 1
+id: audit-log-integrity
+severity: warning
+enforce:
+  post-tool-use:
+    type: custom-script
+    action: warn
+    script: ops/checks/verify-audit-log.sh
+```
+
 4. **No PHI in logs or external services.** PHI must not appear in application logs, error messages, monitoring dashboards, or data sent to third-party services. Use tokenized identifiers.
+
+```enforcement
+version: 1
+id: no-phi-in-source
+severity: blocking
+enforce:
+  post-tool-use:
+    type: content-pattern
+    action: block
+    patterns:
+      - 'SSN[:=]\s*\d{3}-\d{2}-\d{4}'
+      - 'DOB[:=]\s*\d{4}-\d{2}-\d{2}'
+```
 
 5. **Plan before build.** All work items must have an approved plan before implementation. No exceptions in a regulated domain.
 

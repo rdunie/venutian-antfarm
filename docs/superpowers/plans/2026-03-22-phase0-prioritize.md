@@ -15,6 +15,7 @@
 ### Task 1: Add `backlog-triaged` event to metrics-log.sh
 
 **Files:**
+
 - Modify: `ops/metrics-log.sh:39-44` (add arg vars)
 - Modify: `ops/metrics-log.sh:319-331` (add event handler + update error message)
 
@@ -62,10 +63,12 @@ echo "             guidance-published ceo-autonomy-granted ceo-autonomy-violatio
 - [ ] **Step 5: Test the new event**
 
 Run:
+
 ```bash
 cd ~/.config/superpowers/worktrees/venutian-antfarm-private/phase0-prioritize
 TMPLOG=$(mktemp) && METRICS_LOG_FILE="$TMPLOG" bash ops/metrics-log.sh backlog-triaged --items-reviewed 12 --items-added 2 --items-dropped 1 --items-reordered 3 && cat "$TMPLOG" && rm "$TMPLOG"
 ```
+
 Expected: JSON line with all fields present.
 
 - [ ] **Step 6: Verify bash syntax**
@@ -85,6 +88,7 @@ git commit -m "feat: add backlog-triaged event to metrics-log.sh"
 ### Task 2: Add `prioritize_cadence` to fleet-config template
 
 **Files:**
+
 - Modify: `templates/fleet-config.json`
 
 - [ ] **Step 1: Add prioritize_cadence key**
@@ -113,15 +117,19 @@ git commit -m "feat: add prioritize_cadence to fleet-config template"
 ### Task 3: Update `/po` skill — replace `prioritize` with `triage`
 
 **Files:**
+
 - Modify: `.claude/skills/po/SKILL.md`
 
 - [ ] **Step 1: Update frontmatter argument-hint**
 
 Change line 4 from:
+
 ```
 argument-hint: "[groom|promote <item>|review|prioritize|next|backlog]"
 ```
+
 to:
+
 ```
 argument-hint: "[groom|promote <item>|review|triage|next|backlog]"
 ```
@@ -129,10 +137,13 @@ argument-hint: "[groom|promote <item>|review|triage|next|backlog]"
 - [ ] **Step 2: Replace `/po prioritize` with `/po triage` in usage section**
 
 Change line 19 from:
+
 ```
 - `/po prioritize` -- Recalculate WSJF scores for active tiers, propose reordering
 ```
+
 to:
+
 ```
 - `/po triage` -- Phase 0: triage the backlog. Collect signals, assess priorities, write triage report, surface summary to user
 ```
@@ -140,10 +151,13 @@ to:
 - [ ] **Step 3: Update model tiering table**
 
 Change line 31 from:
+
 ```
 | `/po prioritize` | Opus   | Judgment: WSJF scoring, tradeoff reasoning       |
 ```
+
 to:
+
 ```
 | `/po triage`     | Opus   | Judgment: signal assessment, prioritization, triage report |
 ```
@@ -153,7 +167,6 @@ to:
 After the "Promote Branching Workflow" section (after line 57), add:
 
 ```markdown
-
 ## Triage Workflow
 
 When the subcommand is `triage`, the PO runs Phase 0:
@@ -181,6 +194,7 @@ git commit -m "feat: replace /po prioritize with /po triage (Phase 0)"
 ### Task 4: Update SessionStart hook for `per-session` cadence
 
 **Files:**
+
 - Modify: `.claude/settings.json` (full rewrite per CLAUDE.md gotchas)
 
 - [ ] **Step 1: Read current settings.json**
@@ -221,15 +235,19 @@ git commit -m "feat: add SessionStart triage prompt for per-session cadence"
 ### Task 5: Update COLLABORATION.md lifecycle table
 
 **Files:**
+
 - Modify: `.claude/COLLABORATION.md:452-468`
 
 - [ ] **Step 1: Update lifecycle intro text**
 
 Change line 456 from:
+
 ```
 Every work item flows through these phases:
 ```
+
 to:
+
 ```
 The lifecycle has 10 phases. Phase 0 runs per-iteration (configurable via `fleet-config.json`); Phases 1-9 run per-item.
 ```
@@ -254,6 +272,7 @@ git commit -m "feat: add Phase 0 Prioritize to work item lifecycle"
 ### Task 6: Update reference docs (CLAUDE.md, AGENT-FLEET-PATTERN.md, COLLABORATION-MODEL.md)
 
 **Files:**
+
 - Modify: `CLAUDE.md:127`
 - Modify: `docs/AGENT-FLEET-PATTERN.md:233-245`
 - Modify: `docs/COLLABORATION-MODEL.md:212-232`
@@ -261,10 +280,13 @@ git commit -m "feat: add Phase 0 Prioritize to work item lifecycle"
 - [ ] **Step 1: Update CLAUDE.md lifecycle reference**
 
 Change line 127 from:
+
 ```
 Work items follow the 9-phase lifecycle defined in `.claude/COLLABORATION.md` § Work Item Lifecycle: Groom, Promote, Build, Review, Fix, Deploy, Accept, Retro, Checkpoint.
 ```
+
 to:
+
 ```
 Work items follow the 10-phase lifecycle defined in `.claude/COLLABORATION.md` § Work Item Lifecycle: Prioritize, Groom, Promote, Build, Review, Fix, Deploy, Accept, Retro, Checkpoint.
 ```
