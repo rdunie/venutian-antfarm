@@ -17,16 +17,19 @@
     "run_threshold_cfr": 5,
     "run_threshold_fpy": 80
   },
+  "floors": {
+    "compliance": {
+      "file": "floors/compliance.md",
+      "guardian": "cro",
+      "compiled_dir": ".claude/floors/compliance/compiled"
+    }
+  },
+  "prioritize_cadence": "per-iteration",
+  "rewards": {
+    "ledger": ".claude/rewards/ledger.jsonl"
+  },
   "agents": {
-    "governance": [
-      "compliance-officer",
-      "ciso",
-      "ceo",
-      "cto",
-      "cfo",
-      "coo",
-      "cko"
-    ],
+    "governance": ["cro", "ciso", "ceo", "cto", "cfo", "coo", "cko"],
     "core": [
       "product-owner",
       "solution-architect",
@@ -44,7 +47,7 @@
       "build": ["product-owner -> developer", "developer -> product-owner"],
       "review": [],
       "escalation": ["* -> solution-architect", "* -> scrum-master"],
-      "governance": ["* -> compliance-officer", "* -> ceo"]
+      "governance": ["* -> cro", "* -> ceo"]
     }
   }
 }
