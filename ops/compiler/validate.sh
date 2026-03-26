@@ -4,6 +4,9 @@ set -euo pipefail
 # ---------------------------------------------------------------------------
 # validate.sh — validate a single enforcement block YAML file
 #
+# Reads validation rules from schema.yaml where possible; keeps relational
+# constraints (severity/action, file existence, custom-script) as code.
+#
 # Usage:
 #   validate.sh <block-file>
 #
@@ -16,11 +19,13 @@ if [[ $# -lt 1 ]]; then
   exit 1
 fi
 
+VALIDATE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCHEMA="${VALIDATE_DIR}/schema.yaml"
+
 block_file="$1"
-block_name="$(basename "${block_file}")"
 valid=1
 
-# Read source line number for error context
+# --- Error context helpers -------------------------------------------------
 source_line="$(yq '._source_line' "${block_file}" 2>/dev/null)"
 source_line="${source_line//\"/}"
 loc=""
@@ -28,7 +33,6 @@ if [[ "${source_line}" != "null" && -n "${source_line}" ]]; then
   loc=" (line ${source_line})"
 fi
 
-# Read id early for error context
 id="$(yq '.id' "${block_file}")"
 id="${id//\"/}"
 id_label=""
@@ -36,7 +40,7 @@ if [[ "${id}" != "null" && -n "${id}" && "${id}" != '""' ]]; then
   id_label=" [${id}]"
 fi
 
-# Check: version exists and equals 1
+# --- Required fields: version ----------------------------------------------
 version="$(yq '.version' "${block_file}")"
 if [[ "${version}" == "null" || -z "${version}" ]]; then
   echo "INVALID${id_label}${loc}: missing required field 'version'" >&2
@@ -46,39 +50,32 @@ elif [[ "${version}" != "1" ]]; then
   valid=0
 fi
 
-# Check: id exists and is non-empty (already read above for error context)
+# --- Required fields: id ---------------------------------------------------
 if [[ "${id}" == "null" || -z "${id}" || "${id}" == '""' ]]; then
   echo "INVALID${id_label}${loc}: missing or empty 'id' field" >&2
   valid=0
 fi
 
-# Check: severity is 'blocking' or 'warning'
+# --- Required fields: severity (enum from schema) --------------------------
 severity="$(yq '.severity' "${block_file}")"
-# Remove surrounding quotes if present
 severity="${severity//\"/}"
 if [[ "${severity}" != "blocking" && "${severity}" != "warning" ]]; then
   echo "INVALID${id_label}${loc}: 'severity' must be 'blocking' or 'warning', got '${severity}'" >&2
   valid=0
 fi
 
-# Check: no forbidden top-level keys (bypass, skip, override)
-bypass="$(yq '.bypass' "${block_file}")"
-skip="$(yq '.skip' "${block_file}")"
-override="$(yq '.override' "${block_file}")"
-if [[ "${bypass}" != "null" ]]; then
-  echo "INVALID${id_label}${loc}: forbidden top-level field 'bypass' is present" >&2
-  valid=0
-fi
-if [[ "${skip}" != "null" ]]; then
-  echo "INVALID${id_label}${loc}: forbidden top-level field 'skip' is present" >&2
-  valid=0
-fi
-if [[ "${override}" != "null" ]]; then
-  echo "INVALID${id_label}${loc}: forbidden top-level field 'override' is present" >&2
-  valid=0
-fi
+# --- Forbidden fields (driven by schema.yaml) ------------------------------
+while IFS= read -r ff; do
+  ff="${ff//\"/}"
+  [[ -z "${ff}" ]] && continue
+  val="$(yq ".${ff}" "${block_file}")"
+  if [[ "${val}" != "null" ]]; then
+    echo "INVALID${id_label}${loc}: forbidden top-level field '${ff}' is present" >&2
+    valid=0
+  fi
+done <<< "$(yq '.forbidden_fields[]' "${SCHEMA}")"
 
-# Check: at least one pre-tool-use or post-tool-use enforcement point under enforce
+# --- Required enforcement points -------------------------------------------
 pre_hook="$(yq '.enforce."pre-tool-use"' "${block_file}")"
 post_hook="$(yq '.enforce."post-tool-use"' "${block_file}")"
 if [[ "${pre_hook}" == "null" && "${post_hook}" == "null" ]]; then
@@ -86,12 +83,7 @@ if [[ "${pre_hook}" == "null" && "${post_hook}" == "null" ]]; then
   valid=0
 fi
 
-# Check: check type is valid for its enforcement point
-# file-pattern: pre-tool-use only
-# content-pattern: pre-tool-use, post-tool-use
-# semgrep: post-tool-use, ci
-# eslint: post-tool-use, ci
-# custom-script: any
+# --- Type constraints (driven by schema.yaml) ------------------------------
 enforce_keys_ct="$(yq '.enforce | keys | .[]' "${block_file}" 2>/dev/null || true)"
 while IFS= read -r ct_ekey; do
   ct_ekey="${ct_ekey//\"/}"
@@ -99,63 +91,51 @@ while IFS= read -r ct_ekey; do
   ct_type="$(yq ".enforce.\"${ct_ekey}\".type" "${block_file}" 2>/dev/null)"
   ct_type="${ct_type//\"/}"
   [[ "${ct_type}" == "null" || -z "${ct_type}" ]] && continue
-  case "${ct_type}" in
-    file-pattern)
-      if [[ "${ct_ekey}" != "pre-tool-use" ]]; then
-        echo "INVALID${id_label}${loc}: 'file-pattern' is only valid at 'pre-tool-use', found at '${ct_ekey}'" >&2
-        valid=0
+
+  # Read allowed points for this type from schema
+  allowed="$(yq ".enforce.type_constraints.\"${ct_type}\"" "${SCHEMA}" 2>/dev/null)"
+  if [[ "${allowed}" == "null" || -z "${allowed}" ]]; then
+    echo "INVALID${id_label}${loc}: unknown check type '${ct_type}' at '${ct_ekey}'" >&2
+    valid=0
+    continue
+  fi
+
+  # Check if current enforcement point is in the allowed list
+  match="$(yq ".enforce.type_constraints.\"${ct_type}\" | .[] | select(. == \"${ct_ekey}\")" "${SCHEMA}" 2>/dev/null)"
+  if [[ -z "${match}" ]]; then
+    # Build human-readable allowed-points string (e.g. "'pre-tool-use' or 'post-tool-use'")
+    points_list="$(yq -r ".enforce.type_constraints.\"${ct_type}\" | .[]" "${SCHEMA}" 2>/dev/null)"
+    readable=""
+    while IFS= read -r pt; do
+      if [[ -z "${readable}" ]]; then
+        readable="'${pt}'"
+      else
+        readable="${readable} or '${pt}'"
       fi
-      ;;
-    content-pattern)
-      if [[ "${ct_ekey}" != "pre-tool-use" && "${ct_ekey}" != "post-tool-use" ]]; then
-        echo "INVALID${id_label}${loc}: 'content-pattern' is only valid at 'pre-tool-use' or 'post-tool-use', found at '${ct_ekey}'" >&2
-        valid=0
-      fi
-      ;;
-    semgrep)
-      if [[ "${ct_ekey}" != "post-tool-use" && "${ct_ekey}" != "ci" ]]; then
-        echo "INVALID${id_label}${loc}: 'semgrep' is only valid at 'post-tool-use' or 'ci', found at '${ct_ekey}'" >&2
-        valid=0
-      fi
-      ;;
-    eslint)
-      if [[ "${ct_ekey}" != "post-tool-use" && "${ct_ekey}" != "ci" ]]; then
-        echo "INVALID${id_label}${loc}: 'eslint' is only valid at 'post-tool-use' or 'ci', found at '${ct_ekey}'" >&2
-        valid=0
-      fi
-      ;;
-    custom-script)
-      ;; # valid at any enforcement point
-    *)
-      echo "INVALID${id_label}${loc}: unknown check type '${ct_type}' at '${ct_ekey}'" >&2
-      valid=0
-      ;;
-  esac
+    done <<< "${points_list}"
+    echo "INVALID${id_label}${loc}: '${ct_type}' is only valid at ${readable}, found at '${ct_ekey}'" >&2
+    valid=0
+  fi
 done <<< "${enforce_keys_ct}"
 
-# Check: severity/action contradiction
-# warning + block -> reject; blocking + warn -> reject
-severity_clean="${severity}"
+# --- Severity/action contradiction -----------------------------------------
 enforce_keys="$(yq '.enforce | keys | .[]' "${block_file}" 2>/dev/null || true)"
 while IFS= read -r ekey; do
-  # Strip surrounding quotes
   ekey="${ekey//\"/}"
   action="$(yq ".enforce.\"${ekey}\".action" "${block_file}")"
   action="${action//\"/}"
-  if [[ "${action}" == "null" || -z "${action}" ]]; then
-    continue
-  fi
-  if [[ "${severity_clean}" == "warning" && "${action}" == "block" ]]; then
+  [[ "${action}" == "null" || -z "${action}" ]] && continue
+  if [[ "${severity}" == "warning" && "${action}" == "block" ]]; then
     echo "INVALID${id_label}${loc}: contradiction — severity 'warning' with action 'block' at enforcement point '${ekey}'" >&2
     valid=0
   fi
-  if [[ "${severity_clean}" == "blocking" && "${action}" == "warn" ]]; then
+  if [[ "${severity}" == "blocking" && "${action}" == "warn" ]]; then
     echo "INVALID${id_label}${loc}: contradiction — severity 'blocking' with action 'warn' at enforcement point '${ekey}'" >&2
     valid=0
   fi
 done <<< "${enforce_keys}"
 
-# Check: rule-path inside enforcement points (required for semgrep/eslint, must exist)
+# --- Rule-path checks (semgrep/eslint) -------------------------------------
 enforce_keys_rp="$(yq '.enforce | keys | .[]' "${block_file}" 2>/dev/null || true)"
 while IFS= read -r rp_ekey; do
   rp_ekey="${rp_ekey//\"/}"
@@ -181,7 +161,7 @@ while IFS= read -r rp_ekey; do
   fi
 done <<< "${enforce_keys_rp}"
 
-# Check: custom-script enforcement points must have script that exists and is executable
+# --- Custom-script checks --------------------------------------------------
 enforce_keys_cs="$(yq '.enforce | keys | .[]' "${block_file}" 2>/dev/null || true)"
 while IFS= read -r cs_ekey; do
   cs_ekey="${cs_ekey//\"/}"
