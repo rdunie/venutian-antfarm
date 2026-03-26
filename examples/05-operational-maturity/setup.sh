@@ -38,4 +38,19 @@ done
 
 echo ""
 echo "Seeded: 8 completed items, 2 bug cycles, 3 handoffs"
+
+# Compile governance floors
+if command -v gomplate &>/dev/null; then
+  echo "Compiling governance floors..."
+  bash "$WORKTREE_ROOT/ops/compile-floor.sh" \
+    "examples/05-operational-maturity/floors/compliance.md" \
+    ".claude/floors/compliance/compiled"
+  bash "$WORKTREE_ROOT/ops/compile-floor.sh" \
+    "examples/05-operational-maturity/floors/behavioral.md" \
+    ".claude/floors/behavioral/compiled"
+  echo "Compiled: compliance + behavioral floors"
+else
+  echo "Note: gomplate not installed — skipping floor compilation"
+fi
+
 echo "Run: ops/dora.sh to see the dashboard"
