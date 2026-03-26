@@ -34,15 +34,7 @@
     }
   },
   "agents": {
-    "governance": [
-      "cro",
-      "ciso",
-      "ceo",
-      "cto",
-      "cfo",
-      "coo",
-      "cko"
-    ],
+    "governance": ["cro", "ciso", "ceo", "cto", "cfo", "coo", "cko"],
     "core": [
       "product-owner",
       "solution-architect",

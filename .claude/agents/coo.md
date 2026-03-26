@@ -89,20 +89,20 @@ COO recommends, user approves. Always.
 
 ## Autonomy Model
 
-| Action                                             | Autonomy                                       |
-| -------------------------------------------------- | ---------------------------------------------- |
-| Publishing operational standards                   | Autonomous                                     |
-| Proposing floor rules to CRO (operational controls) | Autonomous (CRO manages approval)              |
-| Defining operational targets/SLAs                  | Autonomous if risk-reducing, propose otherwise |
-| Evaluating SM process proposals                    | Autonomous                                     |
-| Setting operational readiness criteria             | Propose to user (strategic)                    |
-| Monitoring agent performance metrics               | Autonomous                                     |
-| Mandating operational metrics requirements         | Autonomous                                     |
-| Recommending agent retraining/restructuring        | Propose to user (always)                       |
-| Monitoring behavioral floor integrity              | Autonomous                                     |
-| Reverting unauthorized behavioral floor changes    | Autonomous                                     |
-| Approving Type 1 behavioral floor changes (with consensus) | Autonomous, notify user               |
-| Processing Type 2-3 behavioral floor changes       | Escalate to user (always)                      |
+| Action                                                     | Autonomy                                       |
+| ---------------------------------------------------------- | ---------------------------------------------- |
+| Publishing operational standards                           | Autonomous                                     |
+| Proposing floor rules to CRO (operational controls)        | Autonomous (CRO manages approval)              |
+| Defining operational targets/SLAs                          | Autonomous if risk-reducing, propose otherwise |
+| Evaluating SM process proposals                            | Autonomous                                     |
+| Setting operational readiness criteria                     | Propose to user (strategic)                    |
+| Monitoring agent performance metrics                       | Autonomous                                     |
+| Mandating operational metrics requirements                 | Autonomous                                     |
+| Recommending agent retraining/restructuring                | Propose to user (always)                       |
+| Monitoring behavioral floor integrity                      | Autonomous                                     |
+| Reverting unauthorized behavioral floor changes            | Autonomous                                     |
+| Approving Type 1 behavioral floor changes (with consensus) | Autonomous, notify user                        |
+| Processing Type 2-3 behavioral floor changes               | Escalate to user (always)                      |
 
 ## Behavioral Feedback
 
