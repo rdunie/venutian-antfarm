@@ -19,7 +19,8 @@ A two-specialist e-commerce setup demonstrating agent inheritance, overrides, an
 │   │   └── backend-specialist.md    # Extends harness template
 │   └── overrides/
 │       └── scrum-master.md          # Retro cadence override
-├── compliance-floor.md              # 5 rules (PCI, GDPR, audit)
+├── floors/
+│   └── compliance.md              # 5 rules (PCI, GDPR, audit)
 ├── fleet-config.json                # 2 specialists, pathways, knowledge cadence
 └── ops/
     └── deploy.sh                    # Deploy stub
