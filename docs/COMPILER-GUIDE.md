@@ -73,6 +73,11 @@ ops/compiler/
 Floor file (Markdown)
     │
     ▼
+┌──────────────────┐
+│ preflight_check  │ ── Verify environment (manifest, artifacts, source hash)
+└──────┬───────────┘
+       │
+       ▼
 ┌──────────────┐
 │ extract_blocks│ ── Parse ```enforcement fences → block-NNN.yaml files
 └──────┬───────┘
@@ -99,6 +104,48 @@ Floor file (Markdown)
        ├── semgrep-rules.yaml  Merged semgrep configs
        └── eslint-rules.json   Merged eslint configs
 ````
+
+### Pre-Flight Checks
+
+Before extraction begins, the compiler runs `preflight_check` to inspect the compilation environment. This step is diagnostic only -- it never blocks compilation, but it logs warnings and emits `preflight-remediation` metrics events to provide visibility into unexpected state.
+
+**What it checks:**
+
+1. Whether the compiled output directory exists (creates it if missing)
+2. Whether `manifest.sha256` is present
+3. Whether compiled artifacts (`enforce.sh`, `<floor>.prose.md`) are present
+4. Whether the source floor file hash matches the manifest's recorded hash
+5. Whether this is a first-time compile (no manifest and no artifacts)
+
+**Classification:**
+
+| Scenario                                     | Classification | Detail                                  |
+| -------------------------------------------- | -------------- | --------------------------------------- |
+| First compile (no manifest, no artifacts)    | expected       | `first compile`                         |
+| Source floor file changed since last compile | expected       | `source has changed since last compile` |
+| Manifest missing but artifacts exist         | unexpected     | `manifest missing but artifacts exist`  |
+| Artifacts missing but manifest exists        | unexpected     | `missing artifacts: <list>`             |
+
+**Output format:**
+
+Pre-flight messages are written to stderr with the prefix `[preflight]`. Warnings use the format:
+
+```
+[preflight] WARNING: Floor '<name>': <description>
+[preflight] Floor '<name>': <description>
+```
+
+**When it runs:**
+
+Pre-flight checks run in `compile` mode and `compile-all` mode (via subprocess invocation) only. Other modes (`dry-run`, `verify`, `extract-only`, `validate-only`, `prose-only`, `generate-enforce`) skip pre-flight checks because they do not produce a full artifact set.
+
+**Metrics:**
+
+Each pre-flight finding emits a `preflight-remediation` event via `ops/metrics-log.sh`:
+
+```bash
+ops/metrics-log.sh preflight-remediation --floor <name> --type <expected|unexpected> --detail "<description>"
+```
 
 ## Enforcement Block Format
 
@@ -313,7 +360,7 @@ Template syntax: [gomplate documentation](https://docs.gomplate.ca/).
 ## Testing
 
 ```bash
-# Run the full test suite (111 tests)
+# Run the full test suite (120 tests)
 bash ops/tests/test-compile-floor.sh
 
 # Syntax check
