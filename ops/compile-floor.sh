@@ -227,6 +227,152 @@ extract_blocks() {
   echo "${block_num}"
 }
 
+# ---------------------------------------------------------------------------
+# prepare_context — build a JSON context from extracted blocks for gomplate
+#
+# Arguments:
+#   $1  input floor file
+#   $2  output directory (containing block-NNN.yaml files)
+#   $3  proposal ID (may be empty)
+#
+# Writes context.json to $2. Prints the context file path to stdout.
+# ---------------------------------------------------------------------------
+
+prepare_context() {
+  local floor_file="$1"
+  local out_dir="$2"
+  local proposal_id="${3:-}"
+
+  local base_name
+  base_name="$(basename "${floor_file}" .md)"
+
+  # Count total prose rules (same logic as generate_coverage)
+  local total_rules=0
+  total_rules=$(grep -cE '^### Rule [0-9]+' "${floor_file}" 2>/dev/null) || true
+  if [[ "${total_rules}" -eq 0 ]]; then
+    total_rules=$(grep -cE '^[0-9]+\. \*\*' "${floor_file}" 2>/dev/null) || true
+  fi
+
+  # Count enforcement blocks
+  local block_count=0
+  for bf in "${out_dir}"/block-*.yaml; do
+    [[ -f "${bf}" ]] || continue
+    block_count=$((block_count + 1))
+  done
+
+  local judgment_count=$(( total_rules - block_count ))
+  if [[ "${judgment_count}" -lt 0 ]]; then
+    judgment_count=0
+  fi
+
+  # Build blocks JSON array
+  local blocks_json="[]"
+  for block_file in "${out_dir}"/block-*.yaml; do
+    [[ -f "${block_file}" ]] || continue
+
+    local rule_id
+    rule_id="$(yq '.id' "${block_file}")"
+    rule_id="${rule_id//\"/}"
+
+    local severity
+    severity="$(yq '.severity' "${block_file}")"
+    severity="${severity//\"/}"
+
+    local source_line
+    source_line="$(yq '._source_line' "${block_file}" 2>/dev/null)"
+    source_line="${source_line//\"/}"
+    [[ "${source_line}" == "null" ]] && source_line=""
+
+    local func_name="check_${rule_id//-/_}"
+
+    # Build enriched enforce object with computed fields per enforcement point
+    local enforce_json="{}"
+    local enforce_keys
+    enforce_keys="$(yq '.enforce | keys | .[]' "${block_file}" 2>/dev/null || true)"
+    while IFS= read -r ekey; do
+      ekey="${ekey//\"/}"
+      [[ -z "${ekey}" ]] && continue
+
+      local etype
+      etype="$(yq ".enforce.\"${ekey}\".type" "${block_file}")"
+      etype="${etype//\"/}"
+      [[ "${etype}" == "null" ]] && etype=""
+
+      local eaction
+      eaction="$(yq ".enforce.\"${ekey}\".action" "${block_file}")"
+      eaction="${eaction//\"/}"
+      [[ "${eaction}" == "null" ]] && eaction=""
+
+      # Compute exit_code
+      local exit_code=1
+      if [[ "${eaction}" == "block" ]]; then
+        exit_code=2
+      fi
+
+      # Compute patterns_joined
+      local patterns_joined=""
+      while IFS= read -r pat; do
+        pat="${pat//\"/}"
+        pat="${pat//\'/}"
+        pat="${pat//\\\\/\\}"
+        if [[ -n "${patterns_joined}" ]]; then
+          patterns_joined="${patterns_joined}|${pat}"
+        else
+          patterns_joined="${pat}"
+        fi
+      done < <(yq ".enforce.\"${ekey}\".patterns[]" "${block_file}" 2>/dev/null || true)
+
+      # Read optional fields for semgrep/eslint/custom-script
+      local rule_path=""
+      rule_path="$(yq ".enforce.\"${ekey}\".\"rule-path\"" "${block_file}" 2>/dev/null)"
+      rule_path="${rule_path//\"/}"
+      [[ "${rule_path}" == "null" ]] && rule_path=""
+
+      local rule_id_ref=""
+      rule_id_ref="$(yq ".enforce.\"${ekey}\".\"rule-id\"" "${block_file}" 2>/dev/null)"
+      rule_id_ref="${rule_id_ref//\"/}"
+      [[ "${rule_id_ref}" == "null" ]] && rule_id_ref=""
+
+      local script=""
+      script="$(yq ".enforce.\"${ekey}\".script" "${block_file}" 2>/dev/null)"
+      script="${script//\"/}"
+      [[ "${script}" == "null" ]] && script=""
+
+      enforce_json="$(jq --arg key "${ekey}" \
+        --arg type "${etype}" \
+        --arg action "${eaction}" \
+        --argjson exit_code "${exit_code}" \
+        --arg patterns_joined "${patterns_joined}" \
+        --arg rule_path "${rule_path}" \
+        --arg rule_id_ref "${rule_id_ref}" \
+        --arg script "${script}" \
+        '.[$key] = {type: $type, action: $action, exit_code: $exit_code, patterns_joined: $patterns_joined, rule_path: $rule_path, rule_id: $rule_id_ref, script: $script}' <<< "${enforce_json}")"
+    done <<< "${enforce_keys}"
+
+    blocks_json="$(jq --arg id "${rule_id}" \
+      --arg severity "${severity}" \
+      --arg source_line "${source_line}" \
+      --arg func_name "${func_name}" \
+      --argjson enforce "${enforce_json}" \
+      '. += [{id: $id, severity: $severity, source_line: $source_line, func_name: $func_name, enforce: $enforce}]' <<< "${blocks_json}")"
+  done
+
+  # Assemble final context
+  local context_json
+  context_json="$(jq -n \
+    --arg floor_file "${floor_file}" \
+    --arg base_name "${base_name}" \
+    --arg proposal_id "${proposal_id}" \
+    --argjson total_rules "${total_rules}" \
+    --argjson block_count "${block_count}" \
+    --argjson judgment_count "${judgment_count}" \
+    --argjson blocks "${blocks_json}" \
+    '{floor_file: $floor_file, base_name: $base_name, proposal_id: $proposal_id, total_rules: $total_rules, block_count: $block_count, judgment_count: $judgment_count, blocks: $blocks}')"
+
+  printf '%s\n' "${context_json}" > "${out_dir}/context.json"
+  echo "${out_dir}/context.json"
+}
+
 
 # ---------------------------------------------------------------------------
 # generate_prose — strip enforcement blocks and write a prose-only floor file
