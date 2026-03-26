@@ -36,24 +36,21 @@ The `preflight_check` function runs these checks in order:
 2. **Compiled directory exists** — create if missing
 3. **Manifest exists** — its presence/absence determines the expected/unexpected classification for all subsequent checks
 4. **Manifest source hash matches floor file** — detects floor edits without recompilation
-5. **Key artifacts present** (`enforce.sh`, `<floor>.prose.md`) — detects deleted artifacts
-6. **Checksum file exists** (`.claude/floors/<name>/floor-checksum.sha256`) — detects missing integrity tracking
-7. **No stale sentinel files** (`.claude/floors/<name>/.applying` older than 5 minutes) — detects interrupted apply operations
+5. **Key artifacts present** (any `.sh` or `.md` files in compiled dir) — detects deleted artifacts
+
+Note: The `/compliance apply` and `/behavioral apply` skills create sentinel files (`.claude/floors/<name>/.applying`) during floor changes. Stale sentinel detection is deferred to the follow-up drift testing issue, since the sentinel mechanism lives in the skills layer, not the compiler.
 
 ### Expected vs Unexpected Classification
 
 The manifest is the signal. If `manifest.sha256` exists in the compiled directory, the floor has been compiled before — any missing infrastructure is unexpected.
 
-| Condition                             | Manifest exists? | Classification                       | Action                                       |
-| ------------------------------------- | ---------------- | ------------------------------------ | -------------------------------------------- |
-| Compiled dir missing                  | No               | Expected (first compile)             | Create dir, log info                         |
-| Manifest missing                      | No               | Expected (first compile)             | Proceed normally, log info                   |
-| Manifest missing, but artifacts exist | No               | Unexpected (manifest deleted)        | Log warning, create finding                  |
-| Source hash mismatch                  | Yes              | Expected (floor edited)              | Log info, proceed (recompile will fix)       |
-| Artifacts missing                     | Yes              | Unexpected (files deleted)           | Log warning, create finding                  |
-| Checksum file missing                 | No               | Expected (first setup)               | Log info, will be created after compile      |
-| Checksum file missing                 | Yes              | Unexpected (integrity tracking lost) | Log warning, create finding                  |
-| Stale sentinel (>5 min old)           | —                | Unexpected (interrupted apply)       | Remove sentinel, log warning, create finding |
+| Condition                             | Manifest exists? | Classification                | Action                                 |
+| ------------------------------------- | ---------------- | ----------------------------- | -------------------------------------- |
+| Compiled dir missing                  | No               | Expected (first compile)      | Create dir, log info                   |
+| Manifest missing                      | No               | Expected (first compile)      | Proceed normally, log info             |
+| Manifest missing, but artifacts exist | No               | Unexpected (manifest deleted) | Log warning, log metrics event         |
+| Source hash mismatch                  | Yes              | Expected (floor edited)       | Log info, proceed (recompile will fix) |
+| Artifacts missing                     | Yes              | Unexpected (files deleted)    | Log warning, log metrics event         |
 
 ### Output Format
 
@@ -68,8 +65,7 @@ The manifest is the signal. If `manifest.sha256` exists in the compiled director
 
 ```
 [preflight] WARNING: Floor 'compliance': enforce.sh missing but manifest exists — artifacts may have been deleted
-[preflight] WARNING: Floor 'compliance': stale sentinel removed (.applying was 12 minutes old)
-[preflight] WARNING: Floor 'behavioral': floor-checksum.sha256 missing but manifest exists — integrity tracking lost
+[preflight] WARNING: Floor 'compliance': manifest.sha256 missing but artifacts exist — manifest may have been deleted
 ```
 
 All output goes to stderr (consistent with existing compiler error output).
@@ -111,10 +107,10 @@ preflight_check(floor_name, floor_file, compiled_dir)
   → logs unexpected events via ops/metrics-log.sh
 ```
 
-**Call sites:**
+**Call site:**
 
 - `compile)` mode: called once before extraction with the resolved floor file and compiled dir
-- `compile-all)` mode: called inside the floor iteration loop before each floor's compilation
+- `compile-all)` does NOT call pre-flight directly — it re-invokes the script as a subprocess per floor, which enters the `compile)` path and runs pre-flight automatically
 
 **Integration with existing flow:**
 
