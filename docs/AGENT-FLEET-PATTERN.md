@@ -28,7 +28,7 @@ This pattern is overkill for simple automation tasks, single-agent workflows, or
 
 ## Governance Tier
 
-The pattern includes an executive governance layer with 7 Cx roles (CO, CISO, CEO, CTO, CFO, COO, CKO) that set policy, standards, and controls independently of the operational chain. Each Cx role proposes floor rules (MUST) and targets (SHOULD) through the Compliance Officer's change control process. See `docs/superpowers/specs/2026-03-19-governance-layer-design.md` and `docs/superpowers/specs/2026-03-19-cx-governance-framework-design.md` for the full governance design.
+The pattern includes an executive governance layer with 7 Cx roles (CRO, CISO, CEO, CTO, CFO, COO, CKO) that set policy, standards, and controls independently of the operational chain. Each Cx role proposes floor rules (MUST) and targets (SHOULD) through the Chief Risk Officer's (CRO) change control process. See `docs/superpowers/specs/2026-03-19-governance-layer-design.md` and `docs/superpowers/specs/2026-03-19-cx-governance-framework-design.md` for the full governance design.
 
 ---
 
@@ -39,7 +39,7 @@ flowchart LR
     USER(["Human\nOperator"])
 
     subgraph Gov ["Governance Layer"]
-        GOV_AGENTS(["CO  CISO  CEO\nCTO  CFO  COO  CKO"])
+        GOV_AGENTS(["CRO  CISO  CEO\nCTO  CFO  COO  CKO"])
     end
 
     subgraph Harness ["Harness Layer (this framework)"]
@@ -200,7 +200,7 @@ Three layers of enforcement, from cheapest to most thorough:
 | **SubagentStop** | Track and prompt           | Log agent completion, suggest findings review                      |
 | **PreCompact**   | Preserve context           | Inject critical architectural constraints before memory compaction |
 
-**Compliance floor:** Non-negotiable rules that override all autonomy tiers, pace settings, and process. Define these for your domain. They should be short (3-5 rules), absolute, and enforced by hooks where possible.
+**Governance floors:** Non-negotiable rules that override all autonomy tiers, pace settings, and process. The framework supports multiple floors (e.g., compliance, behavioral), each guarded by a Cx officer with sole write authority. Define floors for your domain in `floors/` and declare them in `fleet-config.json`. Each floor should be short (3-5 rules), absolute, and enforced by hooks where possible. The CRO facilitates cross-floor risk assessment when any floor changes.
 
 ### 6. Delivery Metrics (DORA + Flow Quality)
 
