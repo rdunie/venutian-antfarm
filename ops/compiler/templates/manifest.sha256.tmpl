@@ -1,0 +1,9 @@
+{{- $ctx := (ds "ctx") -}}
+source: {{ $ctx.source_hash }}
+compiled-from: {{ $ctx.proposal_id }}
+artifacts:
+  {{ $ctx.base_name }}.prose.md: {{ $ctx.prose_hash }}
+  enforce.sh: {{ $ctx.enforce_hash }}
+{{- if $ctx.coverage_hash }}
+  compliance-coverage.md: {{ $ctx.coverage_hash }}
+{{- end }}

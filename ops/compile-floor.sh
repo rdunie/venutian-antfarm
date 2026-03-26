@@ -1063,14 +1063,14 @@ generate_coverage() {
 }
 
 # ---------------------------------------------------------------------------
-# generate_manifest — write manifest.sha256 for staleness detection
+# generate_manifest — write manifest.sha256 via gomplate template
 #
 # Arguments:
 #   $1  input floor file (source)
 #   $2  output directory (must contain compiled artifacts)
 #   $3  proposal ID (may be empty)
 #
-# Writes manifest.sha256 to $2.
+# Writes manifest.sha256 to $2. Hash computation stays in bash.
 # ---------------------------------------------------------------------------
 
 generate_manifest() {
@@ -1107,16 +1107,24 @@ generate_manifest() {
     fi
   fi
 
-  {
-    printf 'source: %s\n' "${source_hash}"
-    printf 'compiled-from: %s\n' "${proposal_id}"
-    printf 'artifacts:\n'
-    printf '  %s.prose.md: %s\n' "${base_name}" "${prose_hash}"
-    printf '  enforce.sh: %s\n' "${enforce_hash}"
-    if [[ -n "${coverage_hash}" ]]; then
-      printf '  compliance-coverage.md: %s\n' "${coverage_hash}"
-    fi
-  } > "${out_dir}/manifest.sha256"
+  # Build temp context with hashes
+  local manifest_ctx
+  manifest_ctx="$(mktemp)"
+  jq -n \
+    --arg source_hash "${source_hash}" \
+    --arg proposal_id "${proposal_id}" \
+    --arg base_name "${base_name}" \
+    --arg prose_hash "${prose_hash}" \
+    --arg enforce_hash "${enforce_hash}" \
+    --arg coverage_hash "${coverage_hash}" \
+    '{source_hash: $source_hash, proposal_id: $proposal_id, base_name: $base_name, prose_hash: $prose_hash, enforce_hash: $enforce_hash, coverage_hash: $coverage_hash}' \
+    > "${manifest_ctx}"
+
+  gomplate -d "ctx=file://${manifest_ctx}?type=application/json" \
+    -f "${SCRIPT_DIR}/compiler/templates/manifest.sha256.tmpl" \
+    -o "${out_dir}/manifest.sha256"
+
+  rm -f "${manifest_ctx}"
 }
 
 # ---------------------------------------------------------------------------
