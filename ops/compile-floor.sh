@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 # ---------------------------------------------------------------------------
 # compile-floor.sh — Governance floor compiler
 #
@@ -225,230 +227,6 @@ extract_blocks() {
   echo "${block_num}"
 }
 
-# ---------------------------------------------------------------------------
-# validate_block — validate a single enforcement block YAML file
-#
-# Arguments:
-#   $1  path to block YAML file
-#
-# Returns 0 on valid.
-# Prints error to stderr and exits 2 on invalid.
-# ---------------------------------------------------------------------------
-
-validate_block() {
-  local block_file="$1"
-  local block_name
-  block_name="$(basename "${block_file}")"
-  local valid=1
-
-  # Read source line number for error context
-  local source_line
-  source_line="$(yq '._source_line' "${block_file}" 2>/dev/null)"
-  source_line="${source_line//\"/}"
-  local loc=""
-  if [[ "${source_line}" != "null" && -n "${source_line}" ]]; then
-    loc=" (line ${source_line})"
-  fi
-
-  # Read id early for error context
-  local id
-  id="$(yq '.id' "${block_file}")"
-  id="${id//\"/}"
-  local id_label=""
-  if [[ "${id}" != "null" && -n "${id}" && "${id}" != '""' ]]; then
-    id_label=" [${id}]"
-  fi
-
-  # Check: version exists and equals 1
-  local version
-  version="$(yq '.version' "${block_file}")"
-  if [[ "${version}" == "null" || -z "${version}" ]]; then
-    echo "INVALID${id_label}${loc}: missing required field 'version'" >&2
-    valid=0
-  elif [[ "${version}" != "1" ]]; then
-    echo "INVALID${id_label}${loc}: 'version' must be 1, got ${version}" >&2
-    valid=0
-  fi
-
-  # Check: id exists and is non-empty (already read above for error context)
-  if [[ "${id}" == "null" || -z "${id}" || "${id}" == '""' ]]; then
-    echo "INVALID${id_label}${loc}: missing or empty 'id' field" >&2
-    valid=0
-  fi
-
-  # Check: severity is 'blocking' or 'warning'
-  local severity
-  severity="$(yq '.severity' "${block_file}")"
-  # Remove surrounding quotes if present
-  severity="${severity//\"/}"
-  if [[ "${severity}" != "blocking" && "${severity}" != "warning" ]]; then
-    echo "INVALID${id_label}${loc}: 'severity' must be 'blocking' or 'warning', got '${severity}'" >&2
-    valid=0
-  fi
-
-  # Check: no forbidden top-level keys (bypass, skip, override)
-  local bypass skip override
-  bypass="$(yq '.bypass' "${block_file}")"
-  skip="$(yq '.skip' "${block_file}")"
-  override="$(yq '.override' "${block_file}")"
-  if [[ "${bypass}" != "null" ]]; then
-    echo "INVALID${id_label}${loc}: forbidden top-level field 'bypass' is present" >&2
-    valid=0
-  fi
-  if [[ "${skip}" != "null" ]]; then
-    echo "INVALID${id_label}${loc}: forbidden top-level field 'skip' is present" >&2
-    valid=0
-  fi
-  if [[ "${override}" != "null" ]]; then
-    echo "INVALID${id_label}${loc}: forbidden top-level field 'override' is present" >&2
-    valid=0
-  fi
-
-  # Check: at least one pre-tool-use or post-tool-use enforcement point under enforce
-  local pre_hook post_hook
-  pre_hook="$(yq '.enforce."pre-tool-use"' "${block_file}")"
-  post_hook="$(yq '.enforce."post-tool-use"' "${block_file}")"
-  if [[ "${pre_hook}" == "null" && "${post_hook}" == "null" ]]; then
-    echo "INVALID${id_label}${loc}: 'enforce' must contain at least one 'pre-tool-use' or 'post-tool-use' point" >&2
-    valid=0
-  fi
-
-  # Check: check type is valid for its enforcement point
-  # file-pattern: pre-tool-use only
-  # content-pattern: pre-tool-use, post-tool-use
-  # semgrep: post-tool-use, ci
-  # eslint: post-tool-use, ci
-  # custom-script: any
-  local enforce_keys_ct
-  enforce_keys_ct="$(yq '.enforce | keys | .[]' "${block_file}" 2>/dev/null || true)"
-  while IFS= read -r ct_ekey; do
-    ct_ekey="${ct_ekey//\"/}"
-    [[ -z "${ct_ekey}" ]] && continue
-    local ct_type
-    ct_type="$(yq ".enforce.\"${ct_ekey}\".type" "${block_file}" 2>/dev/null)"
-    ct_type="${ct_type//\"/}"
-    [[ "${ct_type}" == "null" || -z "${ct_type}" ]] && continue
-    case "${ct_type}" in
-      file-pattern)
-        if [[ "${ct_ekey}" != "pre-tool-use" ]]; then
-          echo "INVALID${id_label}${loc}: 'file-pattern' is only valid at 'pre-tool-use', found at '${ct_ekey}'" >&2
-          valid=0
-        fi
-        ;;
-      content-pattern)
-        if [[ "${ct_ekey}" != "pre-tool-use" && "${ct_ekey}" != "post-tool-use" ]]; then
-          echo "INVALID${id_label}${loc}: 'content-pattern' is only valid at 'pre-tool-use' or 'post-tool-use', found at '${ct_ekey}'" >&2
-          valid=0
-        fi
-        ;;
-      semgrep)
-        if [[ "${ct_ekey}" != "post-tool-use" && "${ct_ekey}" != "ci" ]]; then
-          echo "INVALID${id_label}${loc}: 'semgrep' is only valid at 'post-tool-use' or 'ci', found at '${ct_ekey}'" >&2
-          valid=0
-        fi
-        ;;
-      eslint)
-        if [[ "${ct_ekey}" != "post-tool-use" && "${ct_ekey}" != "ci" ]]; then
-          echo "INVALID${id_label}${loc}: 'eslint' is only valid at 'post-tool-use' or 'ci', found at '${ct_ekey}'" >&2
-          valid=0
-        fi
-        ;;
-      custom-script)
-        ;; # valid at any enforcement point
-      *)
-        echo "INVALID${id_label}${loc}: unknown check type '${ct_type}' at '${ct_ekey}'" >&2
-        valid=0
-        ;;
-    esac
-  done <<< "${enforce_keys_ct}"
-
-  # Check: severity/action contradiction
-  # warning + block → reject; blocking + warn → reject
-  local severity_clean="${severity}"
-  local enforce_keys
-  enforce_keys="$(yq '.enforce | keys | .[]' "${block_file}" 2>/dev/null || true)"
-  while IFS= read -r ekey; do
-    # Strip surrounding quotes
-    ekey="${ekey//\"/}"
-    local action
-    action="$(yq ".enforce.\"${ekey}\".action" "${block_file}")"
-    action="${action//\"/}"
-    if [[ "${action}" == "null" || -z "${action}" ]]; then
-      continue
-    fi
-    if [[ "${severity_clean}" == "warning" && "${action}" == "block" ]]; then
-      echo "INVALID${id_label}${loc}: contradiction — severity 'warning' with action 'block' at enforcement point '${ekey}'" >&2
-      valid=0
-    fi
-    if [[ "${severity_clean}" == "blocking" && "${action}" == "warn" ]]; then
-      echo "INVALID${id_label}${loc}: contradiction — severity 'blocking' with action 'warn' at enforcement point '${ekey}'" >&2
-      valid=0
-    fi
-  done <<< "${enforce_keys}"
-
-  # Check: rule-path inside enforcement points (required for semgrep/eslint, must exist)
-  local enforce_keys_rp
-  enforce_keys_rp="$(yq '.enforce | keys | .[]' "${block_file}" 2>/dev/null || true)"
-  while IFS= read -r rp_ekey; do
-    rp_ekey="${rp_ekey//\"/}"
-    [[ -z "${rp_ekey}" ]] && continue
-    local rp_type
-    rp_type="$(yq ".enforce.\"${rp_ekey}\".type" "${block_file}" 2>/dev/null)"
-    rp_type="${rp_type//\"/}"
-    if [[ "${rp_type}" == "semgrep" || "${rp_type}" == "eslint" ]]; then
-      local rp_rule_path
-      rp_rule_path="$(yq ".enforce.\"${rp_ekey}\".\"rule-path\"" "${block_file}" 2>/dev/null)"
-      rp_rule_path="${rp_rule_path//\"/}"
-      if [[ -z "${rp_rule_path}" || "${rp_rule_path}" == "null" ]]; then
-        echo "INVALID${id_label}${loc}: ${rp_type} at '${rp_ekey}' missing required 'rule-path' field" >&2
-        valid=0
-      elif [[ ! -f "${rp_rule_path}" ]]; then
-        echo "INVALID${id_label}${loc}: ${rp_type} at '${rp_ekey}' rule-path does not exist: ${rp_rule_path}" >&2
-        valid=0
-      fi
-      local rp_rule_id
-      rp_rule_id="$(yq ".enforce.\"${rp_ekey}\".\"rule-id\"" "${block_file}" 2>/dev/null)"
-      rp_rule_id="${rp_rule_id//\"/}"
-      if [[ -z "${rp_rule_id}" || "${rp_rule_id}" == "null" ]]; then
-        echo "INVALID${id_label}${loc}: ${rp_type} at '${rp_ekey}' missing required 'rule-id' field" >&2
-        valid=0
-      fi
-    fi
-  done <<< "${enforce_keys_rp}"
-
-  # Check: custom-script enforcement points must have script that exists and is executable
-  local enforce_keys_cs
-  enforce_keys_cs="$(yq '.enforce | keys | .[]' "${block_file}" 2>/dev/null || true)"
-  while IFS= read -r cs_ekey; do
-    cs_ekey="${cs_ekey//\"/}"
-    [[ -z "${cs_ekey}" ]] && continue
-    local cs_type
-    cs_type="$(yq ".enforce.\"${cs_ekey}\".type" "${block_file}" 2>/dev/null)"
-    cs_type="${cs_type//\"/}"
-    [[ "${cs_type}" != "custom-script" ]] && continue
-    local cs_script
-    cs_script="$(yq ".enforce.\"${cs_ekey}\".script" "${block_file}" 2>/dev/null)"
-    cs_script="${cs_script//\"/}"
-    if [[ -z "${cs_script}" || "${cs_script}" == "null" ]]; then
-      echo "INVALID${id_label}${loc}: custom-script at '${cs_ekey}' missing 'script' field" >&2
-      valid=0
-    elif [[ "${cs_script}" == /* ]]; then
-      echo "INVALID${id_label}${loc}: custom-script 'script' must be a relative path within the repo, got: ${cs_script}" >&2
-      valid=0
-    elif [[ ! -f "${cs_script}" ]]; then
-      echo "INVALID${id_label}${loc}: custom-script 'script' does not exist: ${cs_script}" >&2
-      valid=0
-    elif [[ ! -x "${cs_script}" ]]; then
-      echo "INVALID${id_label}${loc}: custom-script 'script' is not executable: ${cs_script}" >&2
-      valid=0
-    fi
-  done <<< "${enforce_keys_cs}"
-
-  if [[ "${valid}" -eq 0 ]]; then
-    exit 2
-  fi
-  return 0
-}
 
 # ---------------------------------------------------------------------------
 # generate_prose — strip enforcement blocks and write a prose-only floor file
@@ -1323,7 +1101,7 @@ case "${MODE}" in
 
     if [[ "${block_count}" -gt 0 ]]; then
       for block_file in "${local_compile_tmp}"/block-*.yaml; do
-        validate_block "${block_file}"
+        "${SCRIPT_DIR}/compiler/validate.sh" "${block_file}"
       done
     fi
 
@@ -1413,7 +1191,7 @@ case "${MODE}" in
     fi
 
     for block_file in "${local_validate_dir}"/block-*.yaml; do
-      validate_block "${block_file}"
+      "${SCRIPT_DIR}/compiler/validate.sh" "${block_file}"
     done
 
     echo "Validated ${block_count} enforcement block(s) — all valid"
@@ -1448,7 +1226,7 @@ case "${MODE}" in
     fi
 
     for block_file in "${OUTPUT_DIR}"/block-*.yaml; do
-      validate_block "${block_file}"
+      "${SCRIPT_DIR}/compiler/validate.sh" "${block_file}"
     done
 
     generate_enforce "${OUTPUT_DIR}"
@@ -1481,7 +1259,7 @@ case "${MODE}" in
     # Validate all blocks
     if [[ "${block_count}" -gt 0 ]]; then
       for block_file in "${local_dryrun_tmp}"/block-*.yaml; do
-        validate_block "${block_file}"
+        "${SCRIPT_DIR}/compiler/validate.sh" "${block_file}"
       done
     fi
 
