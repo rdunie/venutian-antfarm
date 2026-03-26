@@ -28,7 +28,7 @@ flowchart LR
 
 ## Event Types
 
-The framework tracks 26 event types across 5 categories.
+The framework tracks 28 event types across 6 categories.
 
 ### Delivery Events
 
@@ -80,14 +80,14 @@ Track the branch and PR lifecycle.
 
 Track governance operations.
 
-| Event                  | When Logged                             | Who Logs   | Key Args                                             |
-| ---------------------- | --------------------------------------- | ---------- | ---------------------------------------------------- |
-| `compliance-proposed`  | Change proposal submitted to CO         | Any agent  | `--proposal <id> --change-type 1\|2\|3 --by <agent>` |
-| `compliance-approved`  | Proposal approved                       | CO or user | `--proposal <id> --by <co\|user>`                    |
-| `compliance-rejected`  | Proposal rejected                       | CO or user | `--proposal <id> --by <co\|user> --reason <text>`    |
-| `compliance-applied`   | Change applied to floor or targets      | CO         | `--proposal <id> --scope floor\|targets`             |
-| `compliance-violation` | Unauthorized change detected or blocked | CO         | `--source hook\|checksum`                            |
-| `compliance-reverted`  | Unauthorized change restored            | CO         | `--method git-checkout`                              |
+| Event                  | When Logged                             | Who Logs    | Key Args                                             |
+| ---------------------- | --------------------------------------- | ----------- | ---------------------------------------------------- |
+| `compliance-proposed`  | Change proposal submitted to CRO        | Any agent   | `--proposal <id> --change-type 1\|2\|3 --by <agent>` |
+| `compliance-approved`  | Proposal approved                       | CRO or user | `--proposal <id> --by <cro\|user>`                   |
+| `compliance-rejected`  | Proposal rejected                       | CRO or user | `--proposal <id> --by <cro\|user> --reason <text>`   |
+| `compliance-applied`   | Change applied to floor or targets      | CRO         | `--proposal <id> --scope floor\|targets`             |
+| `compliance-violation` | Unauthorized change detected or blocked | CRO         | `--source hook\|checksum`                            |
+| `compliance-reverted`  | Unauthorized change restored            | CRO         | `--method git-checkout`                              |
 
 ### Governance Events
 
@@ -97,8 +97,19 @@ Track executive governance operations.
 | ------------------------ | -------------------------------------- | ------------- | ----------------------------------------------------------- |
 | `guidance-published`     | Cx role publishes guidance to registry | Any Cx role   | `--by <cx-role> --topic <title>`                            |
 | `ceo-autonomy-granted`   | User grants CEO a new autonomy scope   | User          | `--scope <description>`                                     |
-| `ceo-autonomy-violation` | CO detects CEO acting beyond grants    | CO            | `--action <description>`                                    |
+| `ceo-autonomy-violation` | CRO detects CEO acting beyond grants   | CRO           | `--action <description>`                                    |
 | `knowledge-distributed`  | Knowledge-ops distributes learnings    | Knowledge-ops | `--trigger scheduled\|exception\|on-demand --items <count>` |
+
+### Rewards Events
+
+Track behavioral feedback (kudos, reprimands) and inter-agent tensions.
+
+| Event              | When Logged                                         | Who Logs      | Key Args                                                                      |
+| ------------------ | --------------------------------------------------- | ------------- | ----------------------------------------------------------------------------- |
+| `reward-issued`    | Behavioral feedback issued (kudo or reprimand)      | Issuing agent | `--issuer <agent> --subject <agent> --domain <domain> --type kudo\|reprimand` |
+| `tension-detected` | Inter-agent tension detected from opposing feedback | SM or CRO     | `--between <agent> --and <agent> --domain <domain>`                           |
+
+Rewards events feed the behavioral profile system (`ops/rewards-log.sh profile <agent>`). Persistent patterns in rewards data inform COO retraining recommendations and SM retro topics. Tensions -- opposing feedback on the same agent for the same domain -- are surfaced for retro investigation.
 
 ## Dashboard Tools
 
