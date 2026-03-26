@@ -393,6 +393,95 @@ prepare_context() {
 
 
 # ---------------------------------------------------------------------------
+# preflight_check — verify compilation environment before running
+#
+# Arguments:
+#   $1  floor name (e.g. "compliance")
+#   $2  floor file path
+#   $3  compiled output directory
+#
+# Checks for missing manifests, missing artifacts, source hash drift,
+# and first-compile scenarios. Emits preflight-remediation metrics.
+# Returns 0 always (diagnostics only, never blocks).
+# ---------------------------------------------------------------------------
+
+preflight_check() {
+  local floor_name="$1"
+  local floor_file="$2"
+  local compiled_dir="$3"
+  local manifest="${compiled_dir}/manifest.sha256"
+  local has_manifest=0
+  local has_artifacts=0
+
+  # Check compiled directory
+  if [[ ! -d "${compiled_dir}" ]]; then
+    mkdir -p "${compiled_dir}"
+  fi
+
+  # Check manifest
+  if [[ -f "${manifest}" ]]; then
+    has_manifest=1
+  fi
+
+  # Check for existing artifacts
+  if ls "${compiled_dir}"/*.sh "${compiled_dir}"/*.md 2>/dev/null | grep -q .; then
+    has_artifacts=1
+  fi
+
+  # Manifest missing but artifacts exist — unexpected
+  if [[ "${has_manifest}" -eq 0 && "${has_artifacts}" -eq 1 ]]; then
+    echo "[preflight] WARNING: Floor '${floor_name}': manifest.sha256 missing but artifacts exist — manifest may have been deleted" >&2
+    if [[ -x "${SCRIPT_DIR}/metrics-log.sh" ]]; then
+      "${SCRIPT_DIR}/metrics-log.sh" preflight-remediation \
+        --floor "${floor_name}" --type unexpected \
+        --detail "manifest missing but artifacts exist" 2>/dev/null || true
+    fi
+  fi
+
+  # Manifest exists — check source hash and artifacts
+  if [[ "${has_manifest}" -eq 1 ]]; then
+    local recorded_source
+    recorded_source="$(grep '^source:' "${manifest}" | awk '{print $2}')"
+    local current_source
+    current_source="$(sha256sum "${floor_file}" | cut -d' ' -f1)"
+    if [[ "${current_source}" != "${recorded_source}" ]]; then
+      echo "[preflight] Floor '${floor_name}': source has changed since last compile — will recompile" >&2
+    fi
+
+    local base_name
+    base_name="$(basename "${floor_file}" .md)"
+    local missing_artifacts=""
+    if [[ ! -f "${compiled_dir}/enforce.sh" ]]; then
+      missing_artifacts="${missing_artifacts} enforce.sh"
+    fi
+    if [[ ! -f "${compiled_dir}/${base_name}.prose.md" ]]; then
+      missing_artifacts="${missing_artifacts} ${base_name}.prose.md"
+    fi
+
+    if [[ -n "${missing_artifacts}" ]]; then
+      echo "[preflight] WARNING: Floor '${floor_name}':${missing_artifacts} missing but manifest exists — artifacts may have been deleted" >&2
+      if [[ -x "${SCRIPT_DIR}/metrics-log.sh" ]]; then
+        "${SCRIPT_DIR}/metrics-log.sh" preflight-remediation \
+          --floor "${floor_name}" --type unexpected \
+          --detail "missing artifacts:${missing_artifacts}" 2>/dev/null || true
+      fi
+    fi
+  fi
+
+  # First compile (no manifest, no artifacts)
+  if [[ "${has_manifest}" -eq 0 && "${has_artifacts}" -eq 0 ]]; then
+    echo "[preflight] Floor '${floor_name}': first compile" >&2
+    if [[ -x "${SCRIPT_DIR}/metrics-log.sh" ]]; then
+      "${SCRIPT_DIR}/metrics-log.sh" preflight-remediation \
+        --floor "${floor_name}" --type expected \
+        --detail "first compile" 2>/dev/null || true
+    fi
+  fi
+
+  return 0
+}
+
+# ---------------------------------------------------------------------------
 # strip_enforcement_fences — remove ```enforcement ... ``` blocks from input
 #
 # Arguments:
@@ -719,6 +808,10 @@ case "${MODE}" in
       echo "ERROR: Floor file not found: ${FLOOR_FILE}" >&2
       exit 1
     fi
+
+    # Pre-flight environment check
+    pf_base_name="$(basename "${FLOOR_FILE}" .md)"
+    preflight_check "${FLOOR_NAME:-${pf_base_name}}" "${FLOOR_FILE}" "${OUTPUT_DIR}"
 
     mkdir -p "${OUTPUT_DIR}"
 

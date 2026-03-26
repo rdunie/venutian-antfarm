@@ -44,6 +44,7 @@ TOPIC="" BY="" TRIGGER="" ACTION="" ITEMS=""
 ITEMS_REVIEWED="" ITEMS_ADDED="" ITEMS_DROPPED="" ITEMS_REORDERED=""
 RULE_ID="" ENFORCEMENT_POINT="" FILE_PATH_ARG=""
 REWARD_ID_ARG="" SUBJECT="" DESCRIPTION=""
+FLOOR_ARG="" DETAIL_ARG=""
 POSITIONAL=()
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -82,6 +83,8 @@ while [[ $# -gt 0 ]]; do
     --reward-id) REWARD_ID_ARG="$2"; shift 2 ;;
     --subject) SUBJECT="$2"; shift 2 ;;
     --description) DESCRIPTION="$2"; shift 2 ;;
+    --floor) FLOOR_ARG="$2"; shift 2 ;;
+    --detail) DETAIL_ARG="$2"; shift 2 ;;
     *) POSITIONAL+=("$1"); shift ;;
   esac
 done
@@ -354,6 +357,25 @@ case "$EVENT_TYPE" in
        '{"ts":$ts,"event":$event,"reward_ids":$reward_ids,"item":$item,"subject":$subject,"agent":$agent} | with_entries(select(.value != ""))')"
     ;;
 
+  preflight-remediation)
+    if [[ -z "${FLOOR_ARG}" ]]; then
+      echo "ERROR: preflight-remediation requires --floor" >&2
+      exit 1
+    fi
+    if [[ -z "${DEPLOY_TYPE}" ]]; then
+      echo "ERROR: preflight-remediation requires --type (expected|unexpected)" >&2
+      exit 1
+    fi
+    if [[ -z "${DETAIL_ARG}" ]]; then
+      echo "ERROR: preflight-remediation requires --detail" >&2
+      exit 1
+    fi
+    emit_event "$(jq -cn --arg ts "$TS" --arg event "$EVENT_TYPE" \
+       --arg floor "$FLOOR_ARG" --arg type "$DEPLOY_TYPE" \
+       --arg detail "$DETAIL_ARG" --arg agent "$AGENT" \
+       '{"ts":$ts,"event":$event,"floor":$floor,"type":$type,"detail":$detail,"agent":$agent} | with_entries(select(.value != ""))')"
+    ;;
+
   *)
     echo "ERROR: unknown event type '$EVENT_TYPE'" >&2
     echo "Valid types: item-promoted item-accepted ext-deployed bug-found bug-fixed" >&2
@@ -364,7 +386,7 @@ case "$EVENT_TYPE" in
     echo "             compliance-applied compliance-violation compliance-pass compliance-reverted" >&2
     echo "             branch-created pr-opened pr-merged" >&2
     echo "             guidance-published ceo-autonomy-granted ceo-autonomy-violation knowledge-distributed backlog-triaged" >&2
-    echo "             reward-issued tension-detected" >&2
+    echo "             reward-issued tension-detected preflight-remediation" >&2
     exit 1
     ;;
 esac
