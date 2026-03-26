@@ -15,7 +15,8 @@ The minimum useful Venutian Antfarm setup. One generalist specialist, three comp
 01-getting-started/
 ├── .claude/agents/
 │   └── developer.md          # Self-contained generalist specialist
-├── compliance-floor.md       # 3 rules: secrets, testing, plan-before-build
+├── floors/
+│   └── compliance.md         # 3 rules: secrets, testing, plan-before-build
 ├── fleet-config.json         # Minimal config: 1 specialist, 1 env, Crawl
 └── ops/
     └── deploy.sh             # Deploy stub

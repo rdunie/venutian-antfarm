@@ -16,7 +16,7 @@ Visual guide to how the agent fleet collaborates. Source of truth for collaborat
 - [Work Item Lifecycle](#work-item-lifecycle)
 - [Pace Control](#pace-control)
 - [Review Dispatch](#review-dispatch)
-- [Compliance Floor](#compliance-floor)
+- [Governance Floors](#governance-floors)
 - [Learning Loop](#learning-loop)
 - [Model Selection Decision Tree](#model-selection-decision-tree)
 - [Delivery Metrics (DORA + Flow Quality)](#delivery-metrics-dora--flow-quality)
@@ -42,7 +42,7 @@ flowchart LR
     USER(["User"])
 
     subgraph Gov ["Governance Layer"]
-        GOV(["CO  CISO  CEO\nCTO  CFO  COO  CKO"])
+        GOV(["CRO  CISO  CEO\nCTO  CFO  COO  CKO"])
     end
 
     S(["Strategic\nPO  SA  SM"])
@@ -76,12 +76,12 @@ flowchart LR
 
 ## Governance Tier Detail
 
-The governance tier sets policy and standards. The CO is the compliance floor guardian -- all floor changes require user approval. Each Cx role proposes controls to the CO and participates in consensus when consulted. The CEO is the user's proxy and operates on an independent trust-based pace.
+The governance tier sets policy and standards. The Chief Risk Officer (CRO) is the governance floor guardian -- all floor changes require user approval. Each Cx role proposes controls to the CRO and participates in consensus when consulted. The CEO is the user's proxy and operates on an independent trust-based pace.
 
 ```mermaid
 flowchart TD
     USER(["User"])
-    CO["CO"]
+    CRO["CRO"]
     CISO["CISO"]
     CEO["CEO"]
     CTO["CTO"]
@@ -89,17 +89,17 @@ flowchart TD
     COO["COO"]
     CKO["CKO"]
 
-    USER -.->|"floor approvals"| CO
+    USER -.->|"floor approvals"| CRO
     USER <-->|"executive brief"| CEO
-    CISO -->|"security controls"| CO
-    CTO -->|"tech standards"| CO
-    CFO -->|"cost controls"| CO
-    COO -->|"operational controls"| CO
-    CKO -->|"knowledge controls"| CO
-    CO -.->|"monitors\nautonomy"| CEO
+    CISO -->|"security controls"| CRO
+    CTO -->|"tech standards"| CRO
+    CFO -->|"cost controls"| CRO
+    COO -->|"operational controls"| CRO
+    CKO -->|"knowledge controls"| CRO
+    CRO -.->|"monitors\nautonomy"| CEO
 
     style USER fill:#90caf9,stroke:#1565c0,color:#1a1a1a
-    style CO fill:#ce93d8,stroke:#6a1b9a,color:#1a1a1a
+    style CRO fill:#ce93d8,stroke:#6a1b9a,color:#1a1a1a
     style CISO fill:#ce93d8,stroke:#6a1b9a,color:#1a1a1a
     style CEO fill:#ce93d8,stroke:#6a1b9a,color:#1a1a1a
     style CTO fill:#ce93d8,stroke:#6a1b9a,color:#1a1a1a
@@ -143,7 +143,7 @@ flowchart TD
 
 ## Governance ↔ Operational Bridge
 
-Governance sets the rules; operations follows them. Data flows up to inform governance decisions. The CO and CKO are the primary bridges.
+Governance sets the rules; operations follows them. Data flows up to inform governance decisions. The CRO and CKO are the primary bridges.
 
 ```mermaid
 flowchart LR
@@ -152,7 +152,7 @@ flowchart LR
     end
 
     subgraph Bridge ["Bridges"]
-        CO_B["CO\n(floor/targets)"]
+        CRO_B["CRO\n(floor/targets)"]
         CKO_B["CKO\n(knowledge)"]
     end
 
@@ -161,15 +161,15 @@ flowchart LR
         AGENTS(["Specialists +\nReviewers"])
     end
 
-    CX -->|"floor rules\ntargets\nguidance"| CO_B
+    CX -->|"floor rules\ntargets\nguidance"| CRO_B
     CX -->|"knowledge\nstandards"| CKO_B
-    CO_B -->|"controls"| TRIAD
+    CRO_B -->|"controls"| TRIAD
     CKO_B -->|"learnings"| AGENTS
     AGENTS -->|"metrics\nfindings"| CX
     TRIAD -->|"conformance\nreports"| CX
 
     style CX fill:#ce93d8,stroke:#6a1b9a,color:#1a1a1a
-    style CO_B fill:#ce93d8,stroke:#6a1b9a,color:#1a1a1a
+    style CRO_B fill:#ce93d8,stroke:#6a1b9a,color:#1a1a1a
     style CKO_B fill:#ce93d8,stroke:#6a1b9a,color:#1a1a1a
     style TRIAD fill:#90caf9,stroke:#1565c0,color:#1a1a1a
     style AGENTS fill:#a5d6a7,stroke:#2e7d32,color:#1a1a1a
@@ -367,28 +367,34 @@ flowchart TD
 
 ---
 
-## Compliance Floor
+## Governance Floors
 
-The compliance floor overrides all other protocol elements. Visualized as a foundation that everything rests on.
+Governance floors override all other protocol elements. Visualized as a foundation that everything rests on. Each floor is guarded by a Cx officer with sole write authority.
 
 ```mermaid
 flowchart TD
-    subgraph Floor ["COMPLIANCE FLOOR (non-negotiable)"]
-        S1["Rule 1\n(your domain rule)"]
-        S2["Rule 2\n(your domain rule)"]
-        S3["Rule 3\n(your domain rule)"]
+    subgraph Floors ["GOVERNANCE FLOORS (non-negotiable)"]
+        subgraph CFloor ["Compliance Floor (CRO guardian)"]
+            S1["Rule 1\n(your domain rule)"]
+            S2["Rule 2\n(your domain rule)"]
+        end
+        subgraph BFloor ["Behavioral Floor (COO guardian)"]
+            S3["Rule 3\n(your domain rule)"]
+            S4["Rule 4\n(your domain rule)"]
+        end
     end
 
-    PACE["Pace Control"] -.->|"overridden by"| Floor
-    AUTO["Autonomy Tiers"] -.->|"overridden by"| Floor
-    PRIO["Priority Decisions"] -.->|"overridden by"| Floor
+    PACE["Pace Control"] -.->|"overridden by"| Floors
+    AUTO["Autonomy Tiers"] -.->|"overridden by"| Floors
+    PRIO["Priority Decisions"] -.->|"overridden by"| Floors
 
     style S1 fill:#ef9a9a,stroke:#b71c1c,color:#1a1a1a
     style S2 fill:#ef9a9a,stroke:#b71c1c,color:#1a1a1a
     style S3 fill:#ef9a9a,stroke:#b71c1c,color:#1a1a1a
+    style S4 fill:#ef9a9a,stroke:#b71c1c,color:#1a1a1a
 ```
 
-Define your compliance floor in `compliance-floor.md` at the project root. See `templates/compliance-floor.md` for a starting template.
+Define your compliance floor in `floors/compliance.md` at the project root. See `templates/floors/compliance.md` for a starting template. The compliance floor is one instance of a general governance floor pattern. See `docs/GOVERNANCE-FLOORS.md` for the multi-floor model.
 
 ---
 

@@ -1,0 +1,27 @@
+# Enforcement block schema — used by validate.sh
+required_fields:
+  version:
+    type: integer
+    value: 1
+  id:
+    type: string
+    non_empty: true
+  severity:
+    type: enum
+    values: ["blocking", "warning"]
+
+forbidden_fields:
+  - bypass
+  - skip
+  - override
+
+enforce:
+  valid_points: ["pre-tool-use", "post-tool-use", "ci"]
+  required_points: ["pre-tool-use", "post-tool-use"]
+
+  type_constraints:
+    file-pattern: ["pre-tool-use"]
+    content-pattern: ["pre-tool-use", "post-tool-use"]
+    semgrep: ["post-tool-use", "ci"]
+    eslint: ["post-tool-use", "ci"]
+    custom-script: ["pre-tool-use", "post-tool-use", "ci"]

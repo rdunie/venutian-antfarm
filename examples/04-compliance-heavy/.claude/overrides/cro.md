@@ -1,5 +1,5 @@
 ---
-extends: harness/compliance-officer
+extends: harness/cro
 ---
 
 ## Domain Override

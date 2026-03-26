@@ -10,6 +10,7 @@ A step-by-step guide to setting up your agent fleet harness. For background on t
 
 - **Claude Code CLI** installed and configured
 - **Git** for version control
+- **gomplate v4+** for compliance floor compilation
 - **jq** for metrics processing (optional but recommended)
 
 ## Setup Overview
@@ -41,13 +42,14 @@ cd my-project
 
 ## Step 2: Define Your Compliance Floor
 
-The compliance floor is the set of non-negotiable rules that every agent must follow, regardless of pace or autonomy level. It encompasses security, data governance, audit requirements, regulatory controls, and domain-specific rules.
+The compliance floor is the set of non-negotiable rules that every agent must follow, regardless of pace or autonomy level. It encompasses security, data governance, audit requirements, regulatory controls, and domain-specific rules. Floors live in the `floors/` directory at the project root; the compliance floor is guarded by the CRO.
 
 ```bash
-cp templates/compliance-floor.md compliance-floor.md
+mkdir -p floors
+cp templates/floors/compliance.md floors/compliance.md
 ```
 
-Edit `compliance-floor.md` with your domain's rules. Keep it to 3-5 rules that are absolute, enforceable, and clear. For example:
+Edit `floors/compliance.md` with your domain's rules. Keep it to 3-5 rules that are absolute, enforceable, and clear. For example:
 
 - An e-commerce app might include: "No credit card numbers stored outside the payment processor"
 - A healthcare app might include: "No PHI transmitted without encryption"
@@ -105,21 +107,23 @@ Open Claude Code in your project directory. The 13 core agents are ready (7 gove
 
 Available slash commands:
 
-| Command       | Purpose                                               |
-| ------------- | ----------------------------------------------------- |
-| `/po`         | Product owner status and backlog                      |
-| `/retro`      | Sprint retrospective                                  |
-| `/onboard`    | Fleet onboarding (activates CO and CISO during setup) |
-| `/compliance` | Compliance program management                         |
-| `/governance` | Executive governance                                  |
-| `/pace`       | Pace control                                          |
-| `/audit`      | Compliance audit                                      |
-| `/memory`     | Knowledge management                                  |
-| `/deploy`     | Deployment orchestration                              |
-| `/findings`   | Findings register                                     |
-| `/handoff`    | Structured handoffs                                   |
+| Command       | Purpose                                                |
+| ------------- | ------------------------------------------------------ |
+| `/po`         | Product owner status and backlog                       |
+| `/retro`      | Sprint retrospective                                   |
+| `/onboard`    | Fleet onboarding (activates CRO and CISO during setup) |
+| `/compliance` | Compliance program management                          |
+| `/governance` | Executive governance                                   |
+| `/pace`       | Pace control                                           |
+| `/audit`      | Compliance audit                                       |
+| `/memory`     | Knowledge management                                   |
+| `/deploy`     | Deployment orchestration                               |
+| `/findings`   | Findings register                                      |
+| `/handoff`    | Structured handoffs                                    |
 
-1. **Start with `/po`** to see the status overview
+**Rewards system:** Use `ops/rewards-log.sh` to issue behavioral feedback (kudos, reprimands, tensions) and query agent profiles. See `ops/rewards-log.sh --help` for usage.
+
+1. **Start with `/po triage`** to prioritize the backlog (Phase 0 Prioritize -- triage before grooming)
 2. **Add a work item** to `docs/plans/` -- even a simple one like "Set up project structure"
 3. **Run `/po groom`** to have the PO add acceptance criteria and WSJF score
 4. **Build it** -- the specialist agent handles: code, test, typecheck, build, deploy, validate
@@ -153,4 +157,4 @@ This is the fleet learning autonomy. Not because you told it to, but because the
 - Read the [Agent Fleet Pattern](AGENT-FLEET-PATTERN.md) for the full specification
 - Review the [Collaboration Protocol](../.claude/COLLABORATION.md) for all 11 core principles
 - Check the [Examples](../examples/) for progressive working examples (start with 01-getting-started)
-- Add review agents (security-reviewer, etc.) as your compliance needs crystallize. Note: governance tier agents (CO, CISO at minimum) are active from the first session via `/onboard` and don't need to be added separately.
+- Add review agents (security-reviewer, etc.) as your compliance needs crystallize. Note: governance tier agents (CRO, CISO at minimum) are active from the first session via `/onboard` and don't need to be added separately.
