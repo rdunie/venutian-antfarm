@@ -10,7 +10,7 @@
 
 > **Read the blog post:** [Governing the Ant Farm — A Governance-First Framework for Multi-Agent Software Delivery](https://medium.com/@robdunie/governing-the-ant-farm-a-governance-first-framework-for-multi-agent-software-delivery-29245fc14bd9)
 
-An agent fleet harness framework for structured multi-agent software delivery with progressive autonomy, evidence-based governance, and measurable quality control. Clone it, define your compliance floor, add your specialist agents, and start delivering with a governed fleet.
+An agent fleet harness framework for structured multi-agent software delivery. Define your controls in Markdown, the compiler turns them into enforcement hooks. Add your specialist agents, configure progressive autonomy, and start delivering with a governed fleet.
 
 ## Why Venutian Antfarm?
 
@@ -18,6 +18,13 @@ An agent fleet harness framework for structured multi-agent software delivery wi
 - **Progressive autonomy.** Fleets start at Crawl (propose everything) and earn autonomy through measurable performance. Pace goes both directions — complexity triggers slowdowns, not just promotions.
 - **Measurable delivery.** DORA metrics, flow quality, pathway analysis, and agent cost tracking out of the box. 26 event types, pluggable backends, and CLI dashboards. The fleet learns from its own data.
 - **Extensible by design.** Define your compliance floor, add your specialist agents, override any skill or agent definition. The harness provides structure; you provide the domain.
+
+**Recent highlights:**
+
+- Governance floors are now **multi-domain** — compliance and behavioral ship by default, add your own by declaring them in fleet-config.json
+- The compliance compiler extracts rules from Markdown, validates them against a schema, and generates enforcement hooks — you define controls in prose, the compiler makes them real
+- A rewards system tracks behavioral feedback (kudos/reprimands) per agent, surfacing tensions before they become patterns
+- Framework purity — the repo ships only tooling and templates; runtime artifacts are scaffolded by `/onboard`
 
 ## Quick Start
 
@@ -79,43 +86,39 @@ flowchart LR
     style O fill:#ffcc80,stroke:#e65100,color:#1a1a1a
 ```
 
-**Governance floors** are sets of non-negotiable rules (MUST ALWAYS / MUST NEVER) that you define for your domain. Every agent in every tier must follow them — they override all autonomy levels, pace settings, and process decisions. Each floor has a guardian Cx officer with sole write authority. The compliance-auditor verifies conformance during review. No agent can modify, bypass, or deprioritize a floor rule. V0.4 ships with compliance (CRO guardian) and behavioral (COO guardian) floors.
+### How Controls Work
 
-### Floor Change Management
+You write rules in a Markdown floor file — plain prose that agents can read and follow. For rules you want automated enforcement on, you add an `enforcement` block underneath that tells the compiler what to check.
 
-All changes to governance floors go through a governed process. The floor's guardian (e.g., CRO for compliance) is the sole gatekeeper — no other agent can modify the floor file.
-
-```mermaid
-flowchart TD
-    PROPOSE["Any agent or Cx role\nproposes a change"]
-    CO_REVIEW["Guardian receives and\nclassifies the change"]
-    CONSULT["Guardian consults Cx roles\nfor domain impact"]
-    CONSENSUS{"Consensus?"}
-    USER_APPROVE{"User\napproves?"}
-    APPLY["Guardian applies change\nvia /floor apply"]
-    LOG["Change logged\nwith full audit trail"]
-    REJECT["Change rejected\nwith rationale"]
-
-    PROPOSE --> CO_REVIEW
-    CO_REVIEW --> CONSULT
-    CONSULT --> CONSENSUS
-    CONSENSUS -->|"yes + risk-reducing"| APPLY
-    CONSENSUS -->|"no consensus or\nfloor change"| USER_APPROVE
-    USER_APPROVE -->|"approved"| APPLY
-    USER_APPROVE -->|"rejected"| REJECT
-    APPLY --> LOG
-
-    style PROPOSE fill:#90caf9,stroke:#1565c0,color:#1a1a1a
-    style CO_REVIEW fill:#ce93d8,stroke:#6a1b9a,color:#1a1a1a
-    style CONSULT fill:#ce93d8,stroke:#6a1b9a,color:#1a1a1a
-    style CONSENSUS fill:#ffcc80,stroke:#e65100,color:#1a1a1a
-    style USER_APPROVE fill:#90caf9,stroke:#1565c0,color:#1a1a1a
-    style APPLY fill:#a5d6a7,stroke:#2e7d32,color:#1a1a1a
-    style LOG fill:#bdbdbd,stroke:#424242,color:#1a1a1a
-    style REJECT fill:#ef9a9a,stroke:#b71c1c,color:#1a1a1a
+```
+Floor file (prose + enforcement blocks)
+    → Compiler validates blocks against schema
+    → Generates hook scripts, coverage report, integrity manifest
+    → Hooks fire on every edit — block or warn per rule
+    → --verify catches drift if anyone tampers with generated artifacts
 ```
 
-Risk-reducing target changes can be approved by the guardian autonomously (with user notification). All floor changes require explicit user approval — no exceptions. Every change is logged with who requested, who approved, Cx consultation results, and rationale.
+Here's what that looks like in practice:
+
+````markdown
+1. **No hardcoded secrets.** Keep credentials, API keys, and tokens out of
+   version control. Use environment variables or a secrets manager.
+
+```enforcement
+version: 1
+id: no-hardcoded-secrets
+severity: blocking
+enforce:
+  pre-tool-use:
+    type: file-pattern
+    patterns: ['\.env$', 'secrets?\.yaml$', '\.pem$', '\.key$']
+    action: block
+```
+````
+
+The prose is what agents read. The enforcement block is what becomes a hook check. Not every rule needs one — rules without enforcement blocks show up as "judgment-only" in the coverage report, meaning they rely on review rather than automation. The coverage report makes that gap visible so you can decide whether to close it.
+
+Generated artifacts are checksummed. If the source floor changes without recompilation, or someone hand-edits a generated file, `--verify` flags it. The guardian Cx officer (CRO for compliance, COO for behavioral) owns the floor — changes go through governed change control. See the [Governance Floors Guide](docs/GOVERNANCE-FLOORS.md) for the full process and the [Compiler Guide](docs/COMPILER-GUIDE.md) for enforcement block syntax.
 
 ## What You Get
 
@@ -240,9 +243,8 @@ App fields override harness fields. Unmentioned harness fields are preserved.
 
 ## Key Concepts
 
-- **Governance Floors**: Non-negotiable rules (MUST ALWAYS / MUST NEVER) that override all autonomy tiers and pace settings. Each floor has a Cx guardian with sole write authority. V0.4 ships with compliance (CRO) and behavioral (COO) floors. See the [Governance Floors Guide](docs/GOVERNANCE-FLOORS.md).
-- **Compliance Compiler**: Extracts enforcement blocks from floor files, validates against schema, and generates hook scripts, coverage reports, and integrity manifests. Uses gomplate templates for artifact generation. Pre-flight checks detect drift and guide remediation. See the [Compiler Guide](docs/COMPILER-GUIDE.md).
-- **Rewards System**: Behavioral feedback via kudos and reprimands. Each agent builds a behavioral profile. Tensions (conflicting feedback) surface for resolution. Use `ops/rewards-log.sh` to issue feedback and query profiles.
+- **Governance Floors + Compiler**: Described above in [How Controls Work](#how-controls-work). Full reference: [Governance Floors Guide](docs/GOVERNANCE-FLOORS.md), [Compiler Guide](docs/COMPILER-GUIDE.md).
+- **Rewards System**: Behavioral feedback via kudos and reprimands. Each agent builds a behavioral profile over time. Tensions (conflicting feedback from different agents) surface for resolution before they become patterns. Use `ops/rewards-log.sh` to issue feedback and query profiles.
 - **Findings Loop**: Structured learning where agents record notable events, the SM curates refinements, and the CKO directs knowledge-ops to distribute learnings fleet-wide. The same finding type should decrease over time.
 - **Fix Ownership**: The agent that authored the code is responsible for fixing it, regardless of where the issue was discovered. Diagnosis is collaborative; the fix returns to the author so the learning stays with them.
 - **Environment Discipline**: All code changes happen in dev only. Agents may diagnose in any environment (read-only), but fixes flow through the deployment chain: branch, PR, merge, deploy through promotion order.
