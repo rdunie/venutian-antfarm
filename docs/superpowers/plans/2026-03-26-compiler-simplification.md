@@ -15,6 +15,7 @@
 ## Prerequisites
 
 **Install gomplate before starting:**
+
 ```bash
 # macOS/Linux
 brew install gomplate
@@ -33,36 +34,37 @@ Verify: `gomplate --version` should show v4.x.
 
 ### New Files
 
-| File | Responsibility |
-|------|---------------|
-| `ops/compiler/schema.yaml` | Declarative enforcement block schema (required fields, forbidden fields, type constraints) |
-| `ops/compiler/validate.sh` | Schema-driven validation script — reads schema.yaml + relational constraints |
-| `ops/compiler/templates/prose.md.tmpl` | Gomplate template for prose floor output |
-| `ops/compiler/templates/coverage.md.tmpl` | Gomplate template for coverage report |
-| `ops/compiler/templates/manifest.sha256.tmpl` | Gomplate template for manifest |
-| `ops/compiler/templates/semgrep-rules.yaml.tmpl` | Gomplate template for semgrep config |
-| `ops/compiler/templates/eslint-rules.json.tmpl` | Gomplate template for eslint config |
-| `ops/compiler/templates/enforce.sh.tmpl` | Gomplate template for enforce.sh dispatcher (riskiest — last) |
+| File                                             | Responsibility                                                                             |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------ |
+| `ops/compiler/schema.yaml`                       | Declarative enforcement block schema (required fields, forbidden fields, type constraints) |
+| `ops/compiler/validate.sh`                       | Schema-driven validation script — reads schema.yaml + relational constraints               |
+| `ops/compiler/templates/prose.md.tmpl`           | Gomplate template for prose floor output                                                   |
+| `ops/compiler/templates/coverage.md.tmpl`        | Gomplate template for coverage report                                                      |
+| `ops/compiler/templates/manifest.sha256.tmpl`    | Gomplate template for manifest                                                             |
+| `ops/compiler/templates/semgrep-rules.yaml.tmpl` | Gomplate template for semgrep config                                                       |
+| `ops/compiler/templates/eslint-rules.json.tmpl`  | Gomplate template for eslint config                                                        |
+| `ops/compiler/templates/enforce.sh.tmpl`         | Gomplate template for enforce.sh dispatcher (riskiest — last)                              |
 
 ### Modified Files
 
-| File | Change |
-|------|--------|
+| File                   | Change                                                                                       |
+| ---------------------- | -------------------------------------------------------------------------------------------- |
 | `ops/compile-floor.sh` | Replace inline generators with gomplate calls, add `prepare_context`, add gomplate dep check |
-| `CLAUDE.md` | Document gomplate dependency |
+| `CLAUDE.md`            | Document gomplate dependency                                                                 |
 
 ### Not Changed
 
-| File | Reason |
-|------|--------|
+| File                              | Reason                                      |
+| --------------------------------- | ------------------------------------------- |
 | `ops/tests/test-compile-floor.sh` | Tests verify behavior — must pass unchanged |
-| `ops/tests/fixtures/*` | Test inputs unchanged |
+| `ops/tests/fixtures/*`            | Test inputs unchanged                       |
 
 ---
 
 ## Task 1: Install Gomplate and Add Dependency Check
 
 **Files:**
+
 - Modify: `ops/compile-floor.sh:97-101` (dependency check section)
 
 - [ ] **Step 1: Install gomplate**
@@ -105,6 +107,7 @@ git commit -m "feat(#22): add gomplate dependency check to compiler"
 ## Task 2: Extract Validation to `ops/compiler/validate.sh`
 
 **Files:**
+
 - Create: `ops/compiler/validate.sh`
 - Modify: `ops/compile-floor.sh` (replace `validate_block` calls with `validate.sh` calls)
 
@@ -119,6 +122,7 @@ mkdir -p ops/compiler/templates
 - [ ] **Step 2: Extract `validate_block` to `ops/compiler/validate.sh`**
 
 Create `ops/compiler/validate.sh` with:
+
 - Shebang and `set -euo pipefail`
 - The entire `validate_block` function body (lines 232-446 of current `compile-floor.sh`)
 - Accept a single argument: the block YAML file path
@@ -196,6 +200,7 @@ git commit -m "refactor(#22): extract validation to ops/compiler/validate.sh"
 ## Task 3: Add Schema and Schema-Driven Validation
 
 **Files:**
+
 - Create: `ops/compiler/schema.yaml`
 - Modify: `ops/compiler/validate.sh`
 
@@ -224,7 +229,7 @@ forbidden_fields:
 enforce:
   # At least one of these must be present
   valid_points: ["pre-tool-use", "post-tool-use", "ci"]
-  required_points: ["pre-tool-use", "post-tool-use"]  # at least one
+  required_points: ["pre-tool-use", "post-tool-use"] # at least one
 
   # Check type validity per enforcement point
   type_constraints:
@@ -238,6 +243,7 @@ enforce:
 - [ ] **Step 2: Refactor `validate.sh` to read schema**
 
 Update `validate.sh` to:
+
 1. Determine its own directory: `SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"`
 2. Read `schema.yaml` from `${SCRIPT_DIR}/schema.yaml`
 3. Replace hardcoded required field checks with a loop over `required_fields` from schema
@@ -267,6 +273,7 @@ git commit -m "feat(#22): add declarative schema for enforcement block validatio
 ## Task 4: Add Context Preparation Function
 
 **Files:**
+
 - Modify: `ops/compile-floor.sh`
 
 Add `prepare_context` that builds a JSON context from extracted blocks. This function doesn't change any behavior yet — it's preparation for the template tasks.
@@ -414,6 +421,7 @@ git commit -m "feat(#22): add prepare_context function for gomplate datasource"
 ## Task 5: Template Prose Generation
 
 **Files:**
+
 - Create: `ops/compiler/templates/prose.md.tmpl`
 - Modify: `ops/compile-floor.sh` (replace `generate_prose` call with gomplate)
 
@@ -431,7 +439,7 @@ The prose template is simple — it just emits a header. The actual fence stripp
 
 Add a small function that strips enforcement fences from markdown and returns the result:
 
-```bash
+````bash
 strip_enforcement_fences() {
   local input_file="$1"
   local in_block=0
@@ -449,7 +457,7 @@ strip_enforcement_fences() {
     fi
   done < "${input_file}"
 }
-```
+````
 
 - [ ] **Step 3: Update the compile mode to use gomplate for prose**
 
@@ -494,6 +502,7 @@ git commit -m "refactor(#22): replace generate_prose with gomplate template"
 ## Task 6: Template Coverage Report
 
 **Files:**
+
 - Create: `ops/compiler/templates/coverage.md.tmpl`
 - Modify: `ops/compile-floor.sh`
 
@@ -562,6 +571,7 @@ git commit -m "refactor(#22): replace generate_coverage with gomplate template"
 ## Task 7: Template Manifest
 
 **Files:**
+
 - Create: `ops/compiler/templates/manifest.sha256.tmpl`
 - Modify: `ops/compile-floor.sh`
 
@@ -638,6 +648,7 @@ git commit -m "refactor(#22): replace generate_manifest with gomplate template"
 ## Task 8: Template Semgrep Config
 
 **Files:**
+
 - Create: `ops/compiler/templates/semgrep-rules.yaml.tmpl`
 - Modify: `ops/compile-floor.sh`
 
@@ -693,6 +704,7 @@ git commit -m "refactor(#22): replace generate_semgrep with gomplate template"
 ## Task 9: Template ESLint Config
 
 **Files:**
+
 - Create: `ops/compiler/templates/eslint-rules.json.tmpl`
 - Modify: `ops/compile-floor.sh`
 
@@ -743,6 +755,7 @@ git commit -m "refactor(#22): replace generate_eslint with gomplate template"
 ## Task 10: Template Enforce.sh (Riskiest)
 
 **Files:**
+
 - Create: `ops/compiler/templates/enforce.sh.tmpl`
 - Modify: `ops/compile-floor.sh`
 
@@ -765,6 +778,7 @@ cp /tmp/enforce-ref/enforce.sh /tmp/enforce-ref-output.sh
 - [ ] **Step 2: Create `ops/compiler/templates/enforce.sh.tmpl`**
 
 The template must emit:
+
 1. Static header (shebang, `set -euo pipefail`, GENERATED comment)
 2. `SCRIPT_DIR`, `log_violation`, `log_pass` helper functions
 3. Floor identity: `FLOOR_NAME` and `FLOOR_FILE` variables
@@ -776,6 +790,7 @@ The template must emit:
    - Main entry point
 
 The floor protection logic is static bash with `FLOOR_NAME` and `FLOOR_FILE` interpolated. It handles:
+
 - `floors/*.md` sentinel-gated blocking
 - Legacy `compliance-floor.md` sentinel-gated blocking
 - `.claude/floors/*/compiled/*` warn
@@ -830,6 +845,7 @@ git commit -m "refactor(#22): replace generate_enforce with gomplate template"
 ## Task 11: Clean Up Dead Code
 
 **Files:**
+
 - Modify: `ops/compile-floor.sh`
 
 - [ ] **Step 1: Verify all old generator functions are removed**
@@ -883,6 +899,7 @@ git commit -m "refactor(#22): remove dead code from compiler after template migr
 ## Task 12: Update CLAUDE.md
 
 **Files:**
+
 - Modify: `CLAUDE.md`
 
 - [ ] **Step 1: Add gomplate to Prerequisites**
@@ -923,10 +940,10 @@ git commit -m "docs(#22): document gomplate dependency and compiler architecture
 
 ## Key Files Reference
 
-| File | Why |
-|------|-----|
-| `docs/superpowers/specs/2026-03-26-compiler-simplification-design.md` | The spec this plan implements |
-| `ops/compile-floor.sh` | The compiler being simplified (1558 lines → ~300-400) |
-| `ops/tests/test-compile-floor.sh` | Test suite (833 lines, 111 tests — must pass unchanged) |
-| `ops/tests/fixtures/*` | Test fixture files |
-| `ops/compiler/` | New directory for schema, validator, and templates |
+| File                                                                  | Why                                                     |
+| --------------------------------------------------------------------- | ------------------------------------------------------- |
+| `docs/superpowers/specs/2026-03-26-compiler-simplification-design.md` | The spec this plan implements                           |
+| `ops/compile-floor.sh`                                                | The compiler being simplified (1558 lines → ~300-400)   |
+| `ops/tests/test-compile-floor.sh`                                     | Test suite (833 lines, 111 tests — must pass unchanged) |
+| `ops/tests/fixtures/*`                                                | Test fixture files                                      |
+| `ops/compiler/`                                                       | New directory for schema, validator, and templates      |

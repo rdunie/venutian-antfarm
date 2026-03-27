@@ -26,31 +26,31 @@ The framework repo ships with 18 runtime artifacts in `.claude/` (6 content file
 
 **Move to templates:**
 
-| Current Location | Destination |
-|---|---|
-| `.claude/compliance/change-log.md` | `templates/compliance/change-log.md` |
-| `.claude/compliance/targets.md` | `templates/compliance/targets.md` |
-| `.claude/governance/executive-brief.md` | `templates/governance/executive-brief.md` |
+| Current Location                          | Destination                                 |
+| ----------------------------------------- | ------------------------------------------- |
+| `.claude/compliance/change-log.md`        | `templates/compliance/change-log.md`        |
+| `.claude/compliance/targets.md`           | `templates/compliance/targets.md`           |
+| `.claude/governance/executive-brief.md`   | `templates/governance/executive-brief.md`   |
 | `.claude/governance/guidance-registry.md` | `templates/governance/guidance-registry.md` |
-| `.claude/findings/register.md` | `templates/findings/register.md` |
-| `.claude/findings/information-needs.md` | `templates/findings/information-needs.md` |
+| `.claude/findings/register.md`            | `templates/findings/register.md`            |
+| `.claude/findings/information-needs.md`   | `templates/findings/information-needs.md`   |
 
 **Delete (no template needed — created by `mkdir -p` or `touch` at onboarding):**
 
-| File | Reason |
-|------|--------|
-| `.claude/compliance/proposals/.gitkeep` | Directory scaffold |
-| `.claude/compliance/compiled/.gitkeep` | Directory scaffold |
-| `.claude/compliance/eslint/no-eval.json` | Empty stub — compiler generates these |
+| File                                                   | Reason                                |
+| ------------------------------------------------------ | ------------------------------------- |
+| `.claude/compliance/proposals/.gitkeep`                | Directory scaffold                    |
+| `.claude/compliance/compiled/.gitkeep`                 | Directory scaffold                    |
+| `.claude/compliance/eslint/no-eval.json`               | Empty stub — compiler generates these |
 | `.claude/compliance/semgrep/no-hardcoded-secrets.yaml` | Empty stub — compiler generates these |
-| `.claude/governance/guidance/ceo/.gitkeep` | Directory scaffold |
-| `.claude/governance/guidance/cfo/.gitkeep` | Directory scaffold |
-| `.claude/governance/guidance/ciso/.gitkeep` | Directory scaffold |
-| `.claude/governance/guidance/cko/.gitkeep` | Directory scaffold |
-| `.claude/governance/guidance/coo/.gitkeep` | Directory scaffold |
-| `.claude/governance/guidance/cto/.gitkeep` | Directory scaffold |
-| `.claude/governance/decisions/.gitkeep` | Directory scaffold |
-| `.claude/metrics/events.jsonl` | Empty file |
+| `.claude/governance/guidance/ceo/.gitkeep`             | Directory scaffold                    |
+| `.claude/governance/guidance/cfo/.gitkeep`             | Directory scaffold                    |
+| `.claude/governance/guidance/ciso/.gitkeep`            | Directory scaffold                    |
+| `.claude/governance/guidance/cko/.gitkeep`             | Directory scaffold                    |
+| `.claude/governance/guidance/coo/.gitkeep`             | Directory scaffold                    |
+| `.claude/governance/guidance/cto/.gitkeep`             | Directory scaffold                    |
+| `.claude/governance/decisions/.gitkeep`                | Directory scaffold                    |
+| `.claude/metrics/events.jsonl`                         | Empty file                            |
 
 **What stays in `.claude/`:** Agent definitions (`agents/`), skills (`skills/`), `COLLABORATION.md`, `DOCUMENTATION-STYLE.md`, `settings.json`. These ARE the framework.
 
@@ -58,7 +58,7 @@ The framework repo ships with 18 runtime artifacts in `.claude/` (6 content file
 
 Add **Step 2c: Scaffold Runtime Artifacts** to `.claude/skills/onboard/SKILL.md`, immediately after Step 2b (Governance Activation):
 
-```markdown
+````markdown
 ### Step 2c: Scaffold Runtime Artifacts
 
 Create the runtime directory structure and copy templates:
@@ -92,11 +92,15 @@ if [ -d templates/rewards ]; then
   sha256sum .claude/rewards/ledger.md > .claude/rewards/ledger-checksum.sha256
 fi
 ```
+````
+
 ```
 
 The onboarding summary checklist adds:
 ```
+
 - [x] Runtime artifacts scaffolded (compliance, governance, findings, metrics)
+
 ```
 
 ### 3. Reference Updates
@@ -104,17 +108,19 @@ The onboarding summary checklist adds:
 **CLAUDE.md Directory Structure** — The `.claude/` tree remains accurate (it describes runtime state). Add a comment noting these are created during onboarding:
 
 ```
+
 ├── .claude/
-│   ├── settings.json                # Hook configuration
-│   ├── COLLABORATION.md             # Collaboration protocol (source of truth)
-│   ├── DOCUMENTATION-STYLE.md       # Documentation style guide
-│   ├── agents/                      # Core agent definitions (13)
-│   ├── governance/                  # Governance infrastructure (created at onboarding)
-│   ├── skills/                      # Slash command skills (/po, /retro, /onboard)
-│   ├── compliance/                  # Compliance governance (created at onboarding)
-│   ├── findings/                    # Findings register (created at onboarding)
-│   └── metrics/                     # Event log (created at onboarding)
-```
+│ ├── settings.json # Hook configuration
+│ ├── COLLABORATION.md # Collaboration protocol (source of truth)
+│ ├── DOCUMENTATION-STYLE.md # Documentation style guide
+│ ├── agents/ # Core agent definitions (13)
+│ ├── governance/ # Governance infrastructure (created at onboarding)
+│ ├── skills/ # Slash command skills (/po, /retro, /onboard)
+│ ├── compliance/ # Compliance governance (created at onboarding)
+│ ├── findings/ # Findings register (created at onboarding)
+│ └── metrics/ # Event log (created at onboarding)
+
+````
 
 **CLAUDE.md Quick Start** — Add onboarding reference:
 
@@ -122,7 +128,7 @@ The onboarding summary checklist adds:
 cp templates/fleet-config.json fleet-config.json   # configure your fleet
 cp templates/compliance-floor.md compliance-floor.md # define non-negotiable rules
 # Or run /onboard for guided setup including all runtime artifacts
-```
+````
 
 **CLAUDE.md templates/ tree** — Update to show new subdirectories:
 
@@ -145,42 +151,42 @@ cp templates/compliance-floor.md compliance-floor.md # define non-negotiable rul
 
 ### New Files
 
-| File | Purpose |
-|------|---------|
-| `templates/compliance/change-log.md` | Template for compliance change log |
-| `templates/compliance/targets.md` | Template for compliance targets |
-| `templates/governance/executive-brief.md` | Template for executive brief |
-| `templates/governance/guidance-registry.md` | Template for guidance registry |
-| `templates/findings/register.md` | Template for findings register |
-| `templates/findings/information-needs.md` | Template for information needs |
+| File                                        | Purpose                            |
+| ------------------------------------------- | ---------------------------------- |
+| `templates/compliance/change-log.md`        | Template for compliance change log |
+| `templates/compliance/targets.md`           | Template for compliance targets    |
+| `templates/governance/executive-brief.md`   | Template for executive brief       |
+| `templates/governance/guidance-registry.md` | Template for guidance registry     |
+| `templates/findings/register.md`            | Template for findings register     |
+| `templates/findings/information-needs.md`   | Template for information needs     |
 
 ### Deleted Files
 
-| File | Reason |
-|------|--------|
-| `.claude/compliance/change-log.md` | Moved to templates |
-| `.claude/compliance/targets.md` | Moved to templates |
-| `.claude/compliance/proposals/.gitkeep` | Created at onboarding |
-| `.claude/compliance/compiled/.gitkeep` | Created at onboarding |
-| `.claude/compliance/eslint/no-eval.json` | Empty stub — compiler output |
+| File                                                   | Reason                       |
+| ------------------------------------------------------ | ---------------------------- |
+| `.claude/compliance/change-log.md`                     | Moved to templates           |
+| `.claude/compliance/targets.md`                        | Moved to templates           |
+| `.claude/compliance/proposals/.gitkeep`                | Created at onboarding        |
+| `.claude/compliance/compiled/.gitkeep`                 | Created at onboarding        |
+| `.claude/compliance/eslint/no-eval.json`               | Empty stub — compiler output |
 | `.claude/compliance/semgrep/no-hardcoded-secrets.yaml` | Empty stub — compiler output |
-| `.claude/governance/executive-brief.md` | Moved to templates |
-| `.claude/governance/guidance-registry.md` | Moved to templates |
-| `.claude/governance/guidance/ceo/.gitkeep` | Created at onboarding |
-| `.claude/governance/guidance/cfo/.gitkeep` | Created at onboarding |
-| `.claude/governance/guidance/ciso/.gitkeep` | Created at onboarding |
-| `.claude/governance/guidance/cko/.gitkeep` | Created at onboarding |
-| `.claude/governance/guidance/coo/.gitkeep` | Created at onboarding |
-| `.claude/governance/guidance/cto/.gitkeep` | Created at onboarding |
-| `.claude/governance/decisions/.gitkeep` | Created at onboarding |
-| `.claude/metrics/events.jsonl` | Created at onboarding |
+| `.claude/governance/executive-brief.md`                | Moved to templates           |
+| `.claude/governance/guidance-registry.md`              | Moved to templates           |
+| `.claude/governance/guidance/ceo/.gitkeep`             | Created at onboarding        |
+| `.claude/governance/guidance/cfo/.gitkeep`             | Created at onboarding        |
+| `.claude/governance/guidance/ciso/.gitkeep`            | Created at onboarding        |
+| `.claude/governance/guidance/cko/.gitkeep`             | Created at onboarding        |
+| `.claude/governance/guidance/coo/.gitkeep`             | Created at onboarding        |
+| `.claude/governance/guidance/cto/.gitkeep`             | Created at onboarding        |
+| `.claude/governance/decisions/.gitkeep`                | Created at onboarding        |
+| `.claude/metrics/events.jsonl`                         | Created at onboarding        |
 
 ### Modified Files
 
-| File | Change |
-|------|--------|
-| `.claude/skills/onboard/SKILL.md` | Add Step 2c: Scaffold Runtime Artifacts |
-| `CLAUDE.md` | Update directory tree comments, quick start note, templates tree |
+| File                              | Change                                                           |
+| --------------------------------- | ---------------------------------------------------------------- |
+| `.claude/skills/onboard/SKILL.md` | Add Step 2c: Scaffold Runtime Artifacts                          |
+| `CLAUDE.md`                       | Update directory tree comments, quick start note, templates tree |
 
 ### Not Changed (Intentionally)
 

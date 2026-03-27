@@ -16,39 +16,40 @@
 
 ### Moved Files (All Examples)
 
-| From | To |
-|------|-----|
+| From                             | To                                |
+| -------------------------------- | --------------------------------- |
 | `examples/*/compliance-floor.md` | `examples/*/floors/compliance.md` |
 
 ### Renamed Files
 
-| From | To |
-|------|-----|
+| From                                                                   | To                                                      |
+| ---------------------------------------------------------------------- | ------------------------------------------------------- |
 | `examples/04-compliance-heavy/.claude/overrides/compliance-officer.md` | `examples/04-compliance-heavy/.claude/overrides/cro.md` |
 
 ### New Files
 
-| File | Purpose |
-|------|---------|
-| `examples/05-operational-maturity/floors/behavioral.md` | Behavioral floor with enforcement blocks |
-| `examples/04-compliance-heavy/ops/checks/verify-audit-log.sh` | Placeholder custom-script |
-| `examples/05-operational-maturity/ops/checks/verify-transactions.sh` | Placeholder custom-script |
+| File                                                                 | Purpose                                  |
+| -------------------------------------------------------------------- | ---------------------------------------- |
+| `examples/05-operational-maturity/floors/behavioral.md`              | Behavioral floor with enforcement blocks |
+| `examples/04-compliance-heavy/ops/checks/verify-audit-log.sh`        | Placeholder custom-script                |
+| `examples/05-operational-maturity/ops/checks/verify-transactions.sh` | Placeholder custom-script                |
 
 ### Modified Files (All Examples)
 
-| File | Change |
-|------|--------|
-| `examples/*/fleet-config.json` | Add floors, CRO rename, prioritize_cadence, rewards |
-| `examples/*/README.md` | Update paths and feature descriptions |
-| `examples/04-compliance-heavy/setup.sh` | Update paths, CRO references |
-| `examples/05-operational-maturity/setup.sh` | Compile floors, CRO references |
-| `examples/README.md` | New progression table |
+| File                                        | Change                                              |
+| ------------------------------------------- | --------------------------------------------------- |
+| `examples/*/fleet-config.json`              | Add floors, CRO rename, prioritize_cadence, rewards |
+| `examples/*/README.md`                      | Update paths and feature descriptions               |
+| `examples/04-compliance-heavy/setup.sh`     | Update paths, CRO references                        |
+| `examples/05-operational-maturity/setup.sh` | Compile floors, CRO references                      |
+| `examples/README.md`                        | New progression table                               |
 
 ---
 
 ## Task 1: Example 01-getting-started
 
 **Files:**
+
 - Move: `examples/01-getting-started/compliance-floor.md` → `examples/01-getting-started/floors/compliance.md`
 - Modify: `examples/01-getting-started/fleet-config.json`
 - Modify: `examples/01-getting-started/README.md`
@@ -63,6 +64,7 @@ git mv examples/01-getting-started/compliance-floor.md examples/01-getting-start
 - [ ] **Step 2: Update fleet-config.json**
 
 Add after `pace` section:
+
 ```json
 "floors": {
   "compliance": {
@@ -97,6 +99,7 @@ git commit -m "refactor(#14): update 01-getting-started for multi-floor baseline
 ## Task 2: Example 02-ecommerce
 
 **Files:**
+
 - Move: `examples/02-ecommerce/compliance-floor.md` → `examples/02-ecommerce/floors/compliance.md`
 - Modify: `examples/02-ecommerce/fleet-config.json`
 - Modify: `examples/02-ecommerce/README.md`
@@ -130,6 +133,7 @@ git commit -m "refactor(#14): update 02-ecommerce for multi-floor baseline"
 ## Task 3: Example 03-multi-team (introduces enforcement blocks)
 
 **Files:**
+
 - Move: `examples/03-multi-team/compliance-floor.md` → `examples/03-multi-team/floors/compliance.md`
 - Modify: `examples/03-multi-team/floors/compliance.md` (add enforcement blocks)
 - Modify: `examples/03-multi-team/fleet-config.json`
@@ -210,6 +214,7 @@ git commit -m "feat(#14): update 03-multi-team with enforcement blocks"
 ## Task 4: Example 04-compliance-heavy (full enforcement + CRO override)
 
 **Files:**
+
 - Move: `examples/04-compliance-heavy/compliance-floor.md` → `examples/04-compliance-heavy/floors/compliance.md`
 - Modify: `examples/04-compliance-heavy/floors/compliance.md` (add enforcement blocks)
 - Rename: `examples/04-compliance-heavy/.claude/overrides/compliance-officer.md` → `.claude/overrides/cro.md`
@@ -340,6 +345,7 @@ git commit -m "feat(#14): update 04-compliance-heavy with enforcement blocks and
 ## Task 5: Example 05-operational-maturity (multi-floor + behavioral floor)
 
 **Files:**
+
 - Move: `examples/05-operational-maturity/compliance-floor.md` → `examples/05-operational-maturity/floors/compliance.md`
 - Modify: `examples/05-operational-maturity/floors/compliance.md` (add enforcement blocks)
 - Create: `examples/05-operational-maturity/floors/behavioral.md`
@@ -445,7 +451,7 @@ Rule 2: `**We MUST NEVER** begin implementation without a corresponding backlog 
 
 Then an enforcement block (fenced with ` ```enforcement ` / ` ``` `):
 
-````yaml
+```yaml
 version: 1
 id: no-deferred-fixes
 severity: warning
@@ -454,12 +460,13 @@ enforce:
     type: content-pattern
     action: warn
     patterns:
-      - 'TODO|FIXME|HACK|XXX'
-````
+      - "TODO|FIXME|HACK|XXX"
+```
 
 - [ ] **Step 5: Update fleet-config.json**
 
 Add both floors:
+
 ```json
 "floors": {
   "compliance": {
@@ -528,6 +535,7 @@ git commit -m "feat(#14): update 05-operational-maturity with multi-floor and be
 ## Task 6: Update Top-Level Examples README
 
 **Files:**
+
 - Modify: `examples/README.md`
 
 - [ ] **Step 1: Update the progression table**
@@ -535,13 +543,13 @@ git commit -m "feat(#14): update 05-operational-maturity with multi-floor and be
 Replace the current table with:
 
 ```markdown
-| Example | Focus | Specialists | Compliance Rules | Enforcement Blocks | Floors | Pace | Setup Hook |
-|---------|-------|-------------|------------------|--------------------|--------|------|------------|
-| [01-getting-started](01-getting-started/) | Full lifecycle, minimum config | 1 (developer) | 3 | 0 | compliance | Crawl | — |
-| [02-ecommerce](02-ecommerce/) | Multi-specialist, inheritance | 2 (frontend + backend) | 5 | 0 | compliance | Crawl | — |
-| [03-multi-team](03-multi-team/) | Review gates, enforcement intro | 2 + 1 reviewer | 4 | 2 | compliance | Crawl | — |
-| [04-compliance-heavy](04-compliance-heavy/) | Regulated domain, thick floor | 1 + 1 reviewer | 7 | 3 | compliance | Crawl | Seeds proposals |
-| [05-operational-maturity](05-operational-maturity/) | Mature fleet, multi-floor | 3 (frontend + backend + e2e) | 5+2 | 4 | compliance + behavioral | Walk | Seeds metrics, compiles floors |
+| Example                                             | Focus                           | Specialists                  | Compliance Rules | Enforcement Blocks | Floors                  | Pace  | Setup Hook                     |
+| --------------------------------------------------- | ------------------------------- | ---------------------------- | ---------------- | ------------------ | ----------------------- | ----- | ------------------------------ |
+| [01-getting-started](01-getting-started/)           | Full lifecycle, minimum config  | 1 (developer)                | 3                | 0                  | compliance              | Crawl | —                              |
+| [02-ecommerce](02-ecommerce/)                       | Multi-specialist, inheritance   | 2 (frontend + backend)       | 5                | 0                  | compliance              | Crawl | —                              |
+| [03-multi-team](03-multi-team/)                     | Review gates, enforcement intro | 2 + 1 reviewer               | 4                | 2                  | compliance              | Crawl | —                              |
+| [04-compliance-heavy](04-compliance-heavy/)         | Regulated domain, thick floor   | 1 + 1 reviewer               | 7                | 3                  | compliance              | Crawl | Seeds proposals                |
+| [05-operational-maturity](05-operational-maturity/) | Mature fleet, multi-floor       | 3 (frontend + backend + e2e) | 5+2              | 4                  | compliance + behavioral | Walk  | Seeds metrics, compiles floors |
 ```
 
 - [ ] **Step 2: Update any `compliance-floor.md` references to `floors/compliance.md`**
@@ -558,6 +566,7 @@ git commit -m "docs(#14): update examples README with new progression table"
 ## Task 7: Verify test-example.sh Works
 
 **Files:**
+
 - None modified (verification only)
 
 - [ ] **Step 1: Check that test-example.sh doesn't hardcode compliance-floor.md**
@@ -586,10 +595,10 @@ bash ops/test-example.sh --cleanup 01-getting-started
 
 ## Key Files Reference
 
-| File | Why |
-|------|-----|
-| `docs/superpowers/specs/2026-03-26-examples-refresh-design.md` | The spec |
-| `examples/*/fleet-config.json` | Fleet configs being updated |
-| `examples/*/compliance-floor.md` | Being moved to `floors/compliance.md` |
-| `ops/compile-floor.sh` | Used to validate enforcement blocks compile |
-| `ops/test-example.sh` | Used to verify examples still work |
+| File                                                           | Why                                         |
+| -------------------------------------------------------------- | ------------------------------------------- |
+| `docs/superpowers/specs/2026-03-26-examples-refresh-design.md` | The spec                                    |
+| `examples/*/fleet-config.json`                                 | Fleet configs being updated                 |
+| `examples/*/compliance-floor.md`                               | Being moved to `floors/compliance.md`       |
+| `ops/compile-floor.sh`                                         | Used to validate enforcement blocks compile |
+| `ops/test-example.sh`                                          | Used to verify examples still work          |

@@ -45,6 +45,7 @@ Minimum useful setup. Teaches the framework lifecycle with the simplest possible
 **Floor:** `floors/compliance.md` — 3 prose-only rules (no enforcement blocks). Same rules as today: no secrets in code, all changes tested, plan before build.
 
 **Fleet-config additions:**
+
 ```json
 "floors": {
   "compliance": {
@@ -76,6 +77,7 @@ Review gates and cross-team pathways. **Introduces enforcement blocks.**
 **Floor:** `floors/compliance.md` — 4 rules. 1-2 simple enforcement blocks added:
 
 Block 1 (file-pattern): Block edits to `.env` and secrets files.
+
 ```yaml
 version: 1
 id: no-secrets-in-code
@@ -87,10 +89,11 @@ enforce:
     patterns:
       - '\\.env$'
       - 'secrets?\\.yaml$'
-      - 'credentials'
+      - "credentials"
 ```
 
 Block 2 (file-pattern): Block direct writes to metrics log.
+
 ```yaml
 version: 1
 id: no-direct-metrics
@@ -114,6 +117,7 @@ Regulated domain (healthcare), thick compliance floor. **Full enforcement block 
 **Floor:** `floors/compliance.md` — 7 rules (same healthcare/HIPAA domain). 3-4 enforcement blocks:
 
 Block 1 (file-pattern): Block edits to `.env`, secrets, PHI config.
+
 ```yaml
 version: 1
 id: no-phi-in-config
@@ -125,10 +129,11 @@ enforce:
     patterns:
       - '\\.env$'
       - 'secrets?\\.yaml$'
-      - 'phi-config'
+      - "phi-config"
 ```
 
 Block 2 (content-pattern): Block PHI patterns in source files.
+
 ```yaml
 version: 1
 id: no-phi-in-source
@@ -143,6 +148,7 @@ enforce:
 ```
 
 Block 3 (custom-script): Audit log integrity check.
+
 ```yaml
 version: 1
 id: audit-log-integrity
@@ -169,6 +175,7 @@ Mature fleet with tuned cadences and metrics history. **Demonstrates the full mu
 **Compliance floor:** `floors/compliance.md` — 5 rules (fintech domain). 3-4 enforcement blocks spanning file-pattern, content-pattern, and custom-script types.
 
 Block 1 (file-pattern): Block edits to secrets and credentials.
+
 ```yaml
 version: 1
 id: no-secrets-in-code
@@ -179,11 +186,12 @@ enforce:
     action: block
     patterns:
       - '\\.env$'
-      - 'credentials'
+      - "credentials"
       - 'secrets?\\.yaml$'
 ```
 
 Block 2 (content-pattern): Block hardcoded API keys.
+
 ```yaml
 version: 1
 id: no-hardcoded-keys
@@ -198,6 +206,7 @@ enforce:
 ```
 
 Block 3 (custom-script): Transaction validation check.
+
 ```yaml
 version: 1
 id: transaction-validation
@@ -212,10 +221,12 @@ enforce:
 **Behavioral floor (NEW):** `floors/behavioral.md` — 2-3 process quality rules with 1-2 enforcement blocks.
 
 Rules:
+
 1. **Full validation before handoff.** All work must pass the complete validation cycle (test, typecheck, build) before handoff to the next agent.
 2. **No untracked work.** Every task must have a corresponding backlog item before implementation begins.
 
 Block 1 (content-pattern): Warn on TODO/FIXME/HACK comments left in committed code.
+
 ```yaml
 version: 1
 id: no-deferred-fixes
@@ -225,10 +236,11 @@ enforce:
     type: content-pattern
     action: warn
     patterns:
-      - 'TODO|FIXME|HACK|XXX'
+      - "TODO|FIXME|HACK|XXX"
 ```
 
 **Fleet-config:** Declares both floors:
+
 ```json
 "floors": {
   "compliance": {
@@ -254,13 +266,13 @@ Also: `prioritize_cadence: "per-session"` (mature team triages per session, not 
 
 **`examples/README.md` progression table** gains two new columns:
 
-| Example | Focus | Specialists | Compliance Rules | Enforcement Blocks | Floors | Pace | Setup Hook |
-|---------|-------|-------------|------------------|--------------------|--------|------|------------|
-| 01-getting-started | Full lifecycle, minimum config | 1 (developer) | 3 | 0 | compliance | Crawl | — |
-| 02-ecommerce | Multi-specialist, inheritance | 2 (frontend + backend) | 5 | 0 | compliance | Crawl | — |
-| 03-multi-team | Review gates, enforcement intro | 2 + 1 reviewer | 4 | 2 | compliance | Crawl | — |
-| 04-compliance-heavy | Regulated domain, thick floor | 1 + 1 reviewer | 7 | 3-4 | compliance | Crawl | Seeds proposals |
-| 05-operational-maturity | Mature fleet, multi-floor | 3 (frontend + backend + e2e) | 5+2 | 4-5 | compliance + behavioral | Walk | Seeds metrics, compiles floors |
+| Example                 | Focus                           | Specialists                  | Compliance Rules | Enforcement Blocks | Floors                  | Pace  | Setup Hook                     |
+| ----------------------- | ------------------------------- | ---------------------------- | ---------------- | ------------------ | ----------------------- | ----- | ------------------------------ |
+| 01-getting-started      | Full lifecycle, minimum config  | 1 (developer)                | 3                | 0                  | compliance              | Crawl | —                              |
+| 02-ecommerce            | Multi-specialist, inheritance   | 2 (frontend + backend)       | 5                | 0                  | compliance              | Crawl | —                              |
+| 03-multi-team           | Review gates, enforcement intro | 2 + 1 reviewer               | 4                | 2                  | compliance              | Crawl | —                              |
+| 04-compliance-heavy     | Regulated domain, thick floor   | 1 + 1 reviewer               | 7                | 3-4                | compliance              | Crawl | Seeds proposals                |
+| 05-operational-maturity | Mature fleet, multi-floor       | 3 (frontend + backend + e2e) | 5+2              | 4-5                | compliance + behavioral | Walk  | Seeds metrics, compiles floors |
 
 Each example's README also updated with what's new in this example vs. the previous one.
 
@@ -268,38 +280,38 @@ Each example's README also updated with what's new in this example vs. the previ
 
 ### Moved Files (All Examples)
 
-| From | To |
-|------|-----|
+| From                             | To                                |
+| -------------------------------- | --------------------------------- |
 | `examples/*/compliance-floor.md` | `examples/*/floors/compliance.md` |
 
 ### Renamed Files
 
-| From | To |
-|------|-----|
+| From                                                                   | To                                                      |
+| ---------------------------------------------------------------------- | ------------------------------------------------------- |
 | `examples/04-compliance-heavy/.claude/overrides/compliance-officer.md` | `examples/04-compliance-heavy/.claude/overrides/cro.md` |
 
 ### New Files
 
-| File | Purpose |
-|------|---------|
-| `examples/05-operational-maturity/floors/behavioral.md` | Behavioral floor with process quality rules + enforcement blocks |
-| `examples/04-compliance-heavy/ops/checks/verify-audit-log.sh` | Placeholder custom-script for audit log enforcement block |
-| `examples/05-operational-maturity/ops/checks/verify-transactions.sh` | Placeholder custom-script for transaction enforcement block |
+| File                                                                 | Purpose                                                          |
+| -------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| `examples/05-operational-maturity/floors/behavioral.md`              | Behavioral floor with process quality rules + enforcement blocks |
+| `examples/04-compliance-heavy/ops/checks/verify-audit-log.sh`        | Placeholder custom-script for audit log enforcement block        |
+| `examples/05-operational-maturity/ops/checks/verify-transactions.sh` | Placeholder custom-script for transaction enforcement block      |
 
 ### Modified Files (All Examples)
 
-| File | Change |
-|------|--------|
+| File                           | Change                                                                  |
+| ------------------------------ | ----------------------------------------------------------------------- |
 | `examples/*/fleet-config.json` | Add floors section, CRO rename, prioritize_cadence, rewards placeholder |
-| `examples/*/README.md` | Update paths, describe new features |
+| `examples/*/README.md`         | Update paths, describe new features                                     |
 
 ### Modified Files (Selective)
 
-| File | Change |
-|------|--------|
-| `examples/04-compliance-heavy/setup.sh` | Update paths, CRO references, compile floor |
-| `examples/05-operational-maturity/setup.sh` | Update paths, compile both floors, CRO references |
-| `examples/README.md` | New progression table columns, updated descriptions |
+| File                                        | Change                                              |
+| ------------------------------------------- | --------------------------------------------------- |
+| `examples/04-compliance-heavy/setup.sh`     | Update paths, CRO references, compile floor         |
+| `examples/05-operational-maturity/setup.sh` | Update paths, compile both floors, CRO references   |
+| `examples/README.md`                        | New progression table columns, updated descriptions |
 
 ### Not Changed
 

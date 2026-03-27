@@ -29,20 +29,21 @@ The compliance floor becomes one instance of a general governance floor pattern.
 
 **V1 ships two floors:**
 
-| Floor | File | Guardian | Domain |
-|-------|------|----------|--------|
-| Compliance | `floors/compliance.md` | CRO | Risk, regulatory, data governance |
-| Behavioral | `floors/behavioral.md` | COO | Process quality, delivery standards, collaboration norms |
+| Floor      | File                   | Guardian | Domain                                                   |
+| ---------- | ---------------------- | -------- | -------------------------------------------------------- |
+| Compliance | `floors/compliance.md` | CRO      | Risk, regulatory, data governance                        |
+| Behavioral | `floors/behavioral.md` | COO      | Process quality, delivery standards, collaboration norms |
 
 **Future candidates (pattern supports, not implemented):**
 
-| Floor | Guardian | Domain |
-|-------|----------|--------|
-| Security | CISO | Security controls, threat posture |
-| Technical | CTO | Architecture constraints, tech standards |
-| Cost | CFO | Budget controls, efficiency requirements |
+| Floor     | Guardian | Domain                                   |
+| --------- | -------- | ---------------------------------------- |
+| Security  | CISO     | Security controls, threat posture        |
+| Technical | CTO      | Architecture constraints, tech standards |
+| Cost      | CFO      | Budget controls, efficiency requirements |
 
 **Principles:**
+
 - Each floor is a separate markdown file in `floors/`
 - Each has one guardian (a Cx officer) with sole write authority
 - All floors share the same enforcement weight — violations are blockers
@@ -55,6 +56,7 @@ The compliance floor becomes one instance of a general governance floor pattern.
 The Compliance Officer becomes the **Chief Risk Officer (CRO)**.
 
 **Role changes:**
+
 - Still owns and guards the compliance floor specifically
 - New responsibility: **Cross-Floor Risk Facilitation** — facilitates risk assessment across all floors when any floor change is proposed
 - The CRO does not assess risk alone — they run the consultation where each Cx agent advocates for their domain
@@ -63,6 +65,7 @@ The Compliance Officer becomes the **Chief Risk Officer (CRO)**.
 **The floor guardian role:**
 
 Each floor guardian (CRO for compliance, COO for behavioral):
+
 - Has **sole write authority** to their floor file
 - **Receives proposals** for changes to their floor
 - **Classifies** proposals (Type 1: risk-reducing / Type 2: other / Type 3: new rule)
@@ -132,11 +135,13 @@ ops/compile-floor.sh [options] [floor-file] [output-dir]
 ```
 
 **Changes:**
+
 - Default floor file: read from `fleet-config.json` floors list. If `fleet-config.json` is absent or has no `floors` section, fall back to `floors/compliance.md` → `.claude/floors/compliance/compiled/` (backward compatible with minimal setups).
 - Default output dir: derived from floor name (e.g., `floors/compliance.md` → `.claude/floors/compliance/compiled/`)
 - New `--all` flag: compiles all active floors declared in `fleet-config.json`
 
 **Compiled artifact layout:**
+
 ```
 .claude/floors/
 ├── compliance/
@@ -171,11 +176,13 @@ ops/compile-floor.sh [options] [floor-file] [output-dir]
 Adding a new floor is config — declare it, assign a guardian, specify the compiled directory.
 
 **Hook generalization:**
+
 - **PreToolUse (Edit/Write):** Block edits to any `floors/*.md` unless the appropriate sentinel file exists (`.claude/floors/<name>/.applying`)
 - **SessionStart:** Verify checksums for all active floors
 - Hooks use glob patterns (`floors/*.md`) rather than hardcoded filenames
 
 **Skill additions:**
+
 - `/behavioral` skill — routes to COO (behavioral floor guardian), mirrors `/compliance` structure
 - `/floor propose <floor-name>` — generic skill that routes to the declared guardian for any floor
 - `/compliance` remains as a convenience alias
@@ -184,40 +191,40 @@ Adding a new floor is config — declare it, assign a guardian, specify the comp
 
 ### Renamed Files
 
-| From | To |
-|------|-----|
+| From                                   | To                      |
+| -------------------------------------- | ----------------------- |
 | `.claude/agents/compliance-officer.md` | `.claude/agents/cro.md` |
 
 ### New Files
 
-| File | Purpose |
-|------|---------|
-| `floors/compliance.md` | Compliance floor (moved from root) |
-| `templates/floors/behavioral.md` | Behavioral floor template |
-| `templates/floors/compliance.md` | Compliance floor template (moved from `templates/compliance-floor.md`) |
-| `.claude/skills/behavioral/SKILL.md` | `/behavioral` skill — routes to COO |
-| `.claude/skills/floor/SKILL.md` | `/floor propose <name>` — generic floor skill |
+| File                                 | Purpose                                                                |
+| ------------------------------------ | ---------------------------------------------------------------------- |
+| `floors/compliance.md`               | Compliance floor (moved from root)                                     |
+| `templates/floors/behavioral.md`     | Behavioral floor template                                              |
+| `templates/floors/compliance.md`     | Compliance floor template (moved from `templates/compliance-floor.md`) |
+| `.claude/skills/behavioral/SKILL.md` | `/behavioral` skill — routes to COO                                    |
+| `.claude/skills/floor/SKILL.md`      | `/floor propose <name>` — generic floor skill                          |
 
 ### Modified Files
 
-| File | Change |
-|------|--------|
-| `.claude/agents/cro.md` | Rename + cross-floor risk facilitation role |
-| `.claude/agents/coo.md` | Add behavioral floor guardianship |
-| `ops/compile-floor.sh` | Parameterize defaults from fleet-config, add `--all` flag |
-| `ops/tests/test-compile-floor.sh` | Update tests for parameterized compiler |
-| `templates/fleet-config.json` | Add `floors` section |
-| `.claude/skills/onboard/SKILL.md` | Create `floors/` directory, per-floor scaffolding |
-| `.claude/skills/compliance/SKILL.md` | Update CO → CRO references |
-| `.claude/settings.json` | Generalize hooks from `compliance-floor.md` to `floors/*.md` |
-| `CLAUDE.md` | Document multi-floor model, rename CO → CRO |
-| `.claude/COLLABORATION.md` | Update Compliance Hierarchy → Governance Floors, CO → CRO |
+| File                                 | Change                                                       |
+| ------------------------------------ | ------------------------------------------------------------ |
+| `.claude/agents/cro.md`              | Rename + cross-floor risk facilitation role                  |
+| `.claude/agents/coo.md`              | Add behavioral floor guardianship                            |
+| `ops/compile-floor.sh`               | Parameterize defaults from fleet-config, add `--all` flag    |
+| `ops/tests/test-compile-floor.sh`    | Update tests for parameterized compiler                      |
+| `templates/fleet-config.json`        | Add `floors` section                                         |
+| `.claude/skills/onboard/SKILL.md`    | Create `floors/` directory, per-floor scaffolding            |
+| `.claude/skills/compliance/SKILL.md` | Update CO → CRO references                                   |
+| `.claude/settings.json`              | Generalize hooks from `compliance-floor.md` to `floors/*.md` |
+| `CLAUDE.md`                          | Document multi-floor model, rename CO → CRO                  |
+| `.claude/COLLABORATION.md`           | Update Compliance Hierarchy → Governance Floors, CO → CRO    |
 
 ### Deleted Files
 
-| File | Reason |
-|------|--------|
-| `compliance-floor.md` (root) | Moved to `floors/compliance.md` |
+| File                            | Reason                                    |
+| ------------------------------- | ----------------------------------------- |
+| `compliance-floor.md` (root)    | Moved to `floors/compliance.md`           |
 | `templates/compliance-floor.md` | Moved to `templates/floors/compliance.md` |
 
 ### Not Changed

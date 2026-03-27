@@ -17,6 +17,7 @@
 ### Task 1: Move compliance artifacts to templates
 
 **Files:**
+
 - Create: `templates/compliance/change-log.md` (moved from `.claude/compliance/change-log.md`)
 - Create: `templates/compliance/targets.md` (moved from `.claude/compliance/targets.md`)
 - Delete: `.claude/compliance/change-log.md`
@@ -58,6 +59,7 @@ Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com>"
 ### Task 2: Move governance artifacts to templates
 
 **Files:**
+
 - Create: `templates/governance/executive-brief.md` (moved from `.claude/governance/executive-brief.md`)
 - Create: `templates/governance/guidance-registry.md` (moved from `.claude/governance/guidance-registry.md`)
 - Delete: `.claude/governance/executive-brief.md`
@@ -99,6 +101,7 @@ Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com>"
 ### Task 3: Move findings artifacts to templates
 
 **Files:**
+
 - Create: `templates/findings/register.md` (moved from `.claude/findings/register.md`)
 - Create: `templates/findings/information-needs.md` (moved from `.claude/findings/information-needs.md`)
 - Delete: `.claude/findings/register.md`
@@ -140,6 +143,7 @@ Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com>"
 ### Task 4: Delete scaffolding stubs and empty files
 
 **Files to delete:**
+
 - `.claude/compliance/proposals/.gitkeep`
 - `.claude/compliance/compiled/.gitkeep`
 - `.claude/compliance/eslint/no-eval.json`
@@ -194,6 +198,7 @@ Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com>"
 ### Task 5: Expand onboarding skill with Step 2c
 
 **Files:**
+
 - Modify: `.claude/skills/onboard/SKILL.md`
 
 - [ ] **Step 1: Read the current onboarding skill**
@@ -204,7 +209,7 @@ Read `.claude/skills/onboard/SKILL.md` to confirm the insertion point (after Ste
 
 Insert after the Step 2b section (after the CISO security review and proposal processing), before Step 3 (Fleet Configuration):
 
-```markdown
+````markdown
 ### Step 2c: Scaffold Runtime Artifacts
 
 Create the runtime directory structure and copy templates:
@@ -238,7 +243,9 @@ if [ -d templates/rewards ]; then
   sha256sum .claude/rewards/ledger.md > .claude/rewards/ledger-checksum.sha256
 fi
 ```
-```
+````
+
+````
 
 - [ ] **Step 3: Update the onboarding summary checklist**
 
@@ -246,7 +253,7 @@ In Step 7 (Summary), add a new checklist item after `- [x] Compliance floor guar
 
 ```markdown
 - [x] Runtime artifacts scaffolded (compliance, governance, findings, metrics)
-```
+````
 
 - [ ] **Step 4: Commit**
 
@@ -265,6 +272,7 @@ Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com>"
 ### Task 6: Update CLAUDE.md
 
 **Files:**
+
 - Modify: `CLAUDE.md`
 
 - [ ] **Step 1: Read relevant sections of CLAUDE.md**
