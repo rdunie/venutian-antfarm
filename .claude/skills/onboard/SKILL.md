@@ -20,6 +20,33 @@ command -v jq  # optional but recommended
 
 Report any missing prerequisites before proceeding.
 
+### Step 1b: Scaffold Runtime Directories
+
+Create the runtime directories and copy content templates to their runtime locations. These directories are not shipped in the repo — they are populated by `/onboard` at setup time.
+
+```bash
+# Runtime directories (empty, populated by agents at runtime)
+mkdir -p .claude/compliance/{compiled,eslint,semgrep,proposals}
+mkdir -p .claude/governance/decisions
+mkdir -p .claude/governance/guidance/{ceo,cfo,ciso,cko,coo,cto}
+mkdir -p .claude/floors
+mkdir -p .claude/findings
+mkdir -p .claude/metrics
+
+# Copy content templates to runtime locations
+cp templates/compliance/change-log.md .claude/compliance/change-log.md
+cp templates/compliance/targets.md .claude/compliance/targets.md
+cp templates/governance/executive-brief.md .claude/governance/executive-brief.md
+cp templates/governance/guidance-registry.md .claude/governance/guidance-registry.md
+cp templates/findings/register.md .claude/findings/register.md
+cp templates/findings/information-needs.md .claude/findings/information-needs.md
+
+# Initialize empty runtime files
+touch .claude/metrics/events.jsonl
+```
+
+> **Note:** The CRO does not have a guidance directory — CRO uses the compliance infrastructure (proposals, change-log) rather than a guidance slot.
+
 ### Step 2: Compliance Floor
 
 Check if `floors/compliance.md` exists at project root.
