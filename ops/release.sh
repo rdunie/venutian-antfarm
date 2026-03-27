@@ -62,9 +62,9 @@ if ! git remote get-url upstream &>/dev/null; then
   exit 1
 fi
 
-# Verify working tree is clean
-if [[ -n "$(git status --porcelain)" ]]; then
-  echo "ERROR: Working tree is not clean. Commit or stash changes first." >&2
+# Verify working tree is clean (tracked files only — untracked/ignored are fine)
+if [[ -n "$(git status --porcelain --untracked-files=no)" ]]; then
+  echo "ERROR: Working tree has uncommitted changes. Commit or stash first." >&2
   exit 1
 fi
 
@@ -120,20 +120,14 @@ fi
 # Push to upstream
 git push upstream "${RELEASE_BRANCH}:main"
 
-# Tag on upstream
-git tag "${VERSION}"
-git push upstream "${VERSION}"
-
-echo ""
-echo "=== Released ${VERSION} ==="
-echo "  Pushed to: upstream/main"
-echo "  Tagged: ${VERSION}"
-
-# Cleanup
+# Cleanup release branch (return to previous branch first)
 git checkout -
 git branch -D "${RELEASE_BRANCH}"
 
 echo ""
-echo "Next steps:"
-echo "  1. Create GitHub release: gh release create ${VERSION} --repo rdunie/venutian-antfarm --title '${VERSION}' --notes-file -"
-echo "  2. Update release notes on GitHub"
+echo "=== Pushed ${VERSION} to upstream/main ==="
+echo ""
+echo "Next step: create the GitHub release with release notes."
+echo "  gh release create ${VERSION} --repo rdunie/venutian-antfarm --title '${VERSION}' --notes-file <notes.md>"
+echo ""
+echo "The GitHub release creates the tag automatically — do NOT git tag separately."
