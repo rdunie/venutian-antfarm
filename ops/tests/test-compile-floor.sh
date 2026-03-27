@@ -106,6 +106,60 @@ assert_output_contains() {
 }
 
 # ---------------------------------------------------------------------------
+# Drift test helpers
+# ---------------------------------------------------------------------------
+
+setup_drift_env() {
+  local base_dir="$1"
+  DRIFT_DIR="$(mktemp -d "${base_dir}/drift-XXXXXX")"
+  mkdir -p "${DRIFT_DIR}/floors"
+  cp "${FIXTURES}/floor-valid.md" "${DRIFT_DIR}/floors/compliance.md"
+  cat > "${DRIFT_DIR}/fleet-config.json" <<DEOF
+{
+  "floors": {
+    "compliance": {
+      "file": "floors/compliance.md",
+      "compiled_dir": ".claude/floors/compliance/compiled"
+    }
+  }
+}
+DEOF
+  pushd "${DRIFT_DIR}" >/dev/null
+  "${COMPILER}" >/dev/null 2>&1
+  popd >/dev/null
+}
+
+setup_multifloor_env() {
+  local base_dir="$1"
+  DRIFT_DIR="$(mktemp -d "${base_dir}/multifloor-XXXXXX")"
+  mkdir -p "${DRIFT_DIR}/floors"
+  cp "${FIXTURES}/floor-valid.md" "${DRIFT_DIR}/floors/compliance.md"
+  cat > "${DRIFT_DIR}/floors/behavioral.md" <<BEOF
+# Behavioral Floor
+
+We MUST ALWAYS run full validation before handoff.
+We MUST NEVER skip the findings loop on notable events.
+BEOF
+  cat > "${DRIFT_DIR}/fleet-config.json" <<MEOF
+{
+  "floors": {
+    "compliance": {
+      "file": "floors/compliance.md",
+      "compiled_dir": ".claude/floors/compliance/compiled"
+    },
+    "behavioral": {
+      "file": "floors/behavioral.md",
+      "compiled_dir": ".claude/floors/behavioral/compiled"
+    }
+  }
+}
+MEOF
+  pushd "${DRIFT_DIR}" >/dev/null
+  "${COMPILER}" --all >/dev/null 2>&1
+  popd >/dev/null
+}
+
+# ---------------------------------------------------------------------------
 # Dependency check
 # ---------------------------------------------------------------------------
 
@@ -895,6 +949,153 @@ pfd_exit=$?
 popd >/dev/null
 assert_exit "preflight-d: recompile after editing floor exits 0" 0 "${pfd_exit}"
 assert_output_contains "preflight-d: output mentions source has changed" "${pfd_output}" "source has changed"
+
+# ===========================================================================
+# Drift Detection Tests (#32)
+# ===========================================================================
+
+echo ""
+echo "=== Drift Detection Tests ==="
+DRIFT_TMP="$(mktemp -d)"
+
+# --- Test: Clean first compile (no prior artifacts) ---
+echo "--- clean first compile ---"
+CLEAN_DIR="$(mktemp -d "${DRIFT_TMP}/clean-XXXXXX")"
+mkdir -p "${CLEAN_DIR}/floors"
+cp "${FIXTURES}/floor-valid.md" "${CLEAN_DIR}/floors/compliance.md"
+cat > "${CLEAN_DIR}/fleet-config.json" <<CFEOF
+{
+  "floors": {
+    "compliance": {
+      "file": "floors/compliance.md",
+      "compiled_dir": ".claude/floors/compliance/compiled"
+    }
+  }
+}
+CFEOF
+
+pushd "${CLEAN_DIR}" >/dev/null
+clean_output=$("${COMPILER}" 2>&1) || true
+clean_exit=$?
+popd >/dev/null
+assert_exit "drift: clean first compile exits 0" 0 "${clean_exit}"
+assert_output_contains "drift: first compile message" "${clean_output}" "first compile"
+assert_file_exists "drift: manifest created on first compile" "${CLEAN_DIR}/.claude/floors/compliance/compiled/manifest.sha256"
+assert_file_exists "drift: enforce.sh created on first compile" "${CLEAN_DIR}/.claude/floors/compliance/compiled/enforce.sh"
+
+# --- Test: All artifacts present and valid (re-compile is idempotent) ---
+echo "--- all artifacts valid (idempotent re-compile) ---"
+pushd "${CLEAN_DIR}" >/dev/null
+valid_output=$("${COMPILER}" 2>&1) || true
+valid_exit=$?
+popd >/dev/null
+assert_exit "drift: idempotent re-compile exits 0" 0 "${valid_exit}"
+
+# --- Test: Artifacts deleted after successful compile ---
+echo "--- artifacts deleted after compile ---"
+setup_drift_env "${DRIFT_TMP}"
+rm -f "${DRIFT_DIR}/.claude/floors/compliance/compiled/enforce.sh"
+pushd "${DRIFT_DIR}" >/dev/null
+del_output=$("${COMPILER}" 2>&1) || true
+del_exit=$?
+popd >/dev/null
+assert_exit "drift: recompile after artifact deletion exits 0" 0 "${del_exit}"
+assert_output_contains "drift: WARNING on missing artifact" "${del_output}" "WARNING"
+assert_file_exists "drift: enforce.sh restored after deletion" "${DRIFT_DIR}/.claude/floors/compliance/compiled/enforce.sh"
+
+# --- Test: Manifest deleted, artifacts remain ---
+echo "--- manifest deleted, artifacts remain ---"
+setup_drift_env "${DRIFT_TMP}"
+rm -f "${DRIFT_DIR}/.claude/floors/compliance/compiled/manifest.sha256"
+pushd "${DRIFT_DIR}" >/dev/null
+mani_output=$("${COMPILER}" 2>&1) || true
+mani_exit=$?
+popd >/dev/null
+assert_exit "drift: recompile after manifest deletion exits 0" 0 "${mani_exit}"
+assert_output_contains "drift: WARNING on missing manifest" "${mani_output}" "WARNING"
+assert_file_exists "drift: manifest restored" "${DRIFT_DIR}/.claude/floors/compliance/compiled/manifest.sha256"
+
+# --- Test: Partial compilation (prose exists, enforce.sh missing) ---
+echo "--- partial compilation state ---"
+setup_drift_env "${DRIFT_TMP}"
+rm -f "${DRIFT_DIR}/.claude/floors/compliance/compiled/enforce.sh"
+pushd "${DRIFT_DIR}" >/dev/null
+partial_output=$("${COMPILER}" 2>&1) || true
+partial_exit=$?
+popd >/dev/null
+assert_exit "drift: partial state recompile exits 0" 0 "${partial_exit}"
+assert_file_exists "drift: enforce.sh restored from partial state" "${DRIFT_DIR}/.claude/floors/compliance/compiled/enforce.sh"
+
+# --- Test: Checksum mismatch (artifact hand-edited) ---
+echo "--- checksum mismatch (hand-edited artifact) ---"
+setup_drift_env "${DRIFT_TMP}"
+echo "# hand-edited" >> "${DRIFT_DIR}/.claude/floors/compliance/compiled/enforce.sh"
+pushd "${DRIFT_DIR}" >/dev/null
+tamper_exit=0
+tamper_output=$("${COMPILER}" --verify 2>&1) || tamper_exit=$?
+popd >/dev/null
+assert_exit "drift: --verify detects tampered artifact (exit 1)" 1 "${tamper_exit}"
+assert_output_contains "drift: DRIFT message on tampered artifact" "${tamper_output}" "DRIFT"
+
+# --- Test: Floor source changed, artifacts stale ---
+echo "--- floor source changed, artifacts stale ---"
+setup_drift_env "${DRIFT_TMP}"
+echo "# new rule added" >> "${DRIFT_DIR}/floors/compliance.md"
+pushd "${DRIFT_DIR}" >/dev/null
+src_exit=0
+src_output=$("${COMPILER}" --verify 2>&1) || src_exit=$?
+popd >/dev/null
+assert_exit "drift: --verify detects source change (exit 1)" 1 "${src_exit}"
+assert_output_contains "drift: DRIFT message on source change" "${src_output}" "DRIFT"
+
+# --- Test: Source changed, recompile updates artifacts ---
+echo "--- source changed, recompile updates ---"
+pushd "${DRIFT_DIR}" >/dev/null
+recomp_output=$("${COMPILER}" 2>&1) || true
+recomp_exit=$?
+popd >/dev/null
+assert_exit "drift: recompile after source change exits 0" 0 "${recomp_exit}"
+assert_output_contains "drift: source has changed message" "${recomp_output}" "source has changed"
+# Verify is now clean
+pushd "${DRIFT_DIR}" >/dev/null
+reverify_exit=0
+reverify_output=$("${COMPILER}" --verify 2>&1) || reverify_exit=$?
+popd >/dev/null
+assert_exit "drift: --verify clean after recompile" 0 "${reverify_exit}"
+
+# --- Test: --all with one floor drifted, one clean ---
+echo "--- multi-floor: one drifted, one clean ---"
+setup_multifloor_env "${DRIFT_TMP}"
+echo "# drift injection" >> "${DRIFT_DIR}/floors/compliance.md"
+pushd "${DRIFT_DIR}" >/dev/null
+multi_output=$("${COMPILER}" --all 2>&1) || true
+multi_exit=$?
+popd >/dev/null
+assert_exit "drift: --all with partial drift exits 0" 0 "${multi_exit}"
+assert_output_contains "drift: --all mentions compliance" "${multi_output}" "compliance"
+assert_output_contains "drift: --all mentions behavioral" "${multi_output}" "behavioral"
+
+# --- Test: --verify on clean multi-floor environment ---
+echo "--- multi-floor: --verify on clean state ---"
+setup_multifloor_env "${DRIFT_TMP}"
+pushd "${DRIFT_DIR}" >/dev/null
+mverify_exit=0
+mverify_output=$("${COMPILER}" --floor compliance --verify 2>&1) || mverify_exit=$?
+popd >/dev/null
+assert_exit "drift: --verify clean on multi-floor exits 0" 0 "${mverify_exit}"
+
+# --- Test: --verify detects drift in one floor of multi-floor ---
+echo "--- multi-floor: --verify detects single-floor drift ---"
+echo "# drift" >> "${DRIFT_DIR}/floors/compliance.md"
+pushd "${DRIFT_DIR}" >/dev/null
+mverify_drift_exit=0
+mverify_drift_output=$("${COMPILER}" --floor compliance --verify 2>&1) || mverify_drift_exit=$?
+popd >/dev/null
+assert_exit "drift: --verify detects drift in one floor (exit 1)" 1 "${mverify_drift_exit}"
+assert_output_contains "drift: DRIFT in compliance floor" "${mverify_drift_output}" "DRIFT"
+
+# Cleanup drift temp
+rm -rf "${DRIFT_TMP}"
 
 # ---------------------------------------------------------------------------
 # Results summary
