@@ -14,7 +14,7 @@ An agent fleet harness framework for structured multi-agent software delivery wi
 
 ## Why Venutian Antfarm?
 
-- **Governance-first.** Compliance floor, change control, and audit trails are built in from day one — not bolted on after an incident. A 7-agent executive governance tier (CO, CISO, CEO, CTO, CFO, COO, CKO) sets policy independently of the operational chain.
+- **Governance-first.** Governance floors, change control, and audit trails are built in from day one — not bolted on after an incident. A 7-agent executive governance tier (CRO, CISO, CEO, CTO, CFO, COO, CKO) sets policy independently of the operational chain. Each Cx officer can define a floor with non-negotiable rules enforced by the compiler, hooks, and checksums.
 - **Progressive autonomy.** Fleets start at Crawl (propose everything) and earn autonomy through measurable performance. Pace goes both directions — complexity triggers slowdowns, not just promotions.
 - **Measurable delivery.** DORA metrics, flow quality, pathway analysis, and agent cost tracking out of the box. 26 event types, pluggable backends, and CLI dashboards. The fleet learns from its own data.
 - **Extensible by design.** Define your compliance floor, add your specialist agents, override any skill or agent definition. The harness provides structure; you provide the domain.
@@ -26,22 +26,15 @@ An agent fleet harness framework for structured multi-agent software delivery wi
 git clone https://github.com/rdunie/venutian-antfarm.git my-project
 cd my-project
 
-# 2. Define your compliance floor
-cp templates/compliance-floor.md compliance-floor.md
-# Edit compliance-floor.md with your domain's non-negotiable rules
+# 2. Run interactive onboarding
+# In Claude Code, run: /onboard
+# This scaffolds runtime directories, defines your compliance floor,
+# configures your fleet, and adds your first specialist agent.
 
-# 3. Add your specialist agents
-cp templates/agents/frontend-specialist.md .claude/agents/frontend-specialist.md
-cp templates/agents/backend-specialist.md .claude/agents/backend-specialist.md
-# Edit each to match your tech stack
-
-# 4. Configure your fleet
+# Or set up manually:
+cp templates/floors/compliance.md floors/compliance.md
 cp templates/fleet-config.json fleet-config.json
-# Edit fleet-config.json (metrics backend, deploy command, etc.)
-
-# 5. Start working
-# Open Claude Code in your project directory. The 13 core agents are ready.
-# Your specialists extend them.
+# Edit both for your domain, then start Claude Code.
 ```
 
 ## Architecture
@@ -51,7 +44,7 @@ flowchart LR
     USER(["Human\nOperator"])
 
     subgraph Gov ["Governance Layer"]
-        GOV(["CO  CISO  CEO\nCTO  CFO  COO  CKO"])
+        GOV(["CRO  CISO  CEO\nCTO  CFO  COO  CKO"])
     end
 
     subgraph Harness ["Harness Layer"]
@@ -86,20 +79,20 @@ flowchart LR
     style O fill:#ffcc80,stroke:#e65100,color:#1a1a1a
 ```
 
-The **compliance floor** is a set of non-negotiable rules (MUST ALWAYS / MUST NEVER) that you define for your domain. Every agent in every tier must follow it — it overrides all autonomy levels, pace settings, and process decisions. The governance layer guards the floor through change control; the compliance-auditor verifies conformance during review. No agent can modify, bypass, or deprioritize a floor rule.
+**Governance floors** are sets of non-negotiable rules (MUST ALWAYS / MUST NEVER) that you define for your domain. Every agent in every tier must follow them — they override all autonomy levels, pace settings, and process decisions. Each floor has a guardian Cx officer with sole write authority. The compliance-auditor verifies conformance during review. No agent can modify, bypass, or deprioritize a floor rule. V0.4 ships with compliance (CRO guardian) and behavioral (COO guardian) floors.
 
-### Compliance Floor Change Management
+### Floor Change Management
 
-All changes to the compliance floor go through a governed process. The Compliance Officer (CO) is the sole gatekeeper — no other agent can modify `compliance-floor.md`.
+All changes to governance floors go through a governed process. The floor's guardian (e.g., CRO for compliance) is the sole gatekeeper — no other agent can modify the floor file.
 
 ```mermaid
 flowchart TD
     PROPOSE["Any agent or Cx role\nproposes a change"]
-    CO_REVIEW["CO receives and\nclassifies the change"]
-    CONSULT["CO consults Cx roles\nfor domain impact"]
+    CO_REVIEW["Guardian receives and\nclassifies the change"]
+    CONSULT["Guardian consults Cx roles\nfor domain impact"]
     CONSENSUS{"Consensus?"}
     USER_APPROVE{"User\napproves?"}
-    APPLY["CO applies change\nvia /compliance apply"]
+    APPLY["Guardian applies change\nvia /floor apply"]
     LOG["Change logged\nwith full audit trail"]
     REJECT["Change rejected\nwith rationale"]
 
@@ -122,7 +115,7 @@ flowchart TD
     style REJECT fill:#ef9a9a,stroke:#b71c1c,color:#1a1a1a
 ```
 
-Risk-reducing target changes can be approved by the CO autonomously (with user notification). All floor changes require explicit user approval — no exceptions. Every change is logged with who requested, who approved, Cx consultation results, and rationale.
+Risk-reducing target changes can be approved by the guardian autonomously (with user notification). All floor changes require explicit user approval — no exceptions. Every change is logged with who requested, who approved, Cx consultation results, and rationale.
 
 ## What You Get
 
@@ -130,15 +123,15 @@ Risk-reducing target changes can be approved by the CO autonomously (with user n
 
 **Governance (7)** — Executive leadership that sets policy, standards, and controls independently of the operational chain:
 
-| Agent                  | Role                   | What It Does                                                 |
-| ---------------------- | ---------------------- | ------------------------------------------------------------ |
-| **compliance-officer** | Compliance program     | Floor guardianship, change control, conformance monitoring   |
-| **ciso**               | Security authority     | Security benchmarks, security controls, threat assessment    |
-| **ceo**                | Strategic alignment    | Digital twin of implementer, mission/vision, executive brief |
-| **cto**                | Technology enablement  | Technology floor, tech standards, architecture direction     |
-| **cfo**                | Cost governance        | Token budget strategy, cost efficiency, resource allocation  |
-| **coo**                | Operational efficiency | Process standards, SLAs, agent performance, retraining       |
-| **cko**                | Knowledge quality      | Knowledge standards, distribution cadence, guidance registry |
+| Agent    | Role                   | What It Does                                                    |
+| -------- | ---------------------- | --------------------------------------------------------------- |
+| **cro**  | Chief Risk Officer     | Floor guardianship, change control, cross-floor risk assessment |
+| **ciso** | Security authority     | Security benchmarks, security controls, threat assessment       |
+| **ceo**  | Strategic alignment    | Digital twin of implementer, mission/vision, executive brief    |
+| **cto**  | Technology enablement  | Technology floor, tech standards, architecture direction        |
+| **cfo**  | Cost governance        | Token budget strategy, cost efficiency, resource allocation     |
+| **coo**  | Operational efficiency | Process standards, SLAs, agent performance, retraining          |
+| **cko**  | Knowledge quality      | Knowledge standards, distribution cadence, guidance registry    |
 
 **Operational (6)** — Leadership triad + cross-cutting agents that orchestrate and execute delivery:
 
@@ -247,7 +240,9 @@ App fields override harness fields. Unmentioned harness fields are preserved.
 
 ## Key Concepts
 
-- **Compliance Floor**: Non-negotiable rules (MUST ALWAYS / MUST NEVER) that override all autonomy tiers and pace settings. The compliance-officer guards the floor; changes require user approval. See the [three-tier compliance hierarchy](.claude/COLLABORATION.md) (floor/targets/guidance).
+- **Governance Floors**: Non-negotiable rules (MUST ALWAYS / MUST NEVER) that override all autonomy tiers and pace settings. Each floor has a Cx guardian with sole write authority. V0.4 ships with compliance (CRO) and behavioral (COO) floors. See the [Governance Floors Guide](docs/GOVERNANCE-FLOORS.md).
+- **Compliance Compiler**: Extracts enforcement blocks from floor files, validates against schema, and generates hook scripts, coverage reports, and integrity manifests. Uses gomplate templates for artifact generation. Pre-flight checks detect drift and guide remediation. See the [Compiler Guide](docs/COMPILER-GUIDE.md).
+- **Rewards System**: Behavioral feedback via kudos and reprimands. Each agent builds a behavioral profile. Tensions (conflicting feedback) surface for resolution. Use `ops/rewards-log.sh` to issue feedback and query profiles.
 - **Findings Loop**: Structured learning where agents record notable events, the SM curates refinements, and the CKO directs knowledge-ops to distribute learnings fleet-wide. The same finding type should decrease over time.
 - **Fix Ownership**: The agent that authored the code is responsible for fixing it, regardless of where the issue was discovered. Diagnosis is collaborative; the fix returns to the author so the learning stays with them.
 - **Environment Discipline**: All code changes happen in dev only. Agents may diagnose in any environment (read-only), but fixes flow through the deployment chain: branch, PR, merge, deploy through promotion order.
@@ -265,7 +260,9 @@ App fields override harness fields. Unmentioned harness fields are preserved.
 | `/audit`      | Compliance audit against the compliance floor                  | compliance-auditor |
 | `/pace`       | Pace control: status, evaluation, transitions                  | scrum-master       |
 | `/memory`     | Knowledge management: audit, distribute, optimize, gaps        | knowledge-ops      |
-| `/compliance` | Compliance program: propose, review, apply, audit, log         | compliance-officer |
+| `/compliance` | Compliance program: propose, review, apply, audit, log         | cro                |
+| `/behavioral` | Behavioral floor management: propose, review, apply            | coo                |
+| `/floor`      | Generic floor management for any governance floor              | floor guardian     |
 | `/governance` | Executive governance: brief, decisions, guidance, CEO autonomy | ceo                |
 
 All skills can be overridden by implementers. Create `.claude/skills/<name>/SKILL.md` in your project to replace the harness default.
@@ -278,8 +275,19 @@ All skills can be overridden by implementers. Create `.claude/skills/<name>/SKIL
 - **[Collaboration Protocol](.claude/COLLABORATION.md)** -- How agents work together
 - **[Collaboration Model](docs/COLLABORATION-MODEL.md)** -- Visual diagrams
 - **[Metrics Guide](docs/METRICS-GUIDE.md)** -- Event types, dashboards, extending metrics, example output
+- **[Compiler Guide](docs/COMPILER-GUIDE.md)** -- Enforcement block syntax, compiler pipeline, artifact reference
+- **[Governance Floors Guide](docs/GOVERNANCE-FLOORS.md)** -- Multi-floor governance pattern, adding floors, floor lifecycle
 - **[Pathway Analysis](docs/PATHWAY-ANALYSIS.md)** -- Agent communication pathway analysis: declaring, interpreting, governance
 - **[Examples](examples/)** -- 5 progressive examples from getting started to operational maturity
+
+## What's Coming Next
+
+- **Expanded rewards (#28)** — Extend behavioral feedback to all agents with an escalation chain for unresolved tensions.
+- **Adaptive weighting (#25)** — Context-sensitive scoring for kudos and reprimands based on domain, severity, and recency.
+- **Token-efficient consultation (#30)** — Reduce token cost of multi-agent governance consultations through structured summaries and selective dispatch.
+- **Signal bus (#24)** — Event-driven communication backbone replacing point-to-point agent handoffs.
+
+See the [backlog](https://github.com/rdunie/venutian-antfarm/issues) for the full roadmap.
 
 ## License
 
