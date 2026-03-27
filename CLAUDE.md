@@ -64,8 +64,8 @@ cp templates/floors/compliance.md floors/compliance.md # define non-negotiable r
 - **`fleet-config.json`** -- Project-level fleet configuration: pace thresholds, agent roster, declared pathways, metrics backend, retro cadence. Copy from `templates/fleet-config.json`.
 - **`.claude/agents/*.md`** -- Agent definitions with frontmatter (`name`, `model`, `color`). The 13 agents: 7 governance (cro, ciso, ceo, cto, cfo, coo, cko) + 6 operational (product-owner, solution-architect, scrum-master, knowledge-ops, platform-ops, compliance-auditor).
 - **`floors/*.md`** -- Governance floor files. Each is owned by a guardian Cx officer (declared in `fleet-config.json`). The compliance floor is guarded by the CRO; the behavioral floor by the COO.
-- **`.claude/findings/register.md`** -- Findings register where notable events are recorded during work.
-- **`.claude/metrics/events.jsonl`** -- Event log (append-only, written by `ops/metrics-log.sh`, never directly).
+- **`.claude/findings/register.md`** -- Findings register where notable events are recorded during work. Created by `/onboard` from `templates/findings/register.md`.
+- **`.claude/metrics/events.jsonl`** -- Event log (append-only, written by `ops/metrics-log.sh`, never directly). Created by `/onboard`.
 - **`.mcp.json`** -- Team-shared MCP server configuration (GitHub MCP). Checked into git.
 
 ## Commands
@@ -132,6 +132,12 @@ ops/compile-floor.sh --verify                      # Check artifacts match sourc
 ops/compile-floor.sh --proposal 003                # Tag artifacts with proposal ID
 ops/compile-floor.sh floors/behavioral.md .claude/floors/behavioral/compiled  # Explicit paths
 ops/tests/test-compile-floor.sh                    # Run compiler tests
+```
+
+### Release
+
+```bash
+ops/release.sh [--dry-run] <version>   # Push clean release to upstream
 ```
 
 ### Validation
