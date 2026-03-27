@@ -78,6 +78,7 @@ STRIP_PATHS=(
   "docs/superpowers"
   "memory"
   "docs/compliance-coverage.md"
+  "ops/release.sh"
 )
 
 # Create a temporary branch for the release
@@ -117,8 +118,8 @@ if [[ "${confirm}" != "y" && "${confirm}" != "Y" ]]; then
   exit 0
 fi
 
-# Push to upstream
-git push upstream "${RELEASE_BRANCH}:main"
+# Push to upstream (force: release branch replaces upstream main)
+git push --force-with-lease upstream "${RELEASE_BRANCH}:main"
 
 # Cleanup release branch (return to previous branch first)
 git checkout -
