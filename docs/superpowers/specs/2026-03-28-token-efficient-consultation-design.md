@@ -6,7 +6,7 @@
 
 ## Problem
 
-The cross-floor risk consultation protocol dispatches the CRO, who then consults all 7 Cx agents sequentially for every floor change proposal. Most agents respond with "not impacted / abstain" — wasted tokens. Open-ended responses further inflate cost. Multiple rounds compound the problem. A single floor change can cost 100K+ tokens with little incremental value.
+The cross-floor risk consultation protocol (§ Cross-Floor Risk Facilitation in the CRO agent) dispatches the CRO, who then consults all 6 peer Cx agents sequentially for every floor change proposal. Most agents respond with "not impacted / abstain" — wasted tokens. Open-ended responses further inflate cost. Multiple rounds compound the problem. A single floor change can cost 100K+ tokens with little incremental value.
 
 ## Goals
 
@@ -29,7 +29,7 @@ The cross-floor risk consultation protocol dispatches the CRO, who then consults
 **Before:**
 
 ```
-Guardian → CRO → all 7 Cx agents → synthesize → [round N] → result
+Guardian → CRO → all 6 peer Cx agents → synthesize → [round N] → result
 ```
 
 **After:**
@@ -83,7 +83,15 @@ After round 1, the CRO checks for unanimous consensus:
 - **All impacted with no conditions and same risk level** → abort with consolidated position
 - **Any disagreement, conditions, or high risk** → proceed to round 2 with only the agents who raised concerns
 
+**Special cases:**
+
+- **Zero agents consulted:** If the CRO determines no peer Cx domain is impacted, the CRO issues a solo assessment with recommendation. The assessment must note "No Cx agents consulted -- CRO solo assessment" for audit trail. Expected for narrow, low-risk changes.
+- **Single agent consulted:** If only one agent is consulted and raises concerns in round 1, the CRO synthesizes directly without a round 2 -- there is no additional perspective to gather. Round 2 is only meaningful with 2+ consulted agents.
+- **Minimum guideline:** The CRO should consult at least 2 Cx agents for any floor-level (Type 3) change. For target-level changes, a single-agent consultation is acceptable.
+
 Round 2 is capped: maximum 2 total rounds (round 1 + round 2). If positions still diverge after round 2, the CRO synthesizes what it has and flags the disagreement in the assessment. The user decides — no infinite consultation loops.
+
+**Implementation note:** The CRO agent definition must include explicit instructions to (a) parse structured Impact/Risk fields from each response, (b) apply the abort criteria before drafting synthesis, and (c) log the abort decision rationale.
 
 ### 4. Proposal Domain Tags
 
@@ -99,12 +107,13 @@ Valid domain tags (matching Cx agent scopes):
 | Tag          | Cx Agent |
 | ------------ | -------- |
 | `security`   | CISO     |
-| `risk`       | CRO      |
 | `strategy`   | CEO      |
 | `technology` | CTO      |
 | `cost`       | CFO      |
 | `process`    | COO      |
 | `knowledge`  | CKO      |
+
+Note: CRO is excluded from the tag table — the CRO is the facilitator, not a consultee. The CRO provides its own risk position as part of the synthesis, not as a dispatched assessment.
 
 If `--domains` is omitted, the CRO triages with no hints — works fine, just slightly less efficient. Tags are passed through to the CRO's triage context as advisory input, never as constraints.
 
