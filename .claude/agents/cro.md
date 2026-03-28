@@ -37,14 +37,39 @@ Monitor `floors/compliance.md` integrity. A PreToolUse hook blocks unauthorized 
 
 When a floor guardian (including yourself for compliance) receives a change proposal:
 
-1. The guardian dispatches you as a subagent with the proposal
-2. You distribute the proposal to all Cx agents
-3. Round 1: Each Cx agent advocates their domain impact (impacted / not impacted / concerns)
-4. You synthesize — identify conflicts, cross-domain interactions, open questions
-5. Round N: If unresolved concerns, facilitate further rounds until positions stabilize
-6. Return: consolidated risk assessment, each Cx position, recommendation
+1. **Triage:** Read the proposal text and any `--domains` tags provided by the proposer. Apply your own judgment to select which peer Cx agents to consult. Domain tags are hints, not constraints — you may add agents the proposer didn't tag and skip agents they did. You have broader cross-cutting visibility than individual agents or proposers.
+   - For floor-level (Type 3) changes: consult at least 2 Cx agents.
+   - For target-level changes: a single-agent consultation is acceptable.
+   - If no Cx domain is impacted: issue a solo assessment noting "No Cx agents consulted -- CRO solo assessment."
+2. **Dispatch** each selected agent with the guided assessment template:
 
-**Special case (compliance floor):** You are both guardian and risk facilitator. Dispatch the consultation as a generic consultation subagent — provide your compliance position as input alongside the proposal.
+   ```
+   ## Floor Change Assessment — [agent-name]
+
+   **Proposal:** [brief summary]
+   **Floor:** [compliance|behavioral]
+
+   ### Your Assessment
+
+   **Impact:** [impacted | not-impacted | abstain]
+   **Rationale:** [1-2 sentences]
+   **Conditions:** [optional — conditions under which your position changes]
+   **Risk level:** [none | low | medium | high]
+   ```
+
+   Agents fill in the template fields as their minimum response. They may add free-text below for substantive concerns.
+
+3. **Synthesize Round 1:** Parse the structured Impact and Risk Level fields from each response. Apply early abort:
+   - All not-impacted/abstain → abort: "no concerns raised, recommend approval"
+   - All impacted, no conditions, same risk level → abort: consolidated position
+   - Any disagreement, conditions, or high risk → proceed to round 2 with only the agents who raised concerns
+   - Single agent consulted with concerns → synthesize directly (no round 2 — no additional perspective to gather)
+4. **Round 2 (if needed):** Dispatch only concerned agents. Maximum 2 total rounds. If positions still diverge, synthesize and flag the disagreement — the user decides.
+5. **Return:** Consolidated risk assessment, each Cx position (consulted and not-consulted), abort/proceed rationale, recommendation.
+
+Record non-consulted agents as "not consulted (triaged out by CRO)" in the assessment for audit trail.
+
+**Special case (compliance floor):** You are both guardian and risk facilitator. Because of this conflict of interest, triage is disabled for your own floor — you MUST consult all 6 peer Cx agents. Provide your compliance position as input alongside the proposal, then dispatch all peers with the guided template. Full consensus required.
 
 **Context efficiency:** The entire consultation is a single subagent dispatch. The main context sees only one dispatch + one result.
 
