@@ -702,6 +702,51 @@ assert_contains "decay net=1.2" "$TMPDIR/decay-score.txt" "^net=1.2"
 assert_contains "decay signals=2" "$TMPDIR/decay-score.txt" "^signals=2$"
 assert_contains "decay recent=1" "$TMPDIR/decay-score.txt" "^recent=1$"
 
+# ── Test: weighting defaults (no config weighting section) ───────────
+echo ""
+echo "=== Weighting Defaults ==="
+setup_ledger
+
+LEDGER="$TMPDIR/rewards/ledger.md"
+CHECKSUM="$TMPDIR/rewards/ledger-checksum.sha256"
+FINDINGS_REG="$TMPDIR/findings/register.md"
+METRICS_FILE="$TMPDIR/metrics/events.jsonl"
+
+# Write fleet-config WITHOUT the weighting section
+cat > "$TMPDIR/fleet-config.json" <<'CONFIG'
+{
+  "agents": {
+    "governance": ["cro", "ciso", "ceo", "cto", "cfo", "coo", "cko"],
+    "core": ["product-owner", "solution-architect", "scrum-master", "knowledge-ops", "platform-ops", "compliance-auditor"]
+  },
+  "rewards": {
+    "escalation_deadline_days": 7
+  },
+  "pathways": {
+    "declared": {
+      "feedback": ["security-reviewer -> ciso"],
+      "escalation": ["* -> solution-architect"],
+      "governance": ["* -> ceo"]
+    }
+  }
+}
+CONFIG
+
+# Create a governance kudo — defaults: tier=1.0, type=1.0, domain=1.0, decay=1.0 → weight=1.0
+FEEDBACK_LEDGER="$LEDGER" FEEDBACK_CHECKSUM="$CHECKSUM" \
+FINDINGS_REGISTER="$FINDINGS_REG" METRICS_LOG_FILE="$METRICS_FILE" \
+REPO_ROOT="${TMPDIR}" "${FEEDBACK_LOG}" kudo \
+  --issuer ciso --subject backend-specialist --domain delivery \
+  --description "Default weight test" --evidence "Defaults apply" > /dev/null
+
+DEFAULT_SCORE=$(FEEDBACK_LEDGER="$LEDGER" FEEDBACK_CHECKSUM="$CHECKSUM" \
+FINDINGS_REGISTER="$FINDINGS_REG" METRICS_LOG_FILE="$METRICS_FILE" \
+REPO_ROOT="${TMPDIR}" "${FEEDBACK_LOG}" score backend-specialist)
+
+echo "$DEFAULT_SCORE" > "$TMPDIR/default-score.txt"
+assert_contains "default net=1.0" "$TMPDIR/default-score.txt" "^net=1.0$"
+assert_contains "default kudos=1.0" "$TMPDIR/default-score.txt" "^kudos=1.0$"
+
 # ── Summary ────────────────────────────────────────────────────────────
 echo ""
 echo "========================================"
