@@ -268,10 +268,10 @@ assert_equals "agent filter returns 3 ciso events" "3" "$agent_count"
 echo ""
 echo "=== Since Filter ==="
 
-# All events are within last 30 days
-since_all=$(METRICS_LOG_FILE="$EVENTS_FILE" "$SIGNAL_READ" --since 30d --source local)
+# All events are within last year (use large window to avoid date fragility)
+since_all=$(METRICS_LOG_FILE="$EVENTS_FILE" "$SIGNAL_READ" --since 365d --source local)
 since_all_count=$(echo "$since_all" | grep -c '.' || true)
-assert_equals "since 30d returns all 7 events" "7" "$since_all_count"
+assert_equals "since 365d returns all 7 events" "7" "$since_all_count"
 
 # ── Format count ─────────────────────────────────────────────────────────
 echo ""
@@ -352,13 +352,9 @@ Create `ops/lib/signal-read.sh`:
 #
 # Requires: jq
 
-set -euo pipefail
-
-# ── Dependency check ──────────────────────────────────────────────────────
-if ! command -v jq &>/dev/null; then
-  echo "ERROR: signal-read.sh requires jq. Install jq to use event queries." >&2
-  exit 1
-fi
+# ── Dependency check (only in CLI mode) ───────────────────────────────────
+# Note: set -euo pipefail is in the CLI block at the bottom to avoid
+# corrupting the caller's shell options when sourced.
 
 # ── Defaults ──────────────────────────────────────────────────────────────
 _SR_REPO_ROOT="${REPO_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
@@ -451,6 +447,11 @@ signal_query() {
 
 # ── CLI mode (when executed, not sourced) ─────────────────────────────────
 if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+  set -euo pipefail
+  if ! command -v jq &>/dev/null; then
+    echo "ERROR: signal-read.sh requires jq. Install jq to use event queries." >&2
+    exit 1
+  fi
   signal_query "$@"
 fi
 ```
