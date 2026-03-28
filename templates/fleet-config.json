@@ -84,24 +84,23 @@
         "* -> product-owner"
       ],
       "governance": [
-              "ciso -> cro",
-              "cro -> compliance-auditor",
-              "* -> cro",
-              "cko -> knowledge-ops",
-              "cto -> solution-architect",
-              "cfo -> platform-ops",
-              "coo -> scrum-master",
-              "* -> ceo"
-            ],
-            "feedback": [
-              "product-owner -> scrum-master",
-              "solution-architect -> product-owner",
-              "scrum-master -> product-owner",
-              "knowledge-ops -> product-owner",
-              "platform-ops -> cto",
-              "compliance-auditor -> cro"
-            ]
-          },
+        "ciso -> cro",
+        "cro -> compliance-auditor",
+        "* -> cro",
+        "cko -> knowledge-ops",
+        "cto -> solution-architect",
+        "cfo -> platform-ops",
+        "coo -> scrum-master",
+        "* -> ceo"
+      ],
+      "feedback": [
+        "backend-specialist -> solution-architect",
+        "security-reviewer -> ciso",
+        "frontend-specialist -> product-owner",
+        "e2e-test-engineer -> product-owner"
+      ],
+      "feedback_note": "Specialist-to-supervisor mapping for behavioral feedback proposals. Fallback: escalation wildcards."
+    },
     "note": "Declared pathways define expected agent-to-agent communication routes. Actual pathways are inferred from handoff events. The delta between declared and actual is the signal: undeclared paths may indicate innovation or governance bypass."
   }
 }
