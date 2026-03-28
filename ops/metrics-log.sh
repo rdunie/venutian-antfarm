@@ -376,6 +376,36 @@ case "$EVENT_TYPE" in
        '{"ts":$ts,"event":$event,"floor":$floor,"type":$type,"detail":$detail,"agent":$agent} | with_entries(select(.value != ""))')"
     ;;
 
+  feedback-proposed)
+    emit_event "$(jq -cn --arg ts "$TS" --arg event "$EVENT_TYPE" \
+       --arg issuer "$FROM" --arg subject "$SUBJECT" --arg type "$DEPLOY_TYPE" \
+       --arg domain "$SCOPE" --arg severity "$SEVERITY" \
+       --arg item "$ITEM" --arg proposal_id "$PROPOSAL" --arg supervisor "$TO" \
+       --arg agent "$AGENT" \
+       '{"ts":$ts,"event":$event,"issuer":$issuer,"subject":$subject,"type":$type,"domain":$domain,"severity":$severity,"item":$item,"proposal_id":$proposal_id,"supervisor":$supervisor,"agent":$agent} | with_entries(select(.value != ""))')"
+    ;;
+
+  feedback-formalized)
+    emit_event "$(jq -cn --arg ts "$TS" --arg event "$EVENT_TYPE" \
+       --arg proposal_id "$PROPOSAL" --arg reward_id "$REWARD_ID_ARG" \
+       --arg formalizer "$FROM" --arg agent "$AGENT" \
+       '{"ts":$ts,"event":$event,"proposal_id":$proposal_id,"reward_id":$reward_id,"formalizer":$formalizer,"agent":$agent} | with_entries(select(.value != ""))')"
+    ;;
+
+  feedback-rejected)
+    emit_event "$(jq -cn --arg ts "$TS" --arg event "$EVENT_TYPE" \
+       --arg proposal_id "$PROPOSAL" --arg rejector "$FROM" \
+       --arg reason "$REASON" --arg agent "$AGENT" \
+       '{"ts":$ts,"event":$event,"proposal_id":$proposal_id,"rejector":$rejector,"reason":$reason,"agent":$agent} | with_entries(select(.value != ""))')"
+    ;;
+
+  feedback-escalated)
+    emit_event "$(jq -cn --arg ts "$TS" --arg event "$EVENT_TYPE" \
+       --arg proposal_id "$PROPOSAL" --arg from_supervisor "$FROM" \
+       --arg to_supervisor "$TO" --arg agent "$AGENT" \
+       '{"ts":$ts,"event":$event,"proposal_id":$proposal_id,"from_supervisor":$from_supervisor,"to_supervisor":$to_supervisor,"agent":$agent} | with_entries(select(.value != ""))')"
+    ;;
+
   *)
     echo "ERROR: unknown event type '$EVENT_TYPE'" >&2
     echo "Valid types: item-promoted item-accepted ext-deployed bug-found bug-fixed" >&2
@@ -387,6 +417,7 @@ case "$EVENT_TYPE" in
     echo "             branch-created pr-opened pr-merged" >&2
     echo "             guidance-published ceo-autonomy-granted ceo-autonomy-violation knowledge-distributed backlog-triaged" >&2
     echo "             reward-issued tension-detected preflight-remediation" >&2
+    echo "             feedback-proposed feedback-formalized feedback-rejected feedback-escalated" >&2
     exit 1
     ;;
 esac
