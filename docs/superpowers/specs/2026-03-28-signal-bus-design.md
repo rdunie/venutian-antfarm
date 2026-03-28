@@ -6,7 +6,7 @@
 
 ## Problem
 
-All event producers (feedback-log.sh, compile-floor.sh, hooks) call metrics-log.sh directly, and all consumers (dora.sh, feedback-log.sh, pathways.sh) read events.jsonl with ad-hoc grep/jq. There is no shared abstraction for either reading or writing events. Adding a new event type requires editing metrics-log.sh's case block. Adding a new consumer requires reimplementing filter logic. The write path's backend dispatch (jsonl, webhook) is locked inside metrics-log.sh, unreusable by future producers.
+All event producers (feedback-log.sh, compile-floor.sh, hooks) call metrics-log.sh directly, and all consumers (dora.sh, pathways.sh, feedback-log.sh [also a producer]) read events.jsonl with ad-hoc grep/jq. There is no shared abstraction for either reading or writing events. Adding a new event type requires editing metrics-log.sh's case block. Adding a new consumer requires reimplementing filter logic. The write path's backend dispatch (jsonl, webhook) is locked inside metrics-log.sh, unreusable by future producers.
 
 ## Goals
 
@@ -50,8 +50,10 @@ signal_emit() {
       ;;
     webhook)
       echo "$json_line" >> "$METRICS_LOG_FILE"  # always persist locally
-      curl -s -X POST -H "Content-Type: application/json" \
-        -d "$json_line" "$_SIGNAL_WEBHOOK_URL" >/dev/null 2>&1 || true
+      if [[ -n "$_SIGNAL_WEBHOOK_URL" ]]; then
+        curl -s -X POST -H "Content-Type: application/json" \
+          -d "$json_line" "$_SIGNAL_WEBHOOK_URL" >/dev/null 2>&1 || true
+      fi
       ;;
     statsd|opentelemetry)
       echo "$json_line" >> "$METRICS_LOG_FILE"
@@ -92,6 +94,8 @@ signal_query --topic feedback --since 30d
 | `--source` | Event source (default: `local`)          | `--source local`                         |
 | `--format` | Output format: `json` (default), `count` | `--format count`                         |
 
+**Prerequisites:** The library requires `jq`. On invocation, check `command -v jq` and exit 1 with a clear error if missing (consistent with `ops/compile-floor.sh`'s gomplate check).
+
 **Implementation:** All flags compose into a single `jq` select expression. One process spawn, one pass through the file:
 
 ```bash
@@ -100,22 +104,30 @@ jq_filter='select(1)'  # base: match all
 # --type: exact match
 [[ -n "$type" ]] && jq_filter="$jq_filter | select(.event == \"$type\")"
 
-# --topic: prefix match
-[[ -n "$topic" ]] && jq_filter="$jq_filter | select(.event | startswith(\"$topic\"))"
+# --topic: prefix match (includes trailing hyphen to prevent "item" matching "itemized-cost")
+[[ -n "$topic" ]] && jq_filter="$jq_filter | select(.event | startswith(\"${topic}-\"))"
 
 # --agent: match agent field
 [[ -n "$agent" ]] && jq_filter="$jq_filter | select(.agent == \"$agent\")"
 
-# --since: time window
+# --since: time window (ISO 8601 lexicographic comparison — correct for fixed-width timestamps)
+# Cutoff computed via GNU date: date -u -d "-${N} days" +%Y-%m-%dT%H:%M:%SZ
 [[ -n "$since_cutoff" ]] && jq_filter="$jq_filter | select(.ts >= \"$since_cutoff\")"
 
-# Execute
-jq -c "$jq_filter" "$source_file"
+# Guard: source file must exist
+[[ ! -f "$source_file" ]] && { echo "[]" | jq -c '.[]'; return 0; }
+
+# Execute with fromjson? to silently skip malformed lines
+jq -c -R "fromjson? | $jq_filter" "$source_file"
 ```
 
 For `--format count`: pipe to `jq -s 'length'`.
 
+**Error handling:** The `fromjson?` operator silently skips unparseable lines (truncated writes, concurrent appends). If the source file is empty or missing, the query returns an empty result set (0 for count). No errors propagated to consumers.
+
 **`--source local`** reads from `$METRICS_LOG_FILE`. Future sources add new cases to a source resolver function. The consumer API (`signal_query`) doesn't change.
+
+**Date portability:** `--since` conversion uses GNU coreutils `date -u -d`. BSD/macOS compatibility is consistent with the rest of the framework (which already uses GNU date conventions).
 
 ### 3. Topic Convention
 
@@ -132,7 +144,7 @@ Topics are derived from event-type prefixes by splitting on the first `-`:
 | `reward-issued`        | `reward`     |
 | `agent-invoked`        | `agent`      |
 
-No configuration needed. The prefix IS the topic. `--topic feedback` generates `select(.event | startswith("feedback"))`.
+No configuration needed. The prefix IS the topic. `--topic feedback` generates `select(.event | startswith("feedback-"))`. The trailing hyphen prevents ambiguity (e.g., `--topic item` won't match a hypothetical `itemized-cost` event).
 
 ### 4. Performance
 
@@ -164,12 +176,17 @@ Consumers written against `signal_query --topic feedback --since 7d` work unchan
 | `ops/lib/signal-read.sh`       | Shared read library: `signal_query()` + CLI interface    |
 | `ops/tests/test-signal-bus.sh` | Tests for both emit and read libraries                   |
 
+### New Documentation
+
+| File                 | Purpose                                                                           |
+| -------------------- | --------------------------------------------------------------------------------- |
+| `docs/SIGNAL-BUS.md` | Framework documentation for signal bus libraries (usage, topics, extension points) |
+
 ### Modified Files
 
 | File                 | Change                                                                                               |
 | -------------------- | ---------------------------------------------------------------------------------------------------- |
 | `ops/metrics-log.sh` | Source `signal-emit.sh`, replace `emit_event()` with `signal_emit()`, move backend config to library |
-| `docs/SIGNAL-BUS.md` | Framework documentation for signal bus libraries (usage, topics, extension points)                   |
 
 ### Not Changed
 
