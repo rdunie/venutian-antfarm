@@ -181,6 +181,38 @@ Guardian presents to user with full context
 
 **Special case (compliance floor):** The CRO is both guardian and risk facilitator. The CRO dispatches the consultation as a generic subagent, providing its own compliance position as input.
 
+## Efficient Consultation Protocol
+
+When a floor change is proposed, the CRO facilitates cross-floor risk assessment using a tiered consultation protocol designed to minimize token usage:
+
+### Triage
+
+The CRO reads the proposal and any `--domains` tags, then selects which peer Cx agents to consult. Domain tags are advisory hints — the CRO has final discretion. Non-consulted agents are recorded for audit trail.
+
+**Exception:** When the CRO is both guardian and facilitator (compliance floor), triage is disabled — all 6 peer Cx agents must be consulted. The CRO has a conflict of interest on its own floor and cannot unilaterally narrow the consultation.
+
+### Guided Template
+
+Consulted agents respond using a structured template (Impact, Rationale, Conditions, Risk Level) keeping responses to ~50-100 tokens. Free-text is allowed for substantive concerns.
+
+### Early Abort
+
+If round 1 produces unanimous consensus (all not-impacted, or all aligned), the CRO aborts further rounds. Maximum 2 rounds total.
+
+### Domain Tags
+
+Proposers can hint which domains are affected:
+
+```
+/floor propose behavioral "change" --domains process,cost
+```
+
+Valid tags: `security` (CISO), `strategy` (CEO), `technology` (CTO), `cost` (CFO), `process` (COO), `knowledge` (CKO).
+
+### Budget Observability
+
+The `consultation` section in `fleet-config.json` sets advisory targets (`max_rounds`, `budget_tokens_hint`). The CFO monitors actual costs via `ops/dora.sh --cost`. No hard enforcement.
+
 ### Applying a Change
 
 1. Guardian creates sentinel file (`.claude/floors/<name>/.applying`)
