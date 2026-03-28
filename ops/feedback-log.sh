@@ -99,6 +99,20 @@ resolve_supervisor() {
   echo ""
 }
 
+resolve_escalation_target() {
+  local current_supervisor="$1"
+  local config="$REPO_ROOT/fleet-config.json"
+  if [[ ! -f "$config" ]] || ! command -v jq &>/dev/null; then
+    echo "ceo"; return
+  fi
+  local target
+  target=$(jq -r --arg s "$current_supervisor" \
+    '.pathways.declared.governance[]? | select(startswith($s + " -> ")) | split(" -> ")[1]' \
+    "$config" 2>/dev/null | head -1)
+  if [[ -n "$target" ]]; then echo "$target"; return; fi
+  echo "ceo"
+}
+
 read_proposal_field() {
   local pid="$1"
   local field="$2"
@@ -545,6 +559,105 @@ case "$SUBCOMMAND" in
 
     update_checksum
     echo "proposal_id=$local_pid"
+    ;;
+
+  check-escalations)
+    today="$(date -u +%Y-%m-%d)"
+    current_pid=""
+    current_deadline=""
+    current_supervisor=""
+    current_is_pending=""
+    escalated_count=0
+
+    do_escalate() {
+      local esc_pid="$1" esc_deadline="$2" esc_supervisor="$3"
+      [[ -z "$esc_pid" || -z "$esc_deadline" || -z "$esc_supervisor" ]] && return
+      if [[ "$esc_deadline" < "$today" || "$esc_deadline" == "$today" ]]; then
+        new_supervisor=$(resolve_escalation_target "$esc_supervisor")
+        new_deadline=$(date -u -d "+7 days" +%Y-%m-%d 2>/dev/null || date -u -v+7d +%Y-%m-%d 2>/dev/null || echo "unknown")
+        new_status="pending (escalated from ${esc_supervisor})"
+
+        esc_new_sup="$new_supervisor"
+        esc_new_deadline="$new_deadline"
+        esc_new_status="$new_status"
+        tmpfile=$(mktemp)
+        awk -v pid="### ${esc_pid} " \
+            -v new_sup="$esc_new_sup" \
+            -v new_dl="$esc_new_deadline" \
+            -v new_st="$esc_new_status" '
+          $0 ~ pid { in_entry=1 }
+          in_entry && /^\*\*Supervisor:\*\*/ { print "**Supervisor:** " new_sup; next }
+          in_entry && /^\*\*Escalation deadline:\*\*/ { print "**Escalation deadline:** " new_dl; next }
+          in_entry && /^\*\*Status:\*\*/ { print "**Status:** " new_st; in_entry=0; next }
+          in_entry && /^### / && !($0 ~ pid) { in_entry=0 }
+          { print }
+        ' "$LEDGER" > "$tmpfile" && mv "$tmpfile" "$LEDGER"
+
+        if [[ -f "$FINDINGS" ]]; then
+          esc_finding="### [${today}] normal -- Feedback proposal ${esc_pid} escalated to ${esc_new_sup}
+
+**Found by:** feedback-system (auto)
+**Category:** escalation
+**Description:** Proposal ${esc_pid} deadline passed without action by ${esc_supervisor}. Escalated to ${esc_new_sup}.
+**Proposed action:** ${esc_new_sup} to review and formalize or reject within 7 days
+**Status:** open"
+
+          if grep -q "^(none yet)" "$FINDINGS"; then
+            tmpfile2=$(mktemp)
+            awk -v entry="$esc_finding" '{
+              if ($0 == "(none yet)") { print entry } else { print }
+            }' "$FINDINGS" > "$tmpfile2" && mv "$tmpfile2" "$FINDINGS"
+          elif grep -q "^## Resolved Findings" "$FINDINGS"; then
+            tmpfile2=$(mktemp)
+            awk -v entry="$esc_finding" '{
+              if ($0 == "## Resolved Findings") { print ""; print entry; print "" }
+              print
+            }' "$FINDINGS" > "$tmpfile2" && mv "$tmpfile2" "$FINDINGS"
+          else
+            echo "" >> "$FINDINGS"
+            echo "$esc_finding" >> "$FINDINGS"
+          fi
+        fi
+
+        "$SCRIPT_DIR/metrics-log.sh" feedback-escalated \
+          --proposal "$esc_pid" --from "$esc_supervisor" --to "$esc_new_sup" 2>/dev/null || true
+
+        escalated_count=$((escalated_count + 1))
+      fi
+    }
+
+    while IFS= read -r line; do
+      # Track proposal entry headers
+      if [[ "$line" =~ ^###\ (P-[0-9]+)\ \[proposal\] ]]; then
+        # Flush previous pending entry if fully collected
+        if [[ -n "$current_pid" && -n "$current_is_pending" ]]; then
+          do_escalate "$current_pid" "$current_deadline" "$current_supervisor"
+        fi
+        current_pid="${BASH_REMATCH[1]}"
+        current_deadline=""
+        current_supervisor=""
+        current_is_pending=""
+      elif [[ -n "$current_pid" && "$line" =~ ^\*\*Escalation\ deadline:\*\*\ (.*) ]]; then
+        current_deadline="${BASH_REMATCH[1]}"
+      elif [[ -n "$current_pid" && "$line" =~ ^\*\*Supervisor:\*\*\ (.*) ]]; then
+        current_supervisor="${BASH_REMATCH[1]}"
+      elif [[ -n "$current_pid" && "$line" =~ ^\*\*Status:\*\*\  ]]; then
+        if [[ "$line" =~ ^\*\*Status:\*\*\ pending ]]; then
+          current_is_pending="1"
+        else
+          # Not pending — skip this entry
+          current_pid=""
+        fi
+      fi
+    done < "$LEDGER"
+
+    # Flush the last pending entry (no subsequent header to trigger flush)
+    if [[ -n "$current_pid" && -n "$current_is_pending" ]]; then
+      do_escalate "$current_pid" "$current_deadline" "$current_supervisor"
+    fi
+
+    update_checksum
+    echo "escalated=${escalated_count}"
     ;;
 
   *)

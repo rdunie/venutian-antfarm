@@ -428,6 +428,63 @@ FINDINGS_REGISTER="$FINDINGS_REG" METRICS_LOG_FILE="$METRICS_FILE" \
 REPO_ROOT="${TMPDIR}" "${FEEDBACK_LOG}" reject P-001 --issuer ciso 2>/dev/null || rej_noreason_exit=$?
 assert_exit "reject without --reason fails" 1 "${rej_noreason_exit}"
 
+# ── Test: check-escalations ───────────────────────────────────────────
+echo ""
+echo "=== Escalation ==="
+setup_ledger
+
+# Create a proposal then backdate its deadline
+FEEDBACK_LEDGER="$LEDGER" FEEDBACK_CHECKSUM="$CHECKSUM" \
+FINDINGS_REGISTER="$FINDINGS_REG" METRICS_LOG_FILE="$METRICS_FILE" \
+REPO_ROOT="${TMPDIR}" "${FEEDBACK_LOG}" recommend \
+  --issuer security-reviewer --subject backend-specialist \
+  --type reprimand --domain security --severity medium \
+  --description "Shallow validation" --evidence "No sanitization" > /dev/null
+
+# Backdate deadline to yesterday so it triggers escalation
+yesterday=$(date -u -d "-1 day" +%Y-%m-%d 2>/dev/null || date -u -v-1d +%Y-%m-%d 2>/dev/null || echo "2020-01-01")
+tmpfile=$(mktemp)
+awk -v old_dl="$(grep '\*\*Escalation deadline:\*\*' "$LEDGER" | head -1 | sed 's/.*\*\* //')" \
+    -v new_dl="$yesterday" '{
+  if ($0 ~ /\*\*Escalation deadline:\*\*/) {
+    gsub(old_dl, new_dl)
+  }
+  print
+}' "$LEDGER" > "$tmpfile" && mv "$tmpfile" "$LEDGER"
+
+# Run check-escalations
+esc_exit=0
+ESC_OUTPUT=$(FEEDBACK_LEDGER="$LEDGER" FEEDBACK_CHECKSUM="$CHECKSUM" \
+FINDINGS_REGISTER="$FINDINGS_REG" METRICS_LOG_FILE="$METRICS_FILE" \
+REPO_ROOT="${TMPDIR}" "${FEEDBACK_LOG}" check-escalations) || esc_exit=$?
+assert_exit "check-escalations exits 0" 0 "${esc_exit}"
+
+# ciso -> cro per governance pathway in fleet-config.json
+assert_contains "supervisor escalated to cro" "$LEDGER" "Supervisor.*cro"
+assert_contains "status still pending after escalation" "$LEDGER" "Status.*pending"
+
+# Test: fresh (non-expired) proposal is NOT escalated
+setup_ledger
+FEEDBACK_LEDGER="$LEDGER" FEEDBACK_CHECKSUM="$CHECKSUM" \
+FINDINGS_REGISTER="$FINDINGS_REG" METRICS_LOG_FILE="$METRICS_FILE" \
+REPO_ROOT="${TMPDIR}" "${FEEDBACK_LOG}" recommend \
+  --issuer security-reviewer --subject frontend-specialist \
+  --type kudo --domain testing \
+  --description "Great coverage" --evidence "100%" > /dev/null
+
+ESC_OUTPUT2=$(FEEDBACK_LEDGER="$LEDGER" FEEDBACK_CHECKSUM="$CHECKSUM" \
+FINDINGS_REGISTER="$FINDINGS_REG" METRICS_LOG_FILE="$METRICS_FILE" \
+REPO_ROOT="${TMPDIR}" "${FEEDBACK_LOG}" check-escalations)
+
+TOTAL=$((TOTAL + 1))
+if echo "$ESC_OUTPUT2" | grep -q "escalated=0"; then
+  echo -e "  ${GREEN}PASS${NC} fresh proposal not escalated"
+  PASS=$((PASS + 1))
+else
+  echo -e "  ${RED}FAIL${NC} fresh proposal should not be escalated, got: $ESC_OUTPUT2"
+  FAIL=$((FAIL + 1))
+fi
+
 # ── Summary ────────────────────────────────────────────────────────────
 echo ""
 echo "========================================"
