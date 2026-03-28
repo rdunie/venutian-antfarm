@@ -298,6 +298,15 @@ case "$SUBCOMMAND" in
     check_tension "reprimand" "$SUBJECT" "$ITEM" "$local_id"
 
     echo "reward_id=$local_id"
+
+    # Nudge: check if issuer has pending proposals to review
+    if [[ -f "$LEDGER" ]]; then
+      pending_for_issuer=$(grep -c "Supervisor.*${ISSUER}" "$LEDGER" 2>/dev/null || true)
+      pending_status=$(grep -B5 "Supervisor.*${ISSUER}" "$LEDGER" 2>/dev/null | grep -c "Status.*pending" || true)
+      if [[ "$pending_status" -gt 0 ]]; then
+        echo "NOTICE: You have ${pending_status} pending proposal(s) awaiting your review. Use 'ops/feedback-log.sh formalize <P-id>' or 'reject <P-id>'." >&2
+      fi
+    fi
     ;;
 
   kudo)
@@ -336,6 +345,15 @@ case "$SUBCOMMAND" in
     check_tension "kudo" "$SUBJECT" "$ITEM" "$local_id"
 
     echo "reward_id=$local_id"
+
+    # Nudge: check if issuer has pending proposals to review
+    if [[ -f "$LEDGER" ]]; then
+      pending_for_issuer=$(grep -c "Supervisor.*${ISSUER}" "$LEDGER" 2>/dev/null || true)
+      pending_status=$(grep -B5 "Supervisor.*${ISSUER}" "$LEDGER" 2>/dev/null | grep -c "Status.*pending" || true)
+      if [[ "$pending_status" -gt 0 ]]; then
+        echo "NOTICE: You have ${pending_status} pending proposal(s) awaiting your review. Use 'ops/feedback-log.sh formalize <P-id>' or 'reject <P-id>'." >&2
+      fi
+    fi
     ;;
 
   profile)
@@ -370,6 +388,20 @@ case "$SUBCOMMAND" in
       while IFS= read -r line; do
         echo "  ${line#\#\#\# }"
       done
+
+    # Pending proposals
+    pending_count=$(sed -n "/^## ${SUBJECT}$/,/^## [^#]/p" "$LEDGER" | grep -c "\\[proposal\\]" || true)
+    pending_pending=$(sed -n "/^## ${SUBJECT}$/,/^## [^#]/p" "$LEDGER" | grep -c "Status.*pending" || true)
+    if [[ "$pending_count" -gt 0 ]]; then
+      echo "Proposals: ${pending_count} total (${pending_pending} pending)"
+    fi
+
+    # By origin tier
+    echo "By tier:"
+    for tier in governance core specialist; do
+      tier_count=$(sed -n "/^## ${SUBJECT}$/,/^## [^#]/p" "$LEDGER" | grep -c "Origin tier.*${tier}" || true)
+      [[ "$tier_count" -gt 0 ]] && echo "  ${tier} (${tier_count})" || true
+    done
     ;;
 
   tensions)

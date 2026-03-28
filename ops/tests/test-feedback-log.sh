@@ -485,6 +485,36 @@ else
   FAIL=$((FAIL + 1))
 fi
 
+echo ""
+echo "=== Profile Extensions ==="
+setup_ledger
+
+# Create entries with different tiers
+FEEDBACK_LEDGER="$TMPDIR/rewards/ledger.md" \
+FEEDBACK_CHECKSUM="$TMPDIR/rewards/ledger-checksum.sha256" \
+FINDINGS_REGISTER="$TMPDIR/findings/register.md" \
+METRICS_LOG_FILE="$TMPDIR/metrics/events.jsonl" \
+REPO_ROOT="${TMPDIR}" \
+  "${FEEDBACK_LOG}" reprimand --issuer ciso --subject backend-specialist \
+  --domain security --severity high --description "tier test" --evidence "test"
+
+FEEDBACK_LEDGER="$TMPDIR/rewards/ledger.md" \
+FEEDBACK_CHECKSUM="$TMPDIR/rewards/ledger-checksum.sha256" \
+FINDINGS_REGISTER="$TMPDIR/findings/register.md" \
+METRICS_LOG_FILE="$TMPDIR/metrics/events.jsonl" \
+REPO_ROOT="${TMPDIR}" \
+  "${FEEDBACK_LOG}" recommend --issuer security-reviewer --subject backend-specialist \
+  --type kudo --domain security \
+  --description "pending test" --evidence "test"
+
+profile_output=$(FEEDBACK_LEDGER="$TMPDIR/rewards/ledger.md" \
+  FEEDBACK_CHECKSUM="$TMPDIR/rewards/ledger-checksum.sha256" \
+  "${FEEDBACK_LOG}" profile backend-specialist)
+
+echo "$profile_output" > "$TMPDIR/profile-output.txt"
+assert_contains "profile shows pending proposals" "$TMPDIR/profile-output.txt" "pending"
+assert_contains "profile shows tier breakdown" "$TMPDIR/profile-output.txt" "tier"
+
 # ── Summary ────────────────────────────────────────────────────────────
 echo ""
 echo "========================================"
