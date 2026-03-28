@@ -33,7 +33,11 @@ Every signal in the ledger gets a computed weight at read time:
 weight = tier_multiplier * type_multiplier * domain_multiplier * decay_multiplier
 ```
 
-Kudos contribute positive weight, reprimands contribute negative weight. Net score = sum of all weighted kudos - sum of all weighted reprimands.
+Each kudo contributes `+weight`. Each reprimand contributes `-weight`. The `kudos` output field is the sum of positive contributions. The `reprimands` output field is the sum of negative contributions (always <= 0). `net = kudos + reprimands`.
+
+Only `[kudo]` and `[reprimand]` entries are scored. `[proposal]` entries are excluded -- they represent pre-adjudication signals, and formalized proposals already produce an R/K entry (so including P-entries would double-count). `[tension]` entries are metadata, not feedback signals, and are also excluded.
+
+Formalized proposals retain their original `specialist` origin tier in the ledger. The tier multiplier reflects where the signal originated, not who adjudicated it. The adjudicating supervisor's authority is reflected in the fact that the signal was formalized at all.
 
 | Axis   | Source                                                    | Default                                   |
 | ------ | --------------------------------------------------------- | ----------------------------------------- |
@@ -54,11 +58,15 @@ else: decay = post_cliff_multiplier
 
 **Computing the timeline (O(n + m), not O(n \* m)):**
 
-1. One pass through the metrics log: extract all `item-accepted` timestamps, build an associative array mapping each date to its cumulative accepted count. O(m).
+1. One pass through the metrics log: extract all `item-accepted` timestamps, build an associative array mapping each date to its cumulative accepted count as of end of that date. O(m).
 2. Count total accepted items. O(1) after step 1.
-3. For each signal: look up its date in the associative array to get accepted count at that time, compute age, apply decay. O(n).
+3. For each signal: look up its date in the associative array. If the exact date has no key (no items accepted that day), walk backward to find the most recent date with a key, or default to 0 if no prior date exists. Compute age, apply decay. O(n).
 
-**Edge case:** If the metrics log is empty or missing, all signals are treated as recent (decay = 1.0). Correct for new projects with no accepted items yet.
+**Edge cases:**
+
+- If the metrics log is empty or missing, all signals are treated as recent (decay = 1.0). Correct for new projects with no accepted items yet.
+- If the agent has no ledger entries, `score` outputs `net=0.0 kudos=0.0 reprimands=0.0 signals=0 recent=0` and exits 0.
+- `cliff_items` must be >= 1. A value of 0 would cause all signals to immediately decay, which is almost certainly unintended. The script should validate this and warn if 0.
 
 ### 3. Fleet-Config Schema
 
@@ -100,6 +108,8 @@ else: decay = post_cliff_multiplier
 3. Look up `domain_multipliers._default` -- global default
 4. Fall back to 1.0
 
+Note: The top-level `_default` is a scalar (number), while domain-level entries are objects containing agent-specific overrides and their own `_default`. Implementers should check the type before lookup -- if the result of the domain key lookup is a number, use it directly; if it is an object, descend into it.
+
 ### 4. Script Changes
 
 #### New `score` subcommand
@@ -118,10 +128,10 @@ signals=7
 recent=5
 ```
 
-- `net` = sum of weighted kudos - sum of weighted reprimands
-- `kudos` = sum of positive weighted signals
-- `reprimands` = sum of negative weighted signals (shown as negative number)
-- `signals` = total R/K entries for this agent
+- `net` = `kudos + reprimands` (since reprimands is already negative)
+- `kudos` = sum of positive weighted contributions (always >= 0)
+- `reprimands` = sum of negative weighted contributions (always <= 0)
+- `signals` = total R/K entries for this agent (excludes proposals and tensions)
 - `recent` = entries within the decay cliff window
 
 #### Profile extension
@@ -164,12 +174,12 @@ No consumer auto-acts on the score. It's evidence for human-in-the-loop decision
 
 ### Modified Files
 
-| File                             | Change                                                                                                 |
-| -------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| `ops/feedback-log.sh`            | Add `compute_weighted_score` function, `score` subcommand, extend `profile` with weighted summary line |
-| `ops/tests/test-feedback-log.sh` | Tests for score output, profile weighted line, decay behavior, default fallback when no config         |
-| `templates/fleet-config.json`    | Add `weighting` section to `rewards` with tier/type/domain multipliers and decay config                |
-| `CLAUDE.md`                      | Document `score` subcommand in Feedback commands section                                               |
+| File                             | Change                                                                                                  |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `ops/feedback-log.sh`            | Add `compute_weighted_score` function, `score` subcommand, extend `profile` with weighted summary line  |
+| `ops/tests/test-feedback-log.sh` | Tests for score output, profile weighted line, decay behavior, default fallback when no config          |
+| `templates/fleet-config.json`    | Add `weighting` section to `rewards` with tier/type/domain multipliers and decay config                 |
+| `CLAUDE.md`                      | Document `score` subcommand in Feedback commands section; verify existing subcommand names match script |
 
 ### No New Files
 
