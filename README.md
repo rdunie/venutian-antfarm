@@ -21,10 +21,10 @@ An agent fleet harness framework for structured multi-agent software delivery. D
 
 **Recent highlights:**
 
-- Governance floors are now **multi-domain** — compliance and behavioral ship by default, add your own by declaring them in fleet-config.json
-- The compliance compiler extracts rules from Markdown, validates them against a schema, and generates enforcement hooks — you define controls in prose, the compiler makes them real
-- A rewards system tracks behavioral feedback (kudos/reprimands) per agent, surfacing tensions before they become patterns
-- Framework purity — the repo ships only tooling and templates; runtime artifacts are scaffolded by `/onboard`
+- Behavioral feedback now involves the whole fleet — specialists propose kudos and reprimands via `recommend`, supervisors formalize or reject, and unresolved tensions auto-escalate. Every tier has a voice, no tier has unchecked authority.
+- Feedback scoring is now weighted — a three-axis multiplier (tier, type, domain) scales with your delivery history using step-function decay. The `score` subcommand outputs machine-parseable weighted summaries for dashboards and automation.
+- The metrics pipeline now has a proper signal bus — `ops/lib/signal-emit.sh` and `ops/lib/signal-read.sh` are reusable libraries for writing and querying events, with topic subscriptions and source abstraction baked in.
+- CRO consultations are much cheaper — instead of pulling all 6 Cx officers into every governance review, the CRO selects only the agents with stake in the affected domains. Domain tags on proposals, guided response templates, and early abort on consensus keep the token cost low.
 
 ## Quick Start
 
@@ -202,17 +202,18 @@ DORA + flow quality metrics out of the box, with a pluggable backend (JSONL defa
 
 ```mermaid
 flowchart LR
-    LOG["ops/metrics-log.sh"] --> JSONL["events.jsonl"]
-    JSONL --> DORA["ops/dora.sh\nDORA metrics"]
-    JSONL --> FLOW["ops/dora.sh --flow\nFlow quality"]
-    DORA --> PACE["SM: pace\nrecommendation"]
-    FLOW --> PACE
+    EMIT["ops/lib/signal-emit.sh"] --> JSONL["events.jsonl"]
+    LOG["ops/metrics-log.sh"] --> EMIT
+    JSONL --> READ["ops/lib/signal-read.sh"]
+    READ --> DORA["ops/dora.sh"]
+    READ --> SCORE["feedback-log.sh score"]
 
+    style EMIT fill:#a5d6a7,stroke:#2e7d32,color:#1a1a1a
     style LOG fill:#a5d6a7,stroke:#2e7d32,color:#1a1a1a
     style JSONL fill:#bdbdbd,stroke:#424242,color:#1a1a1a
+    style READ fill:#a5d6a7,stroke:#2e7d32,color:#1a1a1a
     style DORA fill:#90caf9,stroke:#1565c0,color:#1a1a1a
-    style FLOW fill:#90caf9,stroke:#1565c0,color:#1a1a1a
-    style PACE fill:#ffcc80,stroke:#e65100,color:#1a1a1a
+    style SCORE fill:#90caf9,stroke:#1565c0,color:#1a1a1a
 ```
 
 See the [Metrics Guide](docs/METRICS-GUIDE.md) for all event types, dashboard examples, and how agents adapt their behavior based on metrics feedback.
@@ -244,7 +245,7 @@ App fields override harness fields. Unmentioned harness fields are preserved.
 ## Key Concepts
 
 - **Governance Floors + Compiler**: Described above in [How Controls Work](#how-controls-work). Full reference: [Governance Floors Guide](docs/GOVERNANCE-FLOORS.md), [Compiler Guide](docs/COMPILER-GUIDE.md).
-- **Rewards System**: Behavioral feedback via kudos and reprimands. Each agent builds a behavioral profile over time. Tensions (conflicting feedback from different agents) surface for resolution before they become patterns. Use `ops/rewards-log.sh` to issue feedback and query profiles.
+- **Feedback System**: Behavioral feedback via kudos and reprimands. Any agent can propose feedback; supervisors formalize or reject; unresolved tensions auto-escalate. Each agent builds a weighted behavioral profile over time — weighted by tier, type, and domain. Use `ops/feedback-log.sh` to issue feedback, query profiles, and get scored output. See the [Feedback Guide](docs/FEEDBACK-GUIDE.md) for the full reference.
 - **Findings Loop**: Structured learning where agents record notable events, the SM curates refinements, and the CKO directs knowledge-ops to distribute learnings fleet-wide. The same finding type should decrease over time.
 - **Fix Ownership**: The agent that authored the code is responsible for fixing it, regardless of where the issue was discovered. Diagnosis is collaborative; the fix returns to the author so the learning stays with them.
 - **Environment Discipline**: All code changes happen in dev only. Agents may diagnose in any environment (read-only), but fixes flow through the deployment chain: branch, PR, merge, deploy through promotion order.
@@ -280,14 +281,16 @@ All skills can be overridden by implementers. Create `.claude/skills/<name>/SKIL
 - **[Compiler Guide](docs/COMPILER-GUIDE.md)** -- Enforcement block syntax, compiler pipeline, artifact reference
 - **[Governance Floors Guide](docs/GOVERNANCE-FLOORS.md)** -- Multi-floor governance pattern, adding floors, floor lifecycle
 - **[Pathway Analysis](docs/PATHWAY-ANALYSIS.md)** -- Agent communication pathway analysis: declaring, interpreting, governance
+- **[Feedback Guide](docs/FEEDBACK-GUIDE.md)** -- Behavioral feedback system: proposal flow, escalation, weighted scoring
+- **[Signal Bus](docs/SIGNAL-BUS.md)** -- Signal bus libraries: emit/read API, topic conventions, source abstraction
 - **[Examples](examples/)** -- 5 progressive examples from getting started to operational maturity
 
 ## What's Coming Next
 
-- **Expanded rewards (#28)** — Extend behavioral feedback to all agents with an escalation chain for unresolved tensions.
-- **Adaptive weighting (#25)** — Context-sensitive scoring for kudos and reprimands based on domain, severity, and recency.
-- **Token-efficient consultation (#30)** — Reduce token cost of multi-agent governance consultations through structured summaries and selective dispatch.
-- **Signal bus (#24)** — Event-driven communication backbone replacing point-to-point agent handoffs.
+- **Tamper-resistant configuration (#23)** — Integrity protection for fleet-config.json and agent definitions, similar to floor checksums.
+- **Multi-context orchestration (#21)** — Coordinate agents across multiple Claude Code sessions for longer-running workstreams.
+- **COLLABORATION.md split (#20)** — Break the collaboration protocol into focused reference docs that are easier to navigate and maintain.
+- **Sentinel file bypass (#19)** — Mechanisms for safely bypassing sentinel checks in controlled scenarios without weakening governance.
 
 See the [backlog](https://github.com/rdunie/venutian-antfarm/issues) for the full roadmap.
 
