@@ -251,6 +251,161 @@ EOF
   update_checksum
 }
 
+compute_weighted_score() {
+  local agent="$1"
+  local config="$REPO_ROOT/fleet-config.json"
+
+  local tier_gov=1.0 tier_core=0.8 tier_spec=0.5
+  local type_reprimand=1.5 type_kudo=1.0
+  local decay_cliff=10 decay_post=0.25
+
+  if [[ -f "$config" ]] && command -v jq &>/dev/null; then
+    local w
+    w=$(jq -r '.rewards.weighting // empty' "$config" 2>/dev/null)
+    if [[ -n "$w" ]]; then
+      tier_gov=$(jq -r '.rewards.weighting.tier_multipliers.governance // 1.0' "$config" 2>/dev/null)
+      tier_core=$(jq -r '.rewards.weighting.tier_multipliers.core // 0.8' "$config" 2>/dev/null)
+      tier_spec=$(jq -r '.rewards.weighting.tier_multipliers.specialist // 0.5' "$config" 2>/dev/null)
+      type_reprimand=$(jq -r '.rewards.weighting.type_multipliers.reprimand // 1.5' "$config" 2>/dev/null)
+      type_kudo=$(jq -r '.rewards.weighting.type_multipliers.kudo // 1.0' "$config" 2>/dev/null)
+      decay_cliff=$(jq -r '.rewards.weighting.decay.cliff_items // 10' "$config" 2>/dev/null)
+      decay_post=$(jq -r '.rewards.weighting.decay.post_cliff_multiplier // 0.25' "$config" 2>/dev/null)
+    fi
+  fi
+
+  if [[ "$decay_cliff" -lt 1 ]] 2>/dev/null; then
+    echo "WARNING: cliff_items must be >= 1, got ${decay_cliff}. Using 1." >&2
+    decay_cliff=1
+  fi
+
+  declare -A accepted_by_date
+  local total_accepted=0
+  if [[ -f "$METRICS_LOG_FILE" ]] && command -v jq &>/dev/null; then
+    while IFS= read -r evt_date; do
+      [[ -z "$evt_date" ]] && continue
+      total_accepted=$((total_accepted + 1))
+      accepted_by_date["$evt_date"]=$total_accepted
+    done < <(jq -r 'select(.event == "item-accepted") | .ts[:10]' "$METRICS_LOG_FILE" 2>/dev/null)
+  fi
+
+  local sorted_dates
+  sorted_dates=$(printf '%s\n' "${!accepted_by_date[@]}" | sort)
+
+  lookup_accepted_at() {
+    local signal_date="$1"
+    local result=0
+    local d
+    while IFS= read -r d; do
+      [[ -z "$d" ]] && continue
+      if [[ "$d" < "$signal_date" || "$d" == "$signal_date" ]]; then
+        result=${accepted_by_date["$d"]}
+      else
+        break
+      fi
+    done <<< "$sorted_dates"
+    echo "$result"
+  }
+
+  local kudos_sum=0 reprimands_sum=0 signal_count=0 recent_count=0
+
+  if grep -q "^## ${agent}$" "$LEDGER" 2>/dev/null; then
+    local section
+    section=$(sed -n "/^## ${agent}$/,/^## [^#]/p" "$LEDGER")
+
+    while IFS= read -r header; do
+      [[ -z "$header" ]] && continue
+
+      local entry_type entry_date entry_domain entry_tier
+      local re_type='\[(kudo|reprimand)\]'
+      local re_date='\] ([0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]) '
+      local re_domain='/ ([a-zA-Z_-]+)$'
+      local re_id='^### ([RK]-[0-9]+)'
+      if [[ "$header" =~ $re_type ]]; then
+        entry_type="${BASH_REMATCH[1]}"
+      else
+        continue
+      fi
+      if [[ "$header" =~ $re_date ]]; then
+        entry_date="${BASH_REMATCH[1]}"
+      else
+        continue
+      fi
+      if [[ "$header" =~ $re_domain ]]; then
+        entry_domain="${BASH_REMATCH[1]}"
+      else
+        entry_domain="unknown"
+      fi
+
+      local entry_id=""
+      if [[ "$header" =~ $re_id ]]; then
+        entry_id="${BASH_REMATCH[1]}"
+      fi
+      [[ -z "$entry_id" ]] && continue
+      entry_tier=$(sed -n "/^### ${entry_id} /,/^### /p" "$LEDGER" | grep '^\*\*Origin tier:\*\*' | head -1 | sed 's/.*\*\* //')
+      [[ -z "$entry_tier" ]] && entry_tier="unknown"
+
+      local tm=1.0
+      case "$entry_tier" in
+        governance) tm=$tier_gov ;;
+        core) tm=$tier_core ;;
+        specialist) tm=$tier_spec ;;
+      esac
+
+      local tpm=1.0
+      case "$entry_type" in
+        reprimand) tpm=$type_reprimand ;;
+        kudo) tpm=$type_kudo ;;
+      esac
+
+      local dm=1.0
+      if [[ -f "$config" ]] && command -v jq &>/dev/null; then
+        local dm_lookup
+        dm_lookup=$(jq -r --arg d "$entry_domain" --arg a "$agent" \
+          '.rewards.weighting.domain_multipliers[$d] | if type == "object" then .[$a] // ._default // null else . // null end // null' \
+          "$config" 2>/dev/null)
+        if [[ "$dm_lookup" != "null" && -n "$dm_lookup" ]]; then
+          dm=$dm_lookup
+        else
+          dm_lookup=$(jq -r '.rewards.weighting.domain_multipliers._default // 1.0' "$config" 2>/dev/null)
+          dm=$dm_lookup
+        fi
+      fi
+
+      local decay=1.0
+      local accepted_at
+      accepted_at=$(lookup_accepted_at "$entry_date")
+      local signal_age=$((total_accepted - accepted_at))
+      if [[ "$signal_age" -gt "$decay_cliff" ]]; then
+        decay=$decay_post
+      fi
+
+      local weight
+      weight=$(awk "BEGIN { printf \"%.1f\", $tm * $tpm * $dm * $decay }")
+
+      signal_count=$((signal_count + 1))
+      if [[ "$signal_age" -le "$decay_cliff" ]]; then
+        recent_count=$((recent_count + 1))
+      fi
+
+      if [[ "$entry_type" == "kudo" ]]; then
+        kudos_sum=$(awk "BEGIN { printf \"%.1f\", $kudos_sum + $weight }")
+      else
+        reprimands_sum=$(awk "BEGIN { printf \"%.1f\", $reprimands_sum - $weight }")
+      fi
+
+    done <<< "$(echo "$section" | grep '^### [RK]-')"
+  fi
+
+  local net
+  net=$(awk "BEGIN { printf \"%.1f\", $kudos_sum + $reprimands_sum }")
+
+  echo "net=${net}"
+  echo "kudos=${kudos_sum}"
+  echo "reprimands=${reprimands_sum}"
+  echo "signals=${signal_count}"
+  echo "recent=${recent_count}"
+}
+
 # ── Subcommands ──────────────────────────────────────────────────────────
 
 case "$SUBCOMMAND" in
@@ -692,9 +847,14 @@ case "$SUBCOMMAND" in
     echo "escalated=${escalated_count}"
     ;;
 
+  score)
+    [[ -z "$SUBJECT" ]] && echo "Usage: ops/feedback-log.sh score <agent>" >&2 && exit 1
+    compute_weighted_score "$SUBJECT"
+    ;;
+
   *)
     echo "ERROR: Unknown subcommand '$SUBCOMMAND'" >&2
-    echo "Valid: reprimand, kudo, recommend, formalize, reject, check-escalations, profile, tensions" >&2
+    echo "Valid: reprimand, kudo, recommend, formalize, reject, check-escalations, profile, tensions, score" >&2
     exit 1
     ;;
 esac

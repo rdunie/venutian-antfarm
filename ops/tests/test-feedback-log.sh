@@ -515,6 +515,107 @@ echo "$profile_output" > "$TMPDIR/profile-output.txt"
 assert_contains "profile shows pending proposals" "$TMPDIR/profile-output.txt" "pending"
 assert_contains "profile shows tier breakdown" "$TMPDIR/profile-output.txt" "tier"
 
+# ── Test: weighted score ──────────────────────────────────────────────
+echo ""
+echo "=== Weighted Score ==="
+setup_ledger
+
+LEDGER="$TMPDIR/rewards/ledger.md"
+CHECKSUM="$TMPDIR/rewards/ledger-checksum.sha256"
+FINDINGS_REG="$TMPDIR/findings/register.md"
+METRICS_FILE="$TMPDIR/metrics/events.jsonl"
+
+# Write fleet-config with weighting for score tests
+cat > "$TMPDIR/fleet-config.json" <<'CONFIG'
+{
+  "agents": {
+    "governance": ["cro", "ciso", "ceo", "cto", "cfo", "coo", "cko"],
+    "core": ["product-owner", "solution-architect", "scrum-master", "knowledge-ops", "platform-ops", "compliance-auditor"]
+  },
+  "rewards": {
+    "escalation_deadline_days": 7,
+    "weighting": {
+      "tier_multipliers": {
+        "governance": 1.0,
+        "core": 0.8,
+        "specialist": 0.5
+      },
+      "type_multipliers": {
+        "kudo": 1.0,
+        "reprimand": 1.5
+      },
+      "domain_multipliers": {
+        "security": 1.5,
+        "_default": 1.0
+      },
+      "decay": {
+        "cliff_items": 10,
+        "post_cliff_multiplier": 0.25
+      }
+    }
+  },
+  "pathways": {
+    "declared": {
+      "feedback": ["security-reviewer -> ciso", "backend-specialist -> solution-architect"],
+      "escalation": ["* -> solution-architect", "* -> scrum-master", "* -> product-owner"],
+      "governance": ["ciso -> cro", "cto -> solution-architect", "* -> ceo"]
+    }
+  }
+}
+CONFIG
+
+# Test 1: governance kudo for backend-specialist (tier=1.0, type=1.0, domain=1.0, decay=1.0)
+FEEDBACK_LEDGER="$LEDGER" FEEDBACK_CHECKSUM="$CHECKSUM" \
+FINDINGS_REGISTER="$FINDINGS_REG" METRICS_LOG_FILE="$METRICS_FILE" \
+REPO_ROOT="${TMPDIR}" "${FEEDBACK_LOG}" kudo \
+  --issuer ciso --subject backend-specialist --domain delivery \
+  --description "Good work" --evidence "All tests pass" > /dev/null
+
+# Test 2: governance reprimand for backend-specialist (tier=1.0, type=1.5, domain=1.0, decay=1.0)
+FEEDBACK_LEDGER="$LEDGER" FEEDBACK_CHECKSUM="$CHECKSUM" \
+FINDINGS_REGISTER="$FINDINGS_REG" METRICS_LOG_FILE="$METRICS_FILE" \
+REPO_ROOT="${TMPDIR}" "${FEEDBACK_LOG}" reprimand \
+  --issuer ciso --subject backend-specialist --domain delivery \
+  --severity high --description "Missed edge case" --evidence "PR #99" > /dev/null
+
+# Test 3: assert score output
+SCORE_OUTPUT=$(FEEDBACK_LEDGER="$LEDGER" FEEDBACK_CHECKSUM="$CHECKSUM" \
+FINDINGS_REGISTER="$FINDINGS_REG" METRICS_LOG_FILE="$METRICS_FILE" \
+REPO_ROOT="${TMPDIR}" "${FEEDBACK_LOG}" score backend-specialist)
+
+echo "$SCORE_OUTPUT" > "$TMPDIR/score-output.txt"
+assert_contains "score has net=" "$TMPDIR/score-output.txt" "^net="
+assert_contains "score has kudos=" "$TMPDIR/score-output.txt" "^kudos="
+assert_contains "score has reprimands=" "$TMPDIR/score-output.txt" "^reprimands="
+assert_contains "score has signals=2" "$TMPDIR/score-output.txt" "^signals=2$"
+assert_contains "score has recent=" "$TMPDIR/score-output.txt" "^recent="
+
+# Test 4: kudo for security-reviewer in security domain → domain multiplier 1.5
+setup_ledger
+: > "$METRICS_FILE"
+
+FEEDBACK_LEDGER="$LEDGER" FEEDBACK_CHECKSUM="$CHECKSUM" \
+FINDINGS_REGISTER="$FINDINGS_REG" METRICS_LOG_FILE="$METRICS_FILE" \
+REPO_ROOT="${TMPDIR}" "${FEEDBACK_LOG}" kudo \
+  --issuer ciso --subject security-reviewer --domain security \
+  --description "Good audit" --evidence "Found vuln" > /dev/null
+
+SCORE_SEC=$(FEEDBACK_LEDGER="$LEDGER" FEEDBACK_CHECKSUM="$CHECKSUM" \
+FINDINGS_REGISTER="$FINDINGS_REG" METRICS_LOG_FILE="$METRICS_FILE" \
+REPO_ROOT="${TMPDIR}" "${FEEDBACK_LOG}" score security-reviewer)
+
+echo "$SCORE_SEC" > "$TMPDIR/score-sec.txt"
+assert_contains "security domain kudo has kudos=1.5" "$TMPDIR/score-sec.txt" "^kudos=1.5$"
+
+# Test 5: score for nonexistent agent
+SCORE_NONE=$(FEEDBACK_LEDGER="$LEDGER" FEEDBACK_CHECKSUM="$CHECKSUM" \
+FINDINGS_REGISTER="$FINDINGS_REG" METRICS_LOG_FILE="$METRICS_FILE" \
+REPO_ROOT="${TMPDIR}" "${FEEDBACK_LOG}" score nonexistent-agent)
+
+echo "$SCORE_NONE" > "$TMPDIR/score-none.txt"
+assert_contains "nonexistent agent net=0.0" "$TMPDIR/score-none.txt" "^net=0.0$"
+assert_contains "nonexistent agent signals=0" "$TMPDIR/score-none.txt" "^signals=0$"
+
 # ── Summary ────────────────────────────────────────────────────────────
 echo ""
 echo "========================================"
