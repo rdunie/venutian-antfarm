@@ -74,7 +74,7 @@ Every ledger entry records its origin tier:
 | `core`       | PO, SA, SM, knowledge-ops, platform-ops, compliance-auditor | Direct (kudo/reprimand)  | high                      |
 | `specialist` | All specialist/reviewer/output agents                       | Propose only (recommend) | lower (via formalization) |
 
-Note: knowledge-ops, platform-ops, and compliance-auditor are classified as `core` (matching `fleet-config.json` agent roster) and receive direct feedback authority. This brings the total direct issuers from 10 to 13.
+Note: knowledge-ops, platform-ops, and compliance-auditor are classified as `core` and receive direct feedback authority. This brings the total direct issuers from 10 to 13. The fleet-config template must be updated to add compliance-auditor to the `agents.core` array (it currently lives outside both `governance` and `core`).
 
 Direct entries include `**Origin tier:** governance` or `**Origin tier:** core`. Formalized entries include `**Origin tier:** specialist` and `**Origin:** P-xxx`.
 
@@ -103,7 +103,7 @@ Fleet-config gets a new `feedback` pathway type under `pathways.declared`:
 
 When a supervisor does not act on a proposal within the deadline:
 
-1. Resolve the supervisor's own supervisor from `pathways.declared.governance` (e.g., `ciso -> cro` means CRO oversees CISO; `ceo -> product-owner` means CEO oversees PO)
+1. Resolve the supervisor's own supervisor from `pathways.declared.governance` (e.g., `ciso -> cro` means CRO oversees CISO; `cto -> solution-architect` means CTO delegates to SA)
 2. If no governance path found, escalate to CEO (terminal escalation). This is the expected path for most core-agent supervisors unless explicit governance paths are declared for them
 3. The `check-escalations` subcommand updates the P-entry: new supervisor, reset deadline, status note `escalated from <previous>`
 4. A findings register entry is created for visibility
@@ -181,7 +181,7 @@ The existing SubagentStop hook is extended with: "Before finishing, consider whe
 
 ### 10. Agent Definition Changes
 
-**Specialist agent templates** (`templates/agents/`) -- add to all 5 (backend-specialist, frontend-specialist, security-reviewer, e2e-test-engineer, infrastructure-ops):
+**Specialist agent templates** (`templates/agents/`) -- add to all 5 specialist templates (backend-specialist, frontend-specialist, security-reviewer, e2e-test-engineer, infrastructure-ops; excludes cx-role.md which is a governance template):
 
 ```markdown
 ## Behavioral Feedback
