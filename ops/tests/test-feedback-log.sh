@@ -616,6 +616,92 @@ echo "$SCORE_NONE" > "$TMPDIR/score-none.txt"
 assert_contains "nonexistent agent net=0.0" "$TMPDIR/score-none.txt" "^net=0.0$"
 assert_contains "nonexistent agent signals=0" "$TMPDIR/score-none.txt" "^signals=0$"
 
+# ── Test: decay behavior ─────────────────────────────────────────────
+echo ""
+echo "=== Decay ==="
+setup_ledger
+
+LEDGER="$TMPDIR/rewards/ledger.md"
+CHECKSUM="$TMPDIR/rewards/ledger-checksum.sha256"
+FINDINGS_REG="$TMPDIR/findings/register.md"
+METRICS_FILE="$TMPDIR/metrics/events.jsonl"
+
+# Write fleet-config with cliff_items=3 for testable decay
+cat > "$TMPDIR/fleet-config.json" <<'CONFIG'
+{
+  "agents": {
+    "governance": ["cro", "ciso", "ceo", "cto", "cfo", "coo", "cko"],
+    "core": ["product-owner", "solution-architect", "scrum-master", "knowledge-ops", "platform-ops", "compliance-auditor"]
+  },
+  "rewards": {
+    "escalation_deadline_days": 7,
+    "weighting": {
+      "tier_multipliers": {
+        "governance": 1.0,
+        "core": 0.8,
+        "specialist": 0.5
+      },
+      "type_multipliers": {
+        "kudo": 1.0,
+        "reprimand": 1.5
+      },
+      "domain_multipliers": {
+        "_default": 1.0
+      },
+      "decay": {
+        "cliff_items": 3,
+        "post_cliff_multiplier": 0.25
+      }
+    }
+  },
+  "pathways": {
+    "declared": {
+      "feedback": ["security-reviewer -> ciso", "backend-specialist -> solution-architect"],
+      "escalation": ["* -> solution-architect"],
+      "governance": ["ciso -> cro", "* -> ceo"]
+    }
+  }
+}
+CONFIG
+
+# Manually inject an OLD kudo with date 2025-01-01 (cannot use script — always uses today)
+cat >> "$LEDGER" <<'OLDKUDO'
+
+## backend-specialist
+
+### K-001 [kudo] 2025-01-01 — ciso / security
+
+**Description:** Old kudo
+**Evidence:** test
+**Origin tier:** governance
+OLDKUDO
+sha256sum "$LEDGER" > "$CHECKSUM"
+
+# Add 4 item-accepted events AFTER the old kudo date but BEFORE today
+for i in 1 2 3 4; do
+  echo "{\"ts\":\"2025-06-0${i}T12:00:00Z\",\"event\":\"item-accepted\",\"item\":\"${i}\"}" >> "$METRICS_FILE"
+done
+
+# Create a fresh kudo normally (gets today's date)
+FEEDBACK_LEDGER="$LEDGER" FEEDBACK_CHECKSUM="$CHECKSUM" \
+FINDINGS_REGISTER="$FINDINGS_REG" METRICS_LOG_FILE="$METRICS_FILE" \
+REPO_ROOT="${TMPDIR}" "${FEEDBACK_LOG}" kudo \
+  --issuer ciso --subject backend-specialist --domain delivery \
+  --description "Fresh kudo" --evidence "Recent work" > /dev/null
+
+# Expected:
+# Old kudo (2025-01-01): accepted_at=0, signal_age=4-0=4 > cliff=3 → decay=0.25 → weight=1.0*1.0*1.0*0.25=0.25
+# New kudo (today): accepted_at=4, signal_age=4-4=0 <= cliff=3 → decay=1.0 → weight=1.0*1.0*1.0*1.0=1.0
+# net = 0.25 + 1.0 = 1.2 (rounding: 0.2+1.0=1.2)
+DECAY_SCORE=$(FEEDBACK_LEDGER="$LEDGER" FEEDBACK_CHECKSUM="$CHECKSUM" \
+FINDINGS_REGISTER="$FINDINGS_REG" METRICS_LOG_FILE="$METRICS_FILE" \
+REPO_ROOT="${TMPDIR}" "${FEEDBACK_LOG}" score backend-specialist)
+
+echo "$DECAY_SCORE" > "$TMPDIR/decay-score.txt"
+assert_contains "decay net=1.2" "$TMPDIR/decay-score.txt" "^net=1.2"
+assert_contains "decay signals=2" "$TMPDIR/decay-score.txt" "^signals=2$"
+assert_contains "decay recent=1" "$TMPDIR/decay-score.txt" "^recent=1$"
+
 # ── Summary ────────────────────────────────────────────────────────────
 echo ""
 echo "========================================"
