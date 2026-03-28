@@ -15,6 +15,8 @@ Run a team retrospective as defined in `.claude/COLLABORATION.md` § Team Retros
 
 ## Workflow
 
+0. **Check escalations.** Run `ops/feedback-log.sh check-escalations` to process any stale proposals before the retro begins.
+
 1. **Gather metrics.** Run `ops/dora.sh --item <id>` (or `ops/dora.sh` if no item specified) to pull DORA + flow quality data for this iteration.
 
 2. **Summarize the flow.** For the target item, report:

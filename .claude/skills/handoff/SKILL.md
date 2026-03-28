@@ -29,17 +29,19 @@ Orchestrate a structured handoff between agents as defined in `.claude/COLLABORA
    **Urgency:** [blocking / non-blocking]
    ```
 
-3. **Validate the artifact.** Check that all required fields are present. If any are missing, prompt the sending agent to fill them in. A handoff where the receiving agent would need to ask for clarification is a finding.
+3. **Feedback prompt.** After receiving a handoff, evaluate the sender's work quality. If it warrants behavioral feedback (positive or negative), use `ops/feedback-log.sh recommend` to propose it to your supervisor.
 
-4. **Log the event.** Run:
+4. **Validate the artifact.** Check that all required fields are present. If any are missing, prompt the sending agent to fill them in. A handoff where the receiving agent would need to ask for clarification is a finding.
+
+5. **Log the event.** Run:
 
    ```bash
    ops/metrics-log.sh handoff-sent <item> --from <from-agent> --to <to-agent>
    ```
 
-5. **Dispatch the receiving agent.** Send the handoff artifact to the receiving agent (--to) with instructions to act on the request.
+6. **Dispatch the receiving agent.** Send the handoff artifact to the receiving agent (--to) with instructions to act on the request.
 
-6. **Capture outcome.** After the receiving agent completes, determine: accepted or rejected.
+7. **Capture outcome.** After the receiving agent completes, determine: accepted or rejected.
    - If **rejected**, log: `ops/metrics-log.sh handoff-rejected <item> --from <from-agent> --to <to-agent>`
    - Record the rejection reason as a finding if it indicates a pattern.
 

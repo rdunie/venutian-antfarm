@@ -77,7 +77,7 @@
           },
           {
             "type": "command",
-            "command": "echo '[PO] Agent completed. If this was a specialist build, consider /po review. If this was a reviewer, check findings register.' || true"
+            "command": "echo '[PO] Agent completed. If this was a specialist build, consider /po review. If this was a reviewer, check findings register. Before finishing, consider whether any agent you interacted with deserves behavioral feedback — use ops/feedback-log.sh recommend if so.' || true"
           }
         ]
       }
@@ -96,6 +96,10 @@
           {
             "type": "command",
             "command": "[ -f fleet-config.json ] && command -v jq &>/dev/null && { CADENCE=$(jq -r '.prioritize_cadence // \"per-iteration\"' fleet-config.json 2>/dev/null); [ \"$CADENCE\" = \"per-session\" ] && echo '[PO] Backlog triage is due. Run /po triage to review priorities.'; } || true"
+          },
+          {
+            "type": "command",
+            "command": "[ -f ops/feedback-log.sh ] && bash ops/feedback-log.sh check-escalations 2>/dev/null || true"
           }
         ]
       }
