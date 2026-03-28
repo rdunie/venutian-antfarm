@@ -6,7 +6,7 @@
 
 ## Problem
 
-Only 10 agents (7 governance + PO, SA, SM) can issue behavioral feedback. Specialist and reviewer agents observe behavior directly (e.g., a security-reviewer sees shallow work from a backend-specialist) but cannot record that observation. Valuable signals are lost because the agents closest to the work have no voice in the feedback system.
+Only 10 of 13 core agents currently have behavioral feedback sections (7 governance + PO, SA, SM). Specialist and reviewer agents observe behavior directly (e.g., a security-reviewer sees shallow work from a backend-specialist) but cannot record that observation. Valuable signals are lost because the agents closest to the work have no voice in the feedback system.
 
 ## Goals
 
@@ -42,9 +42,11 @@ specialist --recommend--> P-xxx (pending)
         (new entry)   (rejected)   to next-tier supervisor
 ```
 
-Proposals use the `P-xxx` ID prefix. States: `pending` -> `formalized` | `rejected` | `escalated`.
+Proposals use the `P-xxx` ID prefix. States: `pending` -> `formalized` | `rejected` | `escalated` -> `pending` (reassigned).
 
-When formalized, a new `R-xxx` or `K-xxx` entry is created with `**Origin:** P-xxx`. The P-entry status updates to `formalized (R-015)`. The original proposal is never rewritten -- status updates and backrefs preserve the append-only contract.
+When formalized, a new `R-xxx` or `K-xxx` entry is created with `**Origin:** P-xxx`. The P-entry status updates to `formalized (R-015)`. When escalated, the P-entry status updates to `pending` with a note `escalated from <previous-supervisor>`, the supervisor field is updated, and the deadline is reset. This means the new supervisor can formalize or reject normally. The original proposal is never rewritten -- status updates and backrefs preserve the append-only contract.
+
+P-entries are stored in the same ledger file (`.claude/rewards/ledger.md`), appended under the subject's section alongside R/K/T entries. The `profile` subcommand includes pending proposal counts in its output.
 
 ### 2. Proposal Ledger Entry
 
@@ -66,11 +68,13 @@ When formalized, a new `R-xxx` or `K-xxx` entry is created with `**Origin:** P-x
 
 Every ledger entry records its origin tier:
 
-| Tier         | Agents                                | Feedback mode            | Weight hint               |
-| ------------ | ------------------------------------- | ------------------------ | ------------------------- |
-| `governance` | CRO, CISO, CEO, CTO, CFO, COO, CKO    | Direct (kudo/reprimand)  | highest                   |
-| `core`       | PO, SA, SM                            | Direct (kudo/reprimand)  | high                      |
-| `specialist` | All specialist/reviewer/output agents | Propose only (recommend) | lower (via formalization) |
+| Tier         | Agents                                                      | Feedback mode            | Weight hint               |
+| ------------ | ----------------------------------------------------------- | ------------------------ | ------------------------- |
+| `governance` | CRO, CISO, CEO, CTO, CFO, COO, CKO                          | Direct (kudo/reprimand)  | highest                   |
+| `core`       | PO, SA, SM, knowledge-ops, platform-ops, compliance-auditor | Direct (kudo/reprimand)  | high                      |
+| `specialist` | All specialist/reviewer/output agents                       | Propose only (recommend) | lower (via formalization) |
+
+Note: knowledge-ops, platform-ops, and compliance-auditor are classified as `core` (matching `fleet-config.json` agent roster) and receive direct feedback authority. This brings the total direct issuers from 10 to 13.
 
 Direct entries include `**Origin tier:** governance` or `**Origin tier:** core`. Formalized entries include `**Origin tier:** specialist` and `**Origin:** P-xxx`.
 
@@ -99,8 +103,8 @@ Fleet-config gets a new `feedback` pathway type under `pathways.declared`:
 
 When a supervisor does not act on a proposal within the deadline:
 
-1. Resolve the supervisor's own supervisor from `pathways.declared.governance` (e.g., `ciso -> cro` means CRO oversees CISO)
-2. If no governance path found, escalate to CEO (terminal escalation)
+1. Resolve the supervisor's own supervisor from `pathways.declared.governance` (e.g., `ciso -> cro` means CRO oversees CISO; `ceo -> product-owner` means CEO oversees PO)
+2. If no governance path found, escalate to CEO (terminal escalation). This is the expected path for most core-agent supervisors unless explicit governance paths are declared for them
 3. The `check-escalations` subcommand updates the P-entry: new supervisor, reset deadline, status note `escalated from <previous>`
 4. A findings register entry is created for visibility
 5. A `feedback-escalated` metric event is emitted
@@ -115,7 +119,7 @@ When a supervisor does not act on a proposal within the deadline:
 
 ### 6. Programmatic Enforcement
 
-The escalation deadline is enforced at two natural touchpoints:
+The escalation deadline is enforced at three points:
 
 1. **SessionStart hook** -- runs `ops/feedback-log.sh check-escalations` at every session start. Past-deadline proposals are auto-escalated and surfaced in PO status output.
 2. **SM retro phase** -- during Phase 8 (Retro), `feedback-log.sh check-escalations` runs as a mandatory step before the retro summary.
@@ -141,7 +145,7 @@ Rename `ops/rewards-log.sh` to `ops/feedback-log.sh`. Existing subcommands uncha
 **`formalize` validation:**
 
 - Caller's `--issuer` must match the P-entry's current `Supervisor` field
-- P-entry must be in `pending` status
+- P-entry must be in `pending` status (includes proposals that were escalated and reassigned, since escalation resets status to `pending`)
 
 **`reject` validation:**
 
@@ -150,14 +154,14 @@ Rename `ops/rewards-log.sh` to `ops/feedback-log.sh`. Existing subcommands uncha
 
 ### 8. New Metric Events
 
-| Event                 | Fields                                                                                                  | When                        |
-| --------------------- | ------------------------------------------------------------------------------------------------------- | --------------------------- |
-| `feedback-proposed`   | `issuer`, `subject`, `type` (kudo/reprimand), `domain`, `severity`, `item`, `proposal_id`, `supervisor` | Recommendation created      |
-| `feedback-formalized` | `proposal_id`, `reward_id`, `formalizer`                                                                | Supervisor formalizes       |
-| `feedback-rejected`   | `proposal_id`, `rejector`, `reason`                                                                     | Supervisor rejects          |
-| `feedback-escalated`  | `proposal_id`, `from_supervisor`, `to_supervisor`                                                       | Auto-escalation on deadline |
+| Event                 | Fields                                                                                                                                  | When                        |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------- | --------------------------- |
+| `feedback-proposed`   | `issuer`, `subject`, `type` (kudo/reprimand), `domain`, `severity` (nullable for kudos), `item` (optional), `proposal_id`, `supervisor` | Recommendation created      |
+| `feedback-formalized` | `proposal_id`, `reward_id`, `formalizer`                                                                                                | Supervisor formalizes       |
+| `feedback-rejected`   | `proposal_id`, `rejector`, `reason`                                                                                                     | Supervisor rejects          |
+| `feedback-escalated`  | `proposal_id`, `from_supervisor`, `to_supervisor`                                                                                       | Auto-escalation on deadline |
 
-Existing events (`reward-issued`, `tension-detected`) unchanged. Direct feedback from governance/core still emits `reward-issued`. Formalization emits both `feedback-formalized` and `reward-issued` (for the new R/K entry).
+Existing events (`reward-issued`, `tension-detected`) unchanged. Direct feedback from governance/core still emits `reward-issued`. Formalization emits both `feedback-formalized` and `reward-issued` (for the new R/K entry). Since formalization creates a standard R/K entry, existing tension detection logic applies automatically -- no special handling needed.
 
 ### 9. Agent Feedback Triggers
 
@@ -191,7 +195,7 @@ directly.
 - **Judgment:** Propose feedback at natural review points (after receiving handoffs, during reviews). Reserve proposals for patterns or notable events, not every minor observation.
 ```
 
-**Governance + core agents** (`.claude/agents/`) -- update the 10 existing issuers:
+**Governance + core agents** (`.claude/agents/`) -- update all 13 existing issuers:
 
 - Rename all `rewards-log.sh` references to `feedback-log.sh`
 - Add formalization responsibility: "Review pending proposals from your reports. Use `ops/feedback-log.sh formalize <P-id>` or `ops/feedback-log.sh reject <P-id> --reason '...'`"
@@ -218,14 +222,16 @@ directly.
 
 ### 12. Rename Plan
 
-| From                            | To                                                                            |
-| ------------------------------- | ----------------------------------------------------------------------------- |
-| `ops/rewards-log.sh`            | `ops/feedback-log.sh`                                                         |
-| `ops/tests/test-rewards-log.sh` | `ops/tests/test-feedback-log.sh`                                              |
-| `REWARDS_LEDGER` env var        | `FEEDBACK_LEDGER` (keep `REWARDS_LEDGER` as deprecated alias for one version) |
-| `REWARDS_CHECKSUM` env var      | `FEEDBACK_CHECKSUM` (keep `REWARDS_CHECKSUM` as deprecated alias)             |
-| Agent refs to `rewards-log.sh`  | Updated to `feedback-log.sh`                                                  |
-| CLAUDE.md command docs          | Updated to `feedback-log.sh`                                                  |
+| From                            | To                                                                                                     |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `ops/rewards-log.sh`            | `ops/feedback-log.sh`                                                                                  |
+| `ops/tests/test-rewards-log.sh` | `ops/tests/test-feedback-log.sh`                                                                       |
+| `REWARDS_LEDGER` env var        | `FEEDBACK_LEDGER` (keep `REWARDS_LEDGER` as deprecated alias for one version)                          |
+| `REWARDS_CHECKSUM` env var      | `FEEDBACK_CHECKSUM` (keep `REWARDS_CHECKSUM` as deprecated alias)                                      |
+| Agent refs to `rewards-log.sh`  | Updated to `feedback-log.sh`                                                                           |
+| CLAUDE.md command docs          | Updated to `feedback-log.sh`                                                                           |
+| `ops/rewards-log.sh` (shim)     | One-version backward-compat shim that prints deprecation warning and forwards to `feedback-log.sh`     |
+| `"rewards"` fleet-config key    | Retained as-is for backward compatibility; rename to `"feedback"` deferred to a future breaking change |
 
 ## File Inventory
 
@@ -235,18 +241,18 @@ None -- all changes are to existing files.
 
 ### Modified Files
 
-| File                                                                | Change                                                                                                                   |
-| ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| `ops/rewards-log.sh` -> `ops/feedback-log.sh`                       | Rename + add `recommend`, `formalize`, `reject`, `check-escalations` subcommands + origin tier tagging on direct entries |
-| `ops/tests/test-rewards-log.sh` -> `ops/tests/test-feedback-log.sh` | Rename + add tests for new subcommands                                                                                   |
-| `ops/metrics-log.sh`                                                | Add `feedback-proposed`, `feedback-formalized`, `feedback-rejected`, `feedback-escalated` event types                    |
-| `.claude/settings.json`                                             | SessionStart hook adds `check-escalations`; SubagentStop hook adds feedback prompt; update ledger protection refs        |
-| `.claude/agents/*.md` (10 agents)                                   | Rename `rewards-log.sh` -> `feedback-log.sh`, add formalization responsibility                                           |
-| `templates/agents/*.md` (5 templates)                               | Add `## Behavioral Feedback` section with propose-only capability and domain triggers                                    |
-| `templates/fleet-config.json`                                       | Add `escalation_deadline_days` to `rewards`, add `feedback` pathway type                                                 |
-| `CLAUDE.md`                                                         | Update Commands section, rename references                                                                               |
-| `.claude/skills/handoff.md`                                         | Add feedback evaluation prompt on handoff receipt                                                                        |
-| `.claude/skills/retro.md`                                           | Add mandatory `check-escalations` step                                                                                   |
+| File                                                                | Change                                                                                                                                                               |
+| ------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ops/rewards-log.sh` -> `ops/feedback-log.sh`                       | Rename + add `recommend`, `formalize`, `reject`, `check-escalations` subcommands + origin tier tagging on direct entries                                             |
+| `ops/tests/test-rewards-log.sh` -> `ops/tests/test-feedback-log.sh` | Rename + add tests for new subcommands                                                                                                                               |
+| `ops/metrics-log.sh`                                                | Add `feedback-proposed`, `feedback-formalized`, `feedback-rejected`, `feedback-escalated` event types                                                                |
+| `.claude/settings.json`                                             | SessionStart hook adds `check-escalations`; SubagentStop hook adds feedback prompt; update ledger protection refs                                                    |
+| `.claude/agents/*.md` (13 agents)                                   | Rename `rewards-log.sh` -> `feedback-log.sh`, add formalization responsibility (3 new agents: knowledge-ops, platform-ops, compliance-auditor get feedback sections) |
+| `templates/agents/*.md` (5 templates)                               | Add `## Behavioral Feedback` section with propose-only capability and domain triggers                                                                                |
+| `templates/fleet-config.json`                                       | Add `escalation_deadline_days` to `rewards`, add `feedback` pathway type                                                                                             |
+| `CLAUDE.md`                                                         | Update Commands section, rename references                                                                                                                           |
+| `.claude/skills/handoff/SKILL.md`                                   | Add feedback evaluation prompt on handoff receipt                                                                                                                    |
+| `.claude/skills/retro/SKILL.md`                                     | Add mandatory `check-escalations` step                                                                                                                               |
 
 ## Related Issues
 
