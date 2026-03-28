@@ -15,6 +15,7 @@ set -euo pipefail
 #   ops/feedback-log.sh reject --issuer <agent> --subject <agent> ...
 #   ops/feedback-log.sh check-escalations
 #   ops/feedback-log.sh profile <agent>
+#   ops/feedback-log.sh score <agent>
 #   ops/feedback-log.sh tensions [--item <id>]
 #
 # Env vars (for testing — defaults to repo paths):

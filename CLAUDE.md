@@ -94,25 +94,7 @@ ops/dora.sh --since 7d        # 7-day window
 
 ### Feedback
 
-```bash
-# Governance/core agents issue feedback
-ops/feedback-log.sh issue --agent <agent> --type reprimand|kudo --domain <domain> \
-  [--severity low|medium|high] [--item <id>] --description "..." --evidence "..."
-
-# Specialist agents report feedback
-ops/feedback-log.sh report --agent <agent> --type reprimand|kudo --domain <domain> \
-  [--item <id>] --description "..." --evidence "..."
-
-# Feedback proposals (tracked with proposal ID)
-ops/feedback-log.sh propose --agent <agent> --type reprimand|kudo --domain <domain> \
-  [--severity low|medium|high] [--item <id>] --proposal <proposal-id> \
-  --description "..." --evidence "..."
-
-# Query behavioral profiles and feedback history
-ops/feedback-log.sh profile <agent>
-ops/feedback-log.sh history <agent> [--since 7d] [--domain <domain>]
-ops/feedback-log.sh tensions [--item <id>] [--since 7d]
-```
+See `docs/FEEDBACK-GUIDE.md` for behavioral feedback commands (`ops/feedback-log.sh`).
 
 ### Pathway Analysis
 
@@ -250,4 +232,5 @@ Never implement:
 - `docs/COMPILER-GUIDE.md` -- Compliance floor compiler and enforcement block reference
 - `docs/METRICS-GUIDE.md` -- Metrics events and DORA dashboard guide
 - `docs/PATHWAY-ANALYSIS.md` -- Agent communication pathway analysis
+- `docs/FEEDBACK-GUIDE.md` -- Behavioral feedback commands and agent scoring
 - `docs/plans/roadmap-index.md` -- Backlog structure
