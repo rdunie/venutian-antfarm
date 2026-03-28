@@ -25,7 +25,7 @@ set -euo pipefail
 # ---------------------------------------------------------------------------
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+REPO_ROOT="${REPO_ROOT:-$(cd "$SCRIPT_DIR/.." && pwd)}"
 
 LEDGER="${FEEDBACK_LEDGER:-${REWARDS_LEDGER:-$REPO_ROOT/.claude/rewards/ledger.md}}"
 CHECKSUM="${FEEDBACK_CHECKSUM:-${REWARDS_CHECKSUM:-$REPO_ROOT/.claude/rewards/ledger-checksum.sha256}}"
@@ -60,6 +60,22 @@ done
 
 update_checksum() {
   sha256sum "$LEDGER" > "$CHECKSUM"
+}
+
+resolve_tier() {
+  local agent="$1"
+  local config="$REPO_ROOT/fleet-config.json"
+  if [[ ! -f "$config" ]] || ! command -v jq &>/dev/null; then
+    echo "unknown"
+    return
+  fi
+  if jq -e --arg a "$agent" '.agents.governance | index($a)' "$config" &>/dev/null; then
+    echo "governance"; return
+  fi
+  if jq -e --arg a "$agent" '.agents.core | index($a)' "$config" &>/dev/null; then
+    echo "core"; return
+  fi
+  echo "specialist"
 }
 
 # Get the next ID for a given prefix (R, K, or T)
@@ -196,6 +212,7 @@ case "$SUBCOMMAND" in
 
     local_id=$(next_id "R")
     ts="$(date -u +%Y-%m-%d)"
+    local_tier=$(resolve_tier "$ISSUER")
 
     # Ensure subject section exists
     if ! grep -q "^## ${SUBJECT}$" "$LEDGER" 2>/dev/null; then
@@ -212,6 +229,7 @@ case "$SUBCOMMAND" in
       [[ -n "$ITEM" ]] && echo "**Item:** ${ITEM}"
       echo "**Description:** ${DESCRIPTION}"
       echo "**Evidence:** ${EVIDENCE}"
+      echo "**Origin tier:** ${local_tier}"
     } >> "$LEDGER"
 
     # Emit metric event
@@ -237,6 +255,7 @@ case "$SUBCOMMAND" in
 
     local_id=$(next_id "K")
     ts="$(date -u +%Y-%m-%d)"
+    local_tier=$(resolve_tier "$ISSUER")
 
     if ! grep -q "^## ${SUBJECT}$" "$LEDGER" 2>/dev/null; then
       echo "" >> "$LEDGER"
@@ -250,6 +269,7 @@ case "$SUBCOMMAND" in
       [[ -n "$ITEM" ]] && echo "**Item:** ${ITEM}"
       echo "**Description:** ${DESCRIPTION}"
       echo "**Evidence:** ${EVIDENCE}"
+      echo "**Origin tier:** ${local_tier}"
     } >> "$LEDGER"
 
     "$SCRIPT_DIR/metrics-log.sh" reward-issued \

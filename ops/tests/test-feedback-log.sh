@@ -273,6 +273,57 @@ else
   FAIL=$((FAIL + 1))
 fi
 
+# ── Test: origin tier tagging ─────────────────────────────────────────
+echo ""
+echo "=== Origin Tier ==="
+setup_ledger
+
+# Create fleet-config.json in TMPDIR for tier resolution
+cat > "$TMPDIR/fleet-config.json" <<'CONFIG'
+{
+  "agents": {
+    "governance": ["cro", "ciso", "ceo", "cto", "cfo", "coo", "cko"],
+    "core": ["product-owner", "solution-architect", "scrum-master", "knowledge-ops", "platform-ops", "compliance-auditor"]
+  },
+  "rewards": { "escalation_deadline_days": 7 },
+  "pathways": {
+    "declared": {
+      "feedback": ["security-reviewer -> ciso", "backend-specialist -> solution-architect"],
+      "escalation": ["* -> solution-architect", "* -> scrum-master", "* -> product-owner"],
+      "governance": ["ciso -> cro", "cto -> solution-architect", "* -> ceo"]
+    }
+  }
+}
+CONFIG
+
+FEEDBACK_LEDGER="$TMPDIR/rewards/ledger.md" \
+FEEDBACK_CHECKSUM="$TMPDIR/rewards/ledger-checksum.sha256" \
+FINDINGS_REGISTER="$TMPDIR/findings/register.md" \
+METRICS_LOG_FILE="$TMPDIR/metrics/events.jsonl" \
+REPO_ROOT="${TMPDIR}" \
+  "$FEEDBACK_LOG" reprimand \
+    --issuer ciso --subject backend-specialist --domain security \
+    --severity medium --item 10 \
+    --description "Test governance tier" --evidence "Evidence A"
+EXIT_CODE=$?
+
+assert_exit "governance tier reprimand exits 0" 0 "$EXIT_CODE"
+assert_contains "reprimand from ciso has governance tier" "$TMPDIR/rewards/ledger.md" "\*\*Origin tier:\*\* governance"
+
+setup_ledger
+FEEDBACK_LEDGER="$TMPDIR/rewards/ledger.md" \
+FEEDBACK_CHECKSUM="$TMPDIR/rewards/ledger-checksum.sha256" \
+FINDINGS_REGISTER="$TMPDIR/findings/register.md" \
+METRICS_LOG_FILE="$TMPDIR/metrics/events.jsonl" \
+REPO_ROOT="${TMPDIR}" \
+  "$FEEDBACK_LOG" kudo \
+    --issuer product-owner --subject backend-specialist --domain delivery \
+    --description "Great work" --evidence "Evidence B"
+EXIT_CODE=$?
+
+assert_exit "core tier kudo exits 0" 0 "$EXIT_CODE"
+assert_contains "kudo from product-owner has core tier" "$TMPDIR/rewards/ledger.md" "\*\*Origin tier:\*\* core"
+
 # ── Summary ────────────────────────────────────────────────────────────
 echo ""
 echo "========================================"
