@@ -366,6 +366,68 @@ REPO_ROOT="${TMPDIR}" "${FEEDBACK_LOG}" recommend --issuer e2e-test-engineer --s
 assert_exit "recommend with fallback exits 0" 0 "${rec_fallback_exit}"
 assert_contains "fallback supervisor is solution-architect" "$LEDGER" "Supervisor.*solution-architect"
 
+# ── Test: formalize and reject ────────────────────────────────────────
+echo ""
+echo "=== Formalize/Reject ==="
+setup_ledger
+
+# Create a proposal first
+FEEDBACK_LEDGER="$LEDGER" FEEDBACK_CHECKSUM="$CHECKSUM" \
+FINDINGS_REGISTER="$FINDINGS_REG" METRICS_LOG_FILE="$METRICS_FILE" \
+REPO_ROOT="${TMPDIR}" "${FEEDBACK_LOG}" recommend \
+  --issuer security-reviewer --subject backend-specialist \
+  --type reprimand --domain security --severity medium \
+  --description "Shallow validation" --evidence "No sanitization" \
+  --item 42 > /dev/null
+
+# Test: formalize by correct supervisor creates R-entry with Origin
+form_exit=0
+FEEDBACK_LEDGER="$LEDGER" FEEDBACK_CHECKSUM="$CHECKSUM" \
+FINDINGS_REGISTER="$FINDINGS_REG" METRICS_LOG_FILE="$METRICS_FILE" \
+REPO_ROOT="${TMPDIR}" "${FEEDBACK_LOG}" formalize P-001 --issuer ciso || form_exit=$?
+assert_exit "formalize exits 0" 0 "${form_exit}"
+assert_contains "formalize creates R-entry" "$LEDGER" "R-001 \\[reprimand\\]"
+assert_contains "formalize sets Origin field" "$LEDGER" "\\*\\*Origin:\\*\\* P-001"
+assert_contains "formalize sets Origin tier specialist" "$LEDGER" "\\*\\*Origin tier:\\*\\* specialist"
+assert_contains "proposal status updated to formalized" "$LEDGER" "Status.*formalized.*R-001"
+
+# Test: wrong supervisor cannot formalize
+form_wrong_exit=0
+FEEDBACK_LEDGER="$LEDGER" FEEDBACK_CHECKSUM="$CHECKSUM" \
+FINDINGS_REGISTER="$FINDINGS_REG" METRICS_LOG_FILE="$METRICS_FILE" \
+REPO_ROOT="${TMPDIR}" "${FEEDBACK_LOG}" formalize P-001 --issuer cto 2>/dev/null || form_wrong_exit=$?
+assert_exit "wrong supervisor formalize fails" 1 "${form_wrong_exit}"
+
+# Test: formalize non-pending proposal fails
+form_nonpending_exit=0
+FEEDBACK_LEDGER="$LEDGER" FEEDBACK_CHECKSUM="$CHECKSUM" \
+FINDINGS_REGISTER="$FINDINGS_REG" METRICS_LOG_FILE="$METRICS_FILE" \
+REPO_ROOT="${TMPDIR}" "${FEEDBACK_LOG}" formalize P-001 --issuer ciso 2>/dev/null || form_nonpending_exit=$?
+assert_exit "formalize already-formalized proposal fails" 1 "${form_nonpending_exit}"
+
+# Test: reject with reason updates proposal status
+setup_ledger
+FEEDBACK_LEDGER="$LEDGER" FEEDBACK_CHECKSUM="$CHECKSUM" \
+FINDINGS_REGISTER="$FINDINGS_REG" METRICS_LOG_FILE="$METRICS_FILE" \
+REPO_ROOT="${TMPDIR}" "${FEEDBACK_LOG}" recommend \
+  --issuer security-reviewer --subject backend-specialist \
+  --type reprimand --domain security --severity low \
+  --description "Minor issue" --evidence "See PR" > /dev/null
+
+rej_exit=0
+FEEDBACK_LEDGER="$LEDGER" FEEDBACK_CHECKSUM="$CHECKSUM" \
+FINDINGS_REGISTER="$FINDINGS_REG" METRICS_LOG_FILE="$METRICS_FILE" \
+REPO_ROOT="${TMPDIR}" "${FEEDBACK_LOG}" reject P-001 --issuer ciso --reason "Insufficient evidence" || rej_exit=$?
+assert_exit "reject exits 0" 0 "${rej_exit}"
+assert_contains "reject updates status" "$LEDGER" "Status.*rejected.*Insufficient evidence"
+
+# Test: reject without --reason fails
+rej_noreason_exit=0
+FEEDBACK_LEDGER="$LEDGER" FEEDBACK_CHECKSUM="$CHECKSUM" \
+FINDINGS_REGISTER="$FINDINGS_REG" METRICS_LOG_FILE="$METRICS_FILE" \
+REPO_ROOT="${TMPDIR}" "${FEEDBACK_LOG}" reject P-001 --issuer ciso 2>/dev/null || rej_noreason_exit=$?
+assert_exit "reject without --reason fails" 1 "${rej_noreason_exit}"
+
 # ── Summary ────────────────────────────────────────────────────────────
 echo ""
 echo "========================================"

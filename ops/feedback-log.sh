@@ -99,6 +99,25 @@ resolve_supervisor() {
   echo ""
 }
 
+read_proposal_field() {
+  local pid="$1"
+  local field="$2"
+  sed -n "/^### ${pid} /,/^### /p" "$LEDGER" | grep "^\*\*${field}:\*\*" | head -1 | sed "s/.*\*\*${field}:\*\* //"
+}
+
+update_proposal_status() {
+  local pid="$1"
+  local new_status="$2"
+  local tmpfile
+  tmpfile=$(mktemp)
+  awk -v pid="### ${pid} " -v new_status="$new_status" '
+    $0 ~ pid { in_entry=1 }
+    in_entry && /^\*\*Status:\*\*/ { print "**Status:** " new_status; in_entry=0; next }
+    in_entry && /^### / && !($0 ~ pid) { in_entry=0 }
+    { print }
+  ' "$LEDGER" > "$tmpfile" && mv "$tmpfile" "$LEDGER"
+}
+
 # Get the next ID for a given prefix (R, K, or T)
 next_id() {
   local prefix="$1"
@@ -417,6 +436,115 @@ case "$SUBCOMMAND" in
 
     update_checksum
     echo "proposal_id=$local_id"
+    ;;
+
+  formalize)
+    [[ -z "$ISSUER" ]]  && echo "ERROR: --issuer required" >&2 && exit 1
+
+    # Extract P-id from SUBJECT if it looks like a proposal ID
+    local_pid=""
+    if [[ -n "$SUBJECT" && "$SUBJECT" =~ ^P-[0-9]+ ]]; then
+      local_pid="$SUBJECT"
+      SUBJECT=""
+    fi
+    [[ -z "$local_pid" ]] && echo "ERROR: proposal ID (e.g. P-001) required as first positional argument" >&2 && exit 1
+
+    # Validate proposal exists
+    if ! grep -q "^### ${local_pid} \[proposal\]" "$LEDGER" 2>/dev/null; then
+      echo "ERROR: proposal ${local_pid} not found in ledger" >&2; exit 1
+    fi
+
+    # Validate status is pending (prefix match handles "pending (escalated...)")
+    prop_status=$(read_proposal_field "$local_pid" "Status")
+    if [[ ! "$prop_status" =~ ^pending ]]; then
+      echo "ERROR: proposal ${local_pid} is not pending (status: ${prop_status})" >&2; exit 1
+    fi
+
+    # Validate issuer matches supervisor
+    prop_supervisor=$(read_proposal_field "$local_pid" "Supervisor")
+    if [[ "$ISSUER" != "$prop_supervisor" ]]; then
+      echo "ERROR: issuer '${ISSUER}' is not the supervisor for ${local_pid} (supervisor: ${prop_supervisor})" >&2; exit 1
+    fi
+
+    # Read proposal fields
+    prop_type=$(read_proposal_field "$local_pid" "Type")
+    prop_subject=$(read_proposal_field "$local_pid" "Subject")
+    prop_domain=$(read_proposal_field "$local_pid" "Domain")
+    prop_severity=$(read_proposal_field "$local_pid" "Severity")
+    prop_item=$(read_proposal_field "$local_pid" "Item")
+    prop_description=$(read_proposal_field "$local_pid" "Description")
+    prop_evidence=$(read_proposal_field "$local_pid" "Evidence")
+
+    ts="$(date -u +%Y-%m-%d)"
+    local_tier=$(resolve_tier "$ISSUER")
+
+    # Determine new entry prefix
+    if [[ "$prop_type" == "kudo" ]]; then
+      local_id=$(next_id "K")
+      entry_type="kudo"
+    else
+      local_id=$(next_id "R")
+      entry_type="reprimand"
+    fi
+
+    # Ensure subject section exists
+    if ! grep -q "^## ${prop_subject}$" "$LEDGER" 2>/dev/null; then
+      echo "" >> "$LEDGER"; echo "## ${prop_subject}" >> "$LEDGER"
+    fi
+
+    # Append formalized entry
+    {
+      echo ""
+      echo "### ${local_id} [${entry_type}] ${ts} — ${ISSUER} / ${prop_domain}"
+      echo ""
+      [[ -n "$prop_severity" ]] && echo "**Severity:** ${prop_severity}"
+      [[ -n "$prop_item" ]] && echo "**Item:** ${prop_item}"
+      echo "**Description:** ${prop_description}"
+      echo "**Evidence:** ${prop_evidence}"
+      echo "**Origin:** ${local_pid}"
+      echo "**Origin tier:** specialist"
+    } >> "$LEDGER"
+
+    # Update proposal status
+    update_proposal_status "$local_pid" "formalized (${local_id})"
+
+    "$SCRIPT_DIR/metrics-log.sh" feedback-formalized \
+      --from "$ISSUER" --subject "$prop_subject" --type "$prop_type" \
+      --proposal "$local_pid" --reward-id "$local_id" 2>/dev/null || true
+
+    update_checksum
+
+    # Check for tension on the new entry
+    check_tension "$entry_type" "$prop_subject" "$prop_item" "$local_id"
+
+    echo "reward_id=$local_id"
+    ;;
+
+  reject)
+    [[ -z "$ISSUER" ]] && echo "ERROR: --issuer required" >&2 && exit 1
+    [[ -z "$REASON" ]] && echo "ERROR: --reason required for reject" >&2 && exit 1
+
+    # Extract P-id from SUBJECT if it looks like a proposal ID
+    local_pid=""
+    if [[ -n "$SUBJECT" && "$SUBJECT" =~ ^P-[0-9]+ ]]; then
+      local_pid="$SUBJECT"
+      SUBJECT=""
+    fi
+    [[ -z "$local_pid" ]] && echo "ERROR: proposal ID (e.g. P-001) required as first positional argument" >&2 && exit 1
+
+    # Validate proposal exists
+    if ! grep -q "^### ${local_pid} \[proposal\]" "$LEDGER" 2>/dev/null; then
+      echo "ERROR: proposal ${local_pid} not found in ledger" >&2; exit 1
+    fi
+
+    # Update proposal status
+    update_proposal_status "$local_pid" "rejected — ${REASON}"
+
+    "$SCRIPT_DIR/metrics-log.sh" feedback-rejected \
+      --from "$ISSUER" --proposal "$local_pid" 2>/dev/null || true
+
+    update_checksum
+    echo "proposal_id=$local_pid"
     ;;
 
   *)
