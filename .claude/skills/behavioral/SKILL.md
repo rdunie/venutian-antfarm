@@ -1,7 +1,7 @@
 ---
 name: behavioral
 description: "Behavioral floor management. Propose changes, review proposals, apply approved changes, view status. Routes to COO as behavioral floor guardian."
-argument-hint: "[status|propose <change>|review <id>|apply <id>|log]"
+argument-hint: "[status|propose <change> [--domains <d1,d2>]|review <id>|apply <id>|log]"
 ---
 
 # Behavioral Floor
@@ -27,11 +27,12 @@ Manage the behavioral floor through the COO (behavioral floor guardian). All cha
 1. Parse the proposed change text from argument.
 2. Assign next sequential ID (zero-padded 3 digits) in `.claude/floors/behavioral/proposals/`.
 3. Create proposal file with frontmatter (`id`, `status: pending`, `type: TBD`, `requested-by`, `date`) and body.
-4. Dispatch COO agent. COO classifies as Type 1/2/3.
-5. COO dispatches CRO subagent for cross-floor risk consultation.
-6. CRO facilitates multi-round Cx consultation, returns consolidated assessment.
-7. COO presents to user with risk assessment, Cx positions, recommendation.
-8. Log `behavioral-floor-proposed` event via `ops/metrics-log.sh`.
+4. If `--domains` was provided, include domain tags in the proposal file frontmatter as `domains: [d1, d2]`. These are passed to the CRO via COO as advisory triage hints.
+5. Dispatch COO agent. COO classifies as Type 1/2/3.
+6. COO dispatches CRO subagent for cross-floor risk consultation.
+7. CRO facilitates multi-round Cx consultation, returns consolidated assessment.
+8. COO presents to user with risk assessment, Cx positions, recommendation.
+9. Log `behavioral-floor-proposed` event via `ops/metrics-log.sh`.
 
 ## Workflow: Review
 

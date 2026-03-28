@@ -1,7 +1,7 @@
 ---
 name: compliance
 description: "Compliance program management. Propose changes, review proposals, apply approved changes, audit conformance, view change log."
-argument-hint: "[status|propose <change>|review <id>|apply <id>|audit|log]"
+argument-hint: "[status|propose <change> [--domains <d1,d2>]|review <id>|apply <id>|audit|log]"
 ---
 
 # Compliance
@@ -28,7 +28,8 @@ Manage the compliance program through the CRO (Chief Risk Officer). All changes 
 1. Parse the proposed change text from argument.
 2. Assign next sequential ID (zero-padded 3 digits) in `.claude/compliance/proposals/`.
 3. Create proposal file `.claude/compliance/proposals/<id>-<slug>.md` with frontmatter (`id`, `status: pending`, `type: TBD`, `requested-by`, `date`) and body (`change-to: floor|targets`, rule before/after, rationale, benchmark reference, risk assessment). Prompt user for missing fields.
-4. Log `compliance-proposed` event via `ops/metrics-log.sh`. Notify CRO of pending proposal.
+4. If `--domains` was provided, include domain tags in the proposal file frontmatter as `domains: [d1, d2]`. These are passed to the CRO as advisory triage hints.
+5. Log `compliance-proposed` event via `ops/metrics-log.sh`. Notify CRO of pending proposal.
 
 ## Workflow: Review
 

@@ -1,7 +1,7 @@
 ---
 name: floor
 description: "Generic floor management. Routes to the declared guardian for any governance floor. Use /floor propose <floor-name> <change> to propose changes to any active floor."
-argument-hint: "[list|propose <floor-name> <change>|status <floor-name>]"
+argument-hint: "[list|propose <floor-name> <change> [--domains <d1,d2>]|status <floor-name>]"
 ---
 
 # Floor Management
@@ -32,6 +32,7 @@ Generic skill for managing any governance floor. Routes proposals to the declare
 1. Resolve the floor name to its guardian from `fleet-config.json`.
 2. If the guardian has a dedicated skill (e.g., `/compliance`, `/behavioral`), route there.
 3. Otherwise, dispatch the guardian agent with the proposal.
+   - If `--domains` was provided, pass the domain tags to the guardian/CRO as advisory hints for triage. Valid tags: `security`, `strategy`, `technology`, `cost`, `process`, `knowledge`.
 4. The guardian dispatches CRO for cross-floor risk consultation.
 5. Present results to user.
 
