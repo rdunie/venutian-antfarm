@@ -3,7 +3,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
-REWARDS_LOG="${REPO_ROOT}/ops/rewards-log.sh"
+FEEDBACK_LOG="${REPO_ROOT}/ops/feedback-log.sh"
 
 PASS=0
 FAIL=0
@@ -80,7 +80,7 @@ REWARDS_LEDGER="$TMPDIR/rewards/ledger.md" \
 REWARDS_CHECKSUM="$TMPDIR/rewards/ledger-checksum.sha256" \
 FINDINGS_REGISTER="$TMPDIR/findings/register.md" \
 METRICS_LOG_FILE="$TMPDIR/metrics/events.jsonl" \
-  "$REWARDS_LOG" reprimand \
+  "$FEEDBACK_LOG" reprimand \
     --issuer ciso --subject backend-specialist --domain security \
     --severity high --item 42 \
     --description "Skipped edge-case testing" \
@@ -102,7 +102,7 @@ REWARDS_LEDGER="$TMPDIR/rewards/ledger.md" \
 REWARDS_CHECKSUM="$TMPDIR/rewards/ledger-checksum.sha256" \
 FINDINGS_REGISTER="$TMPDIR/findings/register.md" \
 METRICS_LOG_FILE="$TMPDIR/metrics/events.jsonl" \
-  "$REWARDS_LOG" kudo \
+  "$FEEDBACK_LOG" kudo \
     --issuer po --subject backend-specialist --domain delivery \
     --item 42 \
     --description "Clean first-pass AC acceptance" \
@@ -133,7 +133,7 @@ REWARDS_LEDGER="$TMPDIR/rewards/ledger.md" \
 REWARDS_CHECKSUM="$TMPDIR/rewards/ledger-checksum.sha256" \
 FINDINGS_REGISTER="$TMPDIR/findings/register.md" \
 METRICS_LOG_FILE="$TMPDIR/metrics/events.jsonl" \
-  "$REWARDS_LOG" reprimand \
+  "$FEEDBACK_LOG" reprimand \
     --issuer ciso --subject backend-specialist --domain security \
     --severity low --item 42 \
     --description "Minor issue" --evidence "..."
@@ -142,7 +142,7 @@ REWARDS_LEDGER="$TMPDIR/rewards/ledger.md" \
 REWARDS_CHECKSUM="$TMPDIR/rewards/ledger-checksum.sha256" \
 FINDINGS_REGISTER="$TMPDIR/findings/register.md" \
 METRICS_LOG_FILE="$TMPDIR/metrics/events.jsonl" \
-  "$REWARDS_LOG" kudo \
+  "$FEEDBACK_LOG" kudo \
     --issuer po --subject backend-specialist --domain delivery \
     --item 43 \
     --description "Good work" --evidence "..."
@@ -158,7 +158,7 @@ REWARDS_LEDGER="$TMPDIR/rewards/ledger.md" \
 REWARDS_CHECKSUM="$TMPDIR/rewards/ledger-checksum.sha256" \
 FINDINGS_REGISTER="$TMPDIR/findings/register.md" \
 METRICS_LOG_FILE="$TMPDIR/metrics/events.jsonl" \
-  "$REWARDS_LOG" reprimand --issuer ciso 2>/dev/null || EXIT_CODE=$?
+  "$FEEDBACK_LOG" reprimand --issuer ciso 2>/dev/null || EXIT_CODE=$?
 assert_exit "reprimand without --subject fails" 1 "$EXIT_CODE"
 
 EXIT_CODE=0
@@ -166,7 +166,7 @@ REWARDS_LEDGER="$TMPDIR/rewards/ledger.md" \
 REWARDS_CHECKSUM="$TMPDIR/rewards/ledger-checksum.sha256" \
 FINDINGS_REGISTER="$TMPDIR/findings/register.md" \
 METRICS_LOG_FILE="$TMPDIR/metrics/events.jsonl" \
-  "$REWARDS_LOG" reprimand --issuer ciso --subject x --domain y --description "z" --evidence "z" 2>/dev/null || EXIT_CODE=$?
+  "$FEEDBACK_LOG" reprimand --issuer ciso --subject x --domain y --description "z" --evidence "z" 2>/dev/null || EXIT_CODE=$?
 assert_exit "reprimand without --severity fails" 1 "$EXIT_CODE"
 
 # ── Test: profile query ─────────────────────────────────────────────
@@ -178,13 +178,13 @@ REWARDS_LEDGER="$TMPDIR/rewards/ledger.md" \
 REWARDS_CHECKSUM="$TMPDIR/rewards/ledger-checksum.sha256" \
 FINDINGS_REGISTER="$TMPDIR/findings/register.md" \
 METRICS_LOG_FILE="$TMPDIR/metrics/events.jsonl" \
-  "$REWARDS_LOG" reprimand \
+  "$FEEDBACK_LOG" reprimand \
     --issuer ciso --subject test-agent --domain security \
     --severity high --item 10 \
     --description "Test reprimand" --evidence "Test evidence"
 
 PROFILE_OUTPUT=$(REWARDS_LEDGER="$TMPDIR/rewards/ledger.md" \
-  "$REWARDS_LOG" profile test-agent)
+  "$FEEDBACK_LOG" profile test-agent)
 
 TOTAL=$((TOTAL + 1))
 if echo "$PROFILE_OUTPUT" | grep -q "1 reprimand"; then
@@ -196,7 +196,7 @@ else
 fi
 
 NO_PROFILE=$(REWARDS_LEDGER="$TMPDIR/rewards/ledger.md" \
-  "$REWARDS_LOG" profile nonexistent-agent)
+  "$FEEDBACK_LOG" profile nonexistent-agent)
 
 TOTAL=$((TOTAL + 1))
 if echo "$NO_PROFILE" | grep -q "no behavioral signals"; then
@@ -212,7 +212,7 @@ echo ""
 echo "=== Tensions query ==="
 
 TENSIONS_OUTPUT=$(REWARDS_LEDGER="$TMPDIR/rewards/ledger.md" \
-  "$REWARDS_LOG" tensions)
+  "$FEEDBACK_LOG" tensions)
 
 TOTAL=$((TOTAL + 1))
 if echo "$TENSIONS_OUTPUT" | grep -q "(none)"; then
@@ -233,7 +233,7 @@ REWARDS_LEDGER="$TMPDIR/rewards/ledger.md" \
 REWARDS_CHECKSUM="$TMPDIR/rewards/ledger-checksum.sha256" \
 FINDINGS_REGISTER="$TMPDIR/findings/register.md" \
 METRICS_LOG_FILE="$TMPDIR/metrics/events.jsonl" \
-  "$REWARDS_LOG" reprimand \
+  "$FEEDBACK_LOG" reprimand \
     --issuer ciso --subject backend-specialist --domain security \
     --severity high --item 42 \
     --description "Skipped tests" --evidence "PR #87"
@@ -242,14 +242,14 @@ REWARDS_LEDGER="$TMPDIR/rewards/ledger.md" \
 REWARDS_CHECKSUM="$TMPDIR/rewards/ledger-checksum.sha256" \
 FINDINGS_REGISTER="$TMPDIR/findings/register.md" \
 METRICS_LOG_FILE="$TMPDIR/metrics/events.jsonl" \
-  "$REWARDS_LOG" kudo \
+  "$FEEDBACK_LOG" kudo \
     --issuer po --subject backend-specialist --domain delivery \
     --item 42 \
     --description "Clean acceptance" --evidence "All AC passed"
 
 # Query tensions for item 42 — should find the tension
 TENSIONS_42=$(REWARDS_LEDGER="$TMPDIR/rewards/ledger.md" \
-  "$REWARDS_LOG" tensions --item 42)
+  "$FEEDBACK_LOG" tensions --item 42)
 
 TOTAL=$((TOTAL + 1))
 if echo "$TENSIONS_42" | grep -q "\\[tension\\].*item-42"; then
@@ -262,7 +262,7 @@ fi
 
 # Query tensions for item 999 — should find none
 TENSIONS_999=$(REWARDS_LEDGER="$TMPDIR/rewards/ledger.md" \
-  "$REWARDS_LOG" tensions --item 999)
+  "$FEEDBACK_LOG" tensions --item 999)
 
 TOTAL=$((TOTAL + 1))
 if echo "$TENSIONS_999" | grep -q "(none)"; then
