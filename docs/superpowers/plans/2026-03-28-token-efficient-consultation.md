@@ -58,7 +58,7 @@ Agents fill in the template fields as their minimum response. They may add free-
 
 Record non-consulted agents as "not consulted (triaged out by CRO)" in the assessment for audit trail.
 
-**Special case (compliance floor):** You are both guardian and risk facilitator. Provide your compliance position as input alongside the proposal, then triage and consult peer Cx agents as above.
+**Special case (compliance floor):** You are both guardian and risk facilitator. Because of this conflict of interest, triage is disabled for your own floor — you MUST consult all 6 peer Cx agents. Provide your compliance position as input alongside the proposal, then dispatch all peers with the guided template. Full consensus required.
 
 **Context efficiency:** The entire consultation is a single subagent dispatch. The main context sees only one dispatch + one result.
 ```

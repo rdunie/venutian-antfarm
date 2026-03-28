@@ -85,9 +85,10 @@ After round 1, the CRO checks for unanimous consensus:
 
 **Special cases:**
 
-- **Zero agents consulted:** If the CRO determines no peer Cx domain is impacted, the CRO issues a solo assessment with recommendation. The assessment must note "No Cx agents consulted -- CRO solo assessment" for audit trail. Expected for narrow, low-risk changes.
+- **CRO's own floor (compliance):** When the CRO is both guardian and facilitator, triage is disabled — all 6 peer Cx agents MUST be consulted. The CRO has a conflict of interest on its own floor and cannot unilaterally narrow the consultation. Full consensus required.
+- **Zero agents consulted:** For floors the CRO does NOT guard, if the CRO determines no peer Cx domain is impacted, the CRO issues a solo assessment with recommendation. The assessment must note "No Cx agents consulted -- CRO solo assessment" for audit trail. Expected for narrow, low-risk changes.
 - **Single agent consulted:** If only one agent is consulted and raises concerns in round 1, the CRO synthesizes directly without a round 2 -- there is no additional perspective to gather. Round 2 is only meaningful with 2+ consulted agents.
-- **Minimum guideline:** The CRO should consult at least 2 Cx agents for any floor-level (Type 3) change. For target-level changes, a single-agent consultation is acceptable.
+- **Minimum guideline:** The CRO should consult at least 2 Cx agents for any floor-level (Type 3) change on non-CRO floors. For target-level changes, a single-agent consultation is acceptable.
 
 Round 2 is capped: maximum 2 total rounds (round 1 + round 2). If positions still diverge after round 2, the CRO synthesizes what it has and flags the disagreement in the assessment. The user decides — no infinite consultation loops.
 
