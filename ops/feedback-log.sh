@@ -557,6 +557,15 @@ case "$SUBCOMMAND" in
       tier_count=$(sed -n "/^## ${SUBJECT}$/,/^## [^#]/p" "$LEDGER" | grep -c "Origin tier.*${tier}" || true)
       [[ "$tier_count" -gt 0 ]] && echo "  ${tier} (${tier_count})" || true
     done
+
+    # Weighted summary
+    weighted_output=$(compute_weighted_score "$SUBJECT")
+    w_net=$(echo "$weighted_output" | grep '^net=' | cut -d= -f2)
+    w_kudos=$(echo "$weighted_output" | grep '^kudos=' | cut -d= -f2)
+    w_reprimands=$(echo "$weighted_output" | grep '^reprimands=' | cut -d= -f2)
+    w_recent=$(echo "$weighted_output" | grep '^recent=' | cut -d= -f2)
+    w_signals=$(echo "$weighted_output" | grep '^signals=' | cut -d= -f2)
+    echo "Weighted: net=${w_net} (kudos=${w_kudos}, reprimands=${w_reprimands}, ${w_recent} of ${w_signals} recent)"
     ;;
 
   tensions)

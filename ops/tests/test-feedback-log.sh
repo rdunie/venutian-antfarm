@@ -747,6 +747,25 @@ echo "$DEFAULT_SCORE" > "$TMPDIR/default-score.txt"
 assert_contains "default net=1.0" "$TMPDIR/default-score.txt" "^net=1.0$"
 assert_contains "default kudos=1.0" "$TMPDIR/default-score.txt" "^kudos=1.0$"
 
+echo ""
+echo "=== Profile Weighted ==="
+setup_ledger
+
+FEEDBACK_LEDGER="$TMPDIR/rewards/ledger.md" \
+FEEDBACK_CHECKSUM="$TMPDIR/rewards/ledger-checksum.sha256" \
+FINDINGS_REGISTER="$TMPDIR/findings/register.md" \
+METRICS_LOG_FILE="$TMPDIR/metrics/events.jsonl" \
+REPO_ROOT="${TMPDIR}" \
+  "${FEEDBACK_LOG}" kudo --issuer ciso --subject backend-specialist \
+  --domain security --description "Profile weighted test" --evidence "test"
+
+profile_weighted=$(FEEDBACK_LEDGER="$TMPDIR/rewards/ledger.md" \
+  FEEDBACK_CHECKSUM="$TMPDIR/rewards/ledger-checksum.sha256" \
+  METRICS_LOG_FILE="$TMPDIR/metrics/events.jsonl" REPO_ROOT="${TMPDIR}" \
+  "${FEEDBACK_LOG}" profile backend-specialist)
+echo "$profile_weighted" > "$TMPDIR/profile-weighted.txt"
+assert_contains "profile has weighted line" "$TMPDIR/profile-weighted.txt" "^Weighted: net="
+
 # ── Summary ────────────────────────────────────────────────────────────
 echo ""
 echo "========================================"
