@@ -84,6 +84,11 @@
     }
   },
   "rewards_note": "escalation_deadline_days: days before unacted specialist proposals auto-escalate. weighting: multipliers for tier (governance/operational), type (kudo/reprimand), and domain (collaboration/delivery/quality/governance); decay: behavioral scoring decay with 30-day half-life and 0.1 floor.",
+  "consultation": {
+    "max_rounds": 2,
+    "budget_tokens_hint": 50000
+  },
+  "consultation_note": "CFO-monitored advisory token budgeting system. max_rounds limits consultation iterations per item; budget_tokens_hint is a soft target for token consumption per consultation cycle. Exceeded budgets are logged as signals but do not prevent work continuation.",
   "prioritize_cadence": "per-iteration",
   "prioritize_cadence_note": "When Phase 0 (Prioritize) runs. Options: per-iteration (default), per-session, per-item.",
   "pathways": {
