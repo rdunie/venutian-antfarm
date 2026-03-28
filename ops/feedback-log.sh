@@ -40,7 +40,7 @@ fi
 SUBCOMMAND="$1"; shift
 
 # ── Parse flags ──────────────────────────────────────────────────────────
-ISSUER="" SUBJECT="" DOMAIN="" SEVERITY="" ITEM="" DESCRIPTION="" EVIDENCE=""
+ISSUER="" SUBJECT="" DOMAIN="" SEVERITY="" ITEM="" DESCRIPTION="" EVIDENCE="" TYPE="" REASON=""
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --issuer)      ISSUER="$2";      shift 2 ;;
@@ -50,6 +50,8 @@ while [[ $# -gt 0 ]]; do
     --item)        ITEM="$2";        shift 2 ;;
     --description) DESCRIPTION="$2"; shift 2 ;;
     --evidence)    EVIDENCE="$2";    shift 2 ;;
+    --type)        TYPE="$2";        shift 2 ;;
+    --reason)      REASON="$2";      shift 2 ;;
     *) # Positional (used by profile/tensions)
        if [[ -z "$SUBJECT" ]]; then SUBJECT="$1"; fi
        shift ;;
@@ -76,6 +78,25 @@ resolve_tier() {
     echo "core"; return
   fi
   echo "specialist"
+}
+
+resolve_supervisor() {
+  local issuer="$1"
+  local config="$REPO_ROOT/fleet-config.json"
+  if [[ ! -f "$config" ]] || ! command -v jq &>/dev/null; then
+    echo ""; return
+  fi
+  local feedback_target
+  feedback_target=$(jq -r --arg i "$issuer" \
+    '.pathways.declared.feedback[]? | select(startswith($i + " -> ")) | split(" -> ")[1]' \
+    "$config" 2>/dev/null | head -1)
+  if [[ -n "$feedback_target" ]]; then echo "$feedback_target"; return; fi
+  local escalation_target
+  escalation_target=$(jq -r \
+    '.pathways.declared.escalation[]? | select(startswith("* -> ")) | split(" -> ")[1]' \
+    "$config" 2>/dev/null | head -1)
+  if [[ -n "$escalation_target" ]]; then echo "$escalation_target"; return; fi
+  echo ""
 }
 
 # Get the next ID for a given prefix (R, K, or T)
@@ -340,6 +361,62 @@ case "$SUBCOMMAND" in
       fi
     done < "$LEDGER"
     if [[ "$tension_count" -eq 0 ]]; then echo "  (none)"; fi
+    ;;
+
+  recommend)
+    [[ -z "$ISSUER" ]]      && echo "ERROR: --issuer required" >&2 && exit 1
+    [[ -z "$SUBJECT" ]]     && echo "ERROR: --subject required" >&2 && exit 1
+    [[ -z "$TYPE" ]]        && echo "ERROR: --type required (kudo|reprimand)" >&2 && exit 1
+    [[ -z "$DOMAIN" ]]      && echo "ERROR: --domain required" >&2 && exit 1
+    [[ -z "$DESCRIPTION" ]] && echo "ERROR: --description required" >&2 && exit 1
+    [[ -z "$EVIDENCE" ]]    && echo "ERROR: --evidence required" >&2 && exit 1
+    if [[ "$TYPE" == "reprimand" && -z "$SEVERITY" ]]; then
+      echo "ERROR: --severity required for reprimand recommendations" >&2; exit 1
+    fi
+
+    local_supervisor=$(resolve_supervisor "$ISSUER")
+    if [[ -z "$local_supervisor" ]]; then
+      echo "ERROR: no feedback pathway or escalation fallback found for issuer '$ISSUER'" >&2; exit 1
+    fi
+
+    local_id=$(next_id "P")
+    ts="$(date -u +%Y-%m-%d)"
+    deadline_days=7
+    config="$REPO_ROOT/fleet-config.json"
+    if [[ -f "$config" ]] && command -v jq &>/dev/null; then
+      deadline_days=$(jq -r '.rewards.escalation_deadline_days // 7' "$config" 2>/dev/null || echo 7)
+    fi
+    deadline=$(date -u -d "+${deadline_days} days" +%Y-%m-%d 2>/dev/null || date -u -v+${deadline_days}d +%Y-%m-%d 2>/dev/null || echo "unknown")
+
+    if ! grep -q "^## ${SUBJECT}$" "$LEDGER" 2>/dev/null; then
+      echo "" >> "$LEDGER"; echo "## ${SUBJECT}" >> "$LEDGER"
+    fi
+
+    {
+      echo ""
+      echo "### ${local_id} [proposal] ${ts} — ${ISSUER} / ${DOMAIN}"
+      echo ""
+      echo "**Type:** ${TYPE}"
+      [[ -n "$SEVERITY" ]] && echo "**Severity:** ${SEVERITY}"
+      echo "**Subject:** ${SUBJECT}"
+      echo "**Domain:** ${DOMAIN}"
+      [[ -n "$ITEM" ]] && echo "**Item:** ${ITEM}"
+      echo "**Description:** ${DESCRIPTION}"
+      echo "**Evidence:** ${EVIDENCE}"
+      echo "**Supervisor:** ${local_supervisor}"
+      echo "**Origin tier:** specialist"
+      echo "**Status:** pending"
+      echo "**Escalation deadline:** ${deadline}"
+    } >> "$LEDGER"
+
+    "$SCRIPT_DIR/metrics-log.sh" feedback-proposed \
+      --from "$ISSUER" --subject "$SUBJECT" --type "$TYPE" \
+      --scope "$DOMAIN" --severity "$SEVERITY" \
+      ${ITEM:+--item "$ITEM"} --proposal "$local_id" \
+      --to "$local_supervisor" 2>/dev/null || true
+
+    update_checksum
+    echo "proposal_id=$local_id"
     ;;
 
   *)

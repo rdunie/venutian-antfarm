@@ -324,6 +324,48 @@ EXIT_CODE=$?
 assert_exit "core tier kudo exits 0" 0 "$EXIT_CODE"
 assert_contains "kudo from product-owner has core tier" "$TMPDIR/rewards/ledger.md" "\*\*Origin tier:\*\* core"
 
+# ── Test: recommend subcommand ────────────────────────────────────────
+echo ""
+echo "=== Recommend ==="
+setup_ledger
+
+LEDGER="$TMPDIR/rewards/ledger.md"
+CHECKSUM="$TMPDIR/rewards/ledger-checksum.sha256"
+FINDINGS_REG="$TMPDIR/findings/register.md"
+METRICS_FILE="$TMPDIR/metrics/events.jsonl"
+
+# Test: recommend creates a P-entry
+rec_exit=0
+FEEDBACK_LEDGER="$LEDGER" FEEDBACK_CHECKSUM="$CHECKSUM" \
+FINDINGS_REGISTER="$FINDINGS_REG" METRICS_LOG_FILE="$METRICS_FILE" \
+REPO_ROOT="${TMPDIR}" "${FEEDBACK_LOG}" recommend --issuer security-reviewer --subject backend-specialist \
+  --type reprimand --domain security --severity medium \
+  --description "Shallow validation" --evidence "No sanitization" \
+  --item 42 || rec_exit=$?
+assert_exit "recommend exits 0" 0 "${rec_exit}"
+assert_contains "P-001 created" "$LEDGER" "P-001 \\[proposal\\]"
+assert_contains "proposal has supervisor" "$LEDGER" "Supervisor.*ciso"
+assert_contains "proposal has status pending" "$LEDGER" "Status.*pending"
+assert_contains "proposal has escalation deadline" "$LEDGER" "Escalation deadline"
+assert_contains "proposal has type reprimand" "$LEDGER" "Type.*reprimand"
+assert_contains "proposal has origin tier specialist" "$LEDGER" "Origin tier.*specialist"
+
+# Test: recommend without --type fails
+rec_notype_exit=0
+"${FEEDBACK_LOG}" recommend --issuer security-reviewer --subject backend-specialist \
+  --domain security --description "test" --evidence "test" 2>/dev/null || rec_notype_exit=$?
+assert_exit "recommend without --type fails" 1 "${rec_notype_exit}"
+
+# Test: recommend with fallback to escalation wildcard
+rec_fallback_exit=0
+FEEDBACK_LEDGER="$LEDGER" FEEDBACK_CHECKSUM="$CHECKSUM" \
+FINDINGS_REGISTER="$FINDINGS_REG" METRICS_LOG_FILE="$METRICS_FILE" \
+REPO_ROOT="${TMPDIR}" "${FEEDBACK_LOG}" recommend --issuer e2e-test-engineer --subject frontend-specialist \
+  --type kudo --domain testing \
+  --description "Great coverage" --evidence "100% coverage" || rec_fallback_exit=$?
+assert_exit "recommend with fallback exits 0" 0 "${rec_fallback_exit}"
+assert_contains "fallback supervisor is solution-architect" "$LEDGER" "Supervisor.*solution-architect"
+
 # ── Summary ────────────────────────────────────────────────────────────
 echo ""
 echo "========================================"
