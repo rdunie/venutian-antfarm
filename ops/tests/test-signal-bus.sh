@@ -4,6 +4,10 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 SIGNAL_READ="${REPO_ROOT}/ops/lib/signal-read.sh"
+SIGNAL_EMIT="${REPO_ROOT}/ops/lib/signal-emit.sh"
+
+. "$SIGNAL_READ"
+. "$SIGNAL_EMIT"
 
 PASS=0
 FAIL=0
@@ -64,6 +68,19 @@ cat > "$EVENTS_FILE" <<'EVENTS'
 {"ts":"2026-03-26T10:00:00Z","event":"feedback-rejected","agent":"ciso","proposal_id":"P-002"}
 EVENTS
 
+# ── Emit Library ────────────────────────────────────────────────────────────
+echo "=== Emit Library ==="
+
+emit_output=$(METRICS_LOG_FILE="$EVENTS_FILE" signal_emit '{"ts":"2026-03-27T12:00:00Z","event":"test-emit","agent":"test"}' --source local)
+assert_exit "signal_emit writes event" "0" "$?"
+
+assert_contains "emit appends to file" "$EVENTS_FILE" "test-emit"
+
+emit_lines_before=$(wc -l < "$EVENTS_FILE")
+METRICS_LOG_FILE="$EVENTS_FILE" signal_emit '{"ts":"2026-03-27T12:01:00Z","event":"test-emit-2","agent":"test"}' --source local
+emit_lines_after=$(wc -l < "$EVENTS_FILE")
+assert_equals "emit appends multiple events" "$((emit_lines_before + 1))" "$emit_lines_after"
+
 # ── Type filter ──────────────────────────────────────────────────────────
 echo "=== Type Filter ==="
 
@@ -101,7 +118,7 @@ echo "=== Since Filter ==="
 # All events are within last year (use large window to avoid date fragility)
 since_all=$(METRICS_LOG_FILE="$EVENTS_FILE" "$SIGNAL_READ" --since 365d --source local)
 since_all_count=$(echo "$since_all" | grep -c '.' || true)
-assert_equals "since 365d returns all 7 events" "7" "$since_all_count"
+assert_equals "since 365d returns all 9 events" "9" "$since_all_count"
 
 # ── Format count ─────────────────────────────────────────────────────────
 echo ""
