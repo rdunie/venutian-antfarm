@@ -59,10 +59,23 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+# ── Version check ────────────────────────────────────────────────────────
+if ((BASH_VERSINFO[0] < 4)); then
+  echo "ERROR: feedback-log.sh requires bash 4+. macOS users: brew install bash" >&2
+  exit 1
+fi
+
 # ── Helpers ──────────────────────────────────────────────────────────────
 
+# Emit a metric event (non-fatal — errors visible on stderr but don't block primary operation)
+emit_metric() {
+  "$SCRIPT_DIR/metrics-log.sh" "$@" 2>&1 || echo "WARNING: metric emission failed: $1" >&2
+}
+
 update_checksum() {
-  sha256sum "$LEDGER" > "$CHECKSUM"
+  if ! sha256sum "$LEDGER" > "$CHECKSUM" 2>/dev/null; then
+    echo "WARNING: checksum update failed for $LEDGER" >&2
+  fi
 }
 
 resolve_tier() {
@@ -245,9 +258,9 @@ EOF
   fi
 
   # Emit tension-detected metric
-  "$SCRIPT_DIR/metrics-log.sh" tension-detected \
+  emit_metric tension-detected \
     --description "${first_id},${second_id}" \
-    --item "$new_item" --subject "$new_subject" 2>/dev/null || true
+    --item "$new_item" --subject "$new_subject"
 
   update_checksum
 }
@@ -286,7 +299,7 @@ compute_weighted_score() {
       [[ -z "$evt_date" ]] && continue
       total_accepted=$((total_accepted + 1))
       accepted_by_date["$evt_date"]=$total_accepted
-    done < <(jq -r 'select(.event == "item-accepted") | .ts[:10]' "$METRICS_LOG_FILE" 2>/dev/null)
+    done < <(jq -r -R 'fromjson? | select(.event == "item-accepted") | .ts[:10]' "$METRICS_LOG_FILE" 2>/dev/null)
   fi
 
   local sorted_dates
@@ -381,7 +394,8 @@ compute_weighted_score() {
       fi
 
       local weight
-      weight=$(awk "BEGIN { printf \"%.1f\", $tm * $tpm * $dm * $decay }")
+      weight=$(awk -v tm="$tm" -v tpm="$tpm" -v dm="$dm" -v decay="$decay" \
+        'BEGIN { printf "%.1f", tm * tpm * dm * decay }')
 
       signal_count=$((signal_count + 1))
       if [[ "$signal_age" -le "$decay_cliff" ]]; then
@@ -389,16 +403,16 @@ compute_weighted_score() {
       fi
 
       if [[ "$entry_type" == "kudo" ]]; then
-        kudos_sum=$(awk "BEGIN { printf \"%.1f\", $kudos_sum + $weight }")
+        kudos_sum=$(awk -v s="$kudos_sum" -v w="$weight" 'BEGIN { printf "%.1f", s + w }')
       else
-        reprimands_sum=$(awk "BEGIN { printf \"%.1f\", $reprimands_sum - $weight }")
+        reprimands_sum=$(awk -v s="$reprimands_sum" -v w="$weight" 'BEGIN { printf "%.1f", s - w }')
       fi
 
     done <<< "$(echo "$section" | grep '^### [RK]-')"
   fi
 
   local net
-  net=$(awk "BEGIN { printf \"%.1f\", $kudos_sum + $reprimands_sum }")
+  net=$(awk -v k="$kudos_sum" -v r="$reprimands_sum" 'BEGIN { printf "%.1f", k + r }')
 
   echo "net=${net}"
   echo "kudos=${kudos_sum}"
@@ -443,10 +457,10 @@ case "$SUBCOMMAND" in
     } >> "$LEDGER"
 
     # Emit metric event
-    "$SCRIPT_DIR/metrics-log.sh" reward-issued \
+    emit_metric reward-issued \
       --type reprimand --from "$ISSUER" --subject "$SUBJECT" \
       --scope "$DOMAIN" --severity "$SEVERITY" \
-      ${ITEM:+--item "$ITEM"} --reward-id "$local_id" 2>/dev/null || true
+      ${ITEM:+--item "$ITEM"} --reward-id "$local_id"
 
     update_checksum
 
@@ -491,10 +505,10 @@ case "$SUBCOMMAND" in
       echo "**Origin tier:** ${local_tier}"
     } >> "$LEDGER"
 
-    "$SCRIPT_DIR/metrics-log.sh" reward-issued \
+    emit_metric reward-issued \
       --type kudo --from "$ISSUER" --subject "$SUBJECT" \
       --scope "$DOMAIN" \
-      ${ITEM:+--item "$ITEM"} --reward-id "$local_id" 2>/dev/null || true
+      ${ITEM:+--item "$ITEM"} --reward-id "$local_id"
 
     update_checksum
 
@@ -639,11 +653,11 @@ case "$SUBCOMMAND" in
       echo "**Escalation deadline:** ${deadline}"
     } >> "$LEDGER"
 
-    "$SCRIPT_DIR/metrics-log.sh" feedback-proposed \
+    emit_metric feedback-proposed \
       --from "$ISSUER" --subject "$SUBJECT" --type "$TYPE" \
       --scope "$DOMAIN" --severity "$SEVERITY" \
       ${ITEM:+--item "$ITEM"} --proposal "$local_id" \
-      --to "$local_supervisor" 2>/dev/null || true
+      --to "$local_supervisor"
 
     update_checksum
     echo "proposal_id=$local_id"
@@ -719,9 +733,9 @@ case "$SUBCOMMAND" in
     # Update proposal status
     update_proposal_status "$local_pid" "formalized (${local_id})"
 
-    "$SCRIPT_DIR/metrics-log.sh" feedback-formalized \
+    emit_metric feedback-formalized \
       --from "$ISSUER" --subject "$prop_subject" --type "$prop_type" \
-      --proposal "$local_pid" --reward-id "$local_id" 2>/dev/null || true
+      --proposal "$local_pid" --reward-id "$local_id"
 
     update_checksum
 
@@ -751,8 +765,8 @@ case "$SUBCOMMAND" in
     # Update proposal status
     update_proposal_status "$local_pid" "rejected — ${REASON}"
 
-    "$SCRIPT_DIR/metrics-log.sh" feedback-rejected \
-      --from "$ISSUER" --proposal "$local_pid" 2>/dev/null || true
+    emit_metric feedback-rejected \
+      --from "$ISSUER" --proposal "$local_pid"
 
     update_checksum
     echo "proposal_id=$local_pid"
@@ -816,8 +830,8 @@ case "$SUBCOMMAND" in
           fi
         fi
 
-        "$SCRIPT_DIR/metrics-log.sh" feedback-escalated \
-          --proposal "$esc_pid" --from "$esc_supervisor" --to "$esc_new_sup" 2>/dev/null || true
+        emit_metric feedback-escalated \
+          --proposal "$esc_pid" --from "$esc_supervisor" --to "$esc_new_sup"
 
         escalated_count=$((escalated_count + 1))
       fi

@@ -24,6 +24,15 @@ if [[ -z "${METRICS_LOG_FILE:-}" ]]; then
   METRICS_LOG_FILE="${METRICS_LOG_FILE:-${_SR_REPO_ROOT}/.claude/metrics/events.jsonl}"
 fi
 
+# ── Input validation ──────────────────────────────────────────────────────
+_signal_validate_param() {
+  local name="$1" value="$2"
+  if [[ "$value" =~ [^a-zA-Z0-9_.:-] ]]; then
+    echo "ERROR: invalid ${name} value: ${value} (must be alphanumeric, dots, hyphens, underscores, colons)" >&2
+    return 1
+  fi
+}
+
 # ── Query function ────────────────────────────────────────────────────────
 signal_query() {
   local type="" topic="" agent="" since="" source_type="local" format="json"
@@ -36,9 +45,14 @@ signal_query() {
       --since)  since="$2";       shift 2 ;;
       --source) source_type="$2"; shift 2 ;;
       --format) format="$2";      shift 2 ;;
-      *) shift ;;
+      *) echo "WARNING: unknown argument '$1' ignored" >&2; shift ;;
     esac
   done
+
+  # Validate inputs to prevent jq injection
+  if [[ -n "$type" ]];  then _signal_validate_param "type" "$type" || return 1; fi
+  if [[ -n "$topic" ]]; then _signal_validate_param "topic" "$topic" || return 1; fi
+  if [[ -n "$agent" ]]; then _signal_validate_param "agent" "$agent" || return 1; fi
 
   # Resolve source file
   local source_file=""
@@ -90,6 +104,8 @@ signal_query() {
     esac
     if [[ -n "$since_cutoff" ]]; then
       jq_filter="$jq_filter | select(.ts >= \"$since_cutoff\")"
+    else
+      echo "WARNING: could not compute cutoff for --since '${since}'; returning unfiltered results" >&2
     fi
   fi
 

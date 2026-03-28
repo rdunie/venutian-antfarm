@@ -118,8 +118,8 @@ case "$EVENT_TYPE" in
 
   bug-found)
     [[ -z "$SOURCE" ]] && SOURCE="new-discovery"
-    COUNT=$(jq -r --arg item "$ITEM" \
-      'select(.event == "bug-found" and .item == $item) | 1' \
+    COUNT=$(jq -c -R --arg item "$ITEM" \
+      'fromjson? | select(.event == "bug-found" and .item == $item) | 1' \
       "$METRICS_LOG_FILE" 2>/dev/null | wc -l | tr -d ' ')
     NEW_BUG_ID="b$((COUNT + 1))"
     emit_event "$(jq -cn --arg ts "$TS" --arg item "$ITEM" --arg bug_id "$NEW_BUG_ID" \
@@ -144,8 +144,8 @@ case "$EVENT_TYPE" in
     ;;
 
   handoff-rejected)
-    PRIOR=$(jq -r --arg item "$ITEM" --arg from "$FROM" --arg to "$TO" \
-      'select(.event == "handoff-sent" and .item == $item and .from == $from and .to == $to) | 1' \
+    PRIOR=$(jq -c -R --arg item "$ITEM" --arg from "$FROM" --arg to "$TO" \
+      'fromjson? | select(.event == "handoff-sent" and .item == $item and .from == $from and .to == $to) | 1' \
       "$METRICS_LOG_FILE" 2>/dev/null | wc -l | tr -d ' ')
     if [[ "$PRIOR" -eq 0 ]]; then
       echo "WARNING: handoff-rejected logged without prior handoff-sent for item=$ITEM from=$FROM to=$TO" >&2

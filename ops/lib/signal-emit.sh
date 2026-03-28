@@ -30,8 +30,10 @@ fi
 METRICS_LOG_FILE="${METRICS_LOG_FILE:-$_SIGNAL_REPO_ROOT/.claude/metrics/events.jsonl}"
 
 # ── Ensure log directory exists ───────────────────────────────────────────────
-mkdir -p "$(dirname "$METRICS_LOG_FILE")"
-touch "$METRICS_LOG_FILE"
+if ! mkdir -p "$(dirname "$METRICS_LOG_FILE")" 2>/dev/null; then
+  echo "ERROR: signal-emit.sh: cannot create metrics directory $(dirname "$METRICS_LOG_FILE")" >&2
+fi
+touch "$METRICS_LOG_FILE" 2>/dev/null || true
 
 # ── Backend dispatch ──────────────────────────────────────────────────────────
 signal_emit() {
@@ -43,7 +45,8 @@ signal_emit() {
     webhook)
       if [[ -n "$_SIGNAL_WEBHOOK_URL" ]]; then
         echo "$json_line" >> "$METRICS_LOG_FILE"  # always persist locally
-        curl -s -X POST -H "Content-Type: application/json" -d "$json_line" "$_SIGNAL_WEBHOOK_URL" >/dev/null 2>&1 || true
+        echo "$json_line" | curl -s -X POST -H "Content-Type: application/json" --data-binary @- "$_SIGNAL_WEBHOOK_URL" >/dev/null 2>&1 \
+          || echo "WARNING: webhook dispatch failed (curl exit $?). Event persisted to local JSONL." >&2
       else
         echo "$json_line" >> "$METRICS_LOG_FILE"
       fi
@@ -56,6 +59,7 @@ signal_emit() {
       ;;
     *)
       echo "$json_line" >> "$METRICS_LOG_FILE"
+      echo "WARNING: unknown backend '$_SIGNAL_BACKEND', falling back to JSONL" >&2
       ;;
   esac
 }
