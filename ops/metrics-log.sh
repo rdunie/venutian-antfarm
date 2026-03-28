@@ -15,17 +15,12 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-# ── Read fleet config for backend ──────────────────────────────────────────
-FLEET_CONFIG="$REPO_ROOT/fleet-config.json"
-BACKEND="jsonl"
-WEBHOOK_URL=""
-if [[ -f "$FLEET_CONFIG" ]] && command -v jq &>/dev/null; then
-  BACKEND=$(jq -r '.metrics.backend // "jsonl"' "$FLEET_CONFIG" 2>/dev/null || echo "jsonl")
-  WEBHOOK_URL=$(jq -r '.metrics.webhook // empty' "$FLEET_CONFIG" 2>/dev/null || echo "")
-  METRICS_LOG_FILE="${METRICS_LOG_FILE:-$(jq -r '.metrics.file // empty' "$FLEET_CONFIG" 2>/dev/null || echo "")}"
-fi
+# ── Source shared emit library ────────────────────────────────────────────
+source "$SCRIPT_DIR/lib/signal-emit.sh"
 
-METRICS_LOG_FILE="${METRICS_LOG_FILE:-$REPO_ROOT/.claude/metrics/events.jsonl}"
+# Backward compat: alias for internal references
+emit_event() { signal_emit "$@"; }
+
 AGENT="${AGENT_NAME:-unknown}"
 
 if [ $# -eq 0 ]; then
@@ -96,38 +91,7 @@ else
   [[ ${#POSITIONAL[@]} -gt 0 ]] && [[ -z "$ITEM" ]] && ITEM="${POSITIONAL[0]}"
 fi
 
-# ── Ensure log file exists ────────────────────────────────────────────────────
-mkdir -p "$(dirname "$METRICS_LOG_FILE")"
-touch "$METRICS_LOG_FILE"
-
 TS="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-
-# ── Backend dispatch ─────────────────────────────────────────────────────────
-emit_event() {
-  local json_line="$1"
-  case "$BACKEND" in
-    jsonl)
-      echo "$json_line" >> "$METRICS_LOG_FILE"
-      ;;
-    webhook)
-      if [[ -n "$WEBHOOK_URL" ]]; then
-        echo "$json_line" >> "$METRICS_LOG_FILE"  # always persist locally
-        curl -s -X POST -H "Content-Type: application/json" -d "$json_line" "$WEBHOOK_URL" >/dev/null 2>&1 || true
-      else
-        echo "$json_line" >> "$METRICS_LOG_FILE"
-      fi
-      ;;
-    statsd|opentelemetry)
-      # Future: implement StatsD/OTEL dispatch
-      # For now, fall back to JSONL
-      echo "$json_line" >> "$METRICS_LOG_FILE"
-      echo "WARNING: $BACKEND backend not yet implemented, falling back to JSONL" >&2
-      ;;
-    *)
-      echo "$json_line" >> "$METRICS_LOG_FILE"
-      ;;
-  esac
-}
 
 # ── Event handlers ────────────────────────────────────────────────────────────
 case "$EVENT_TYPE" in
