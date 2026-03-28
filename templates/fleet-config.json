@@ -40,7 +40,8 @@
       "solution-architect",
       "scrum-master",
       "knowledge-ops",
-      "platform-ops"
+      "platform-ops",
+      "compliance-auditor"
     ],
     "specialists": [],
     "reviewers": [],
@@ -59,8 +60,8 @@
     },
     "note": "Items between knowledge distributions per pace. 0 = on-demand/retro only."
   },
-  "rewards": {},
-  "rewards_note": "Placeholder for adaptive weighting configuration (see #25). Currently unused — v1 uses unweighted signals.",
+  "rewards": { "escalation_deadline_days": 7 },
+  "rewards_note": "escalation_deadline_days: days before unacted specialist proposals auto-escalate. Adaptive weighting configuration (see #25) will be added here.",
   "prioritize_cadence": "per-iteration",
   "prioritize_cadence_note": "When Phase 0 (Prioritize) runs. Options: per-iteration (default), per-session, per-item.",
   "pathways": {
