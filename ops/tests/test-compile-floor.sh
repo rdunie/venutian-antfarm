@@ -552,9 +552,16 @@ echo "=== Semgrep/ESLint ==="
 SEMGREP_DIR="${TMPDIR_ROOT}/semgrep"
 mkdir -p "${SEMGREP_DIR}"
 
+# Create stub rule-path files so validation passes (the compiler checks file existence)
+mkdir -p "${SEMGREP_DIR}/.claude/compliance/semgrep" "${SEMGREP_DIR}/.claude/compliance/eslint"
+touch "${SEMGREP_DIR}/.claude/compliance/semgrep/no-hardcoded-secrets.yaml"
+touch "${SEMGREP_DIR}/.claude/compliance/eslint/no-eval.json"
+
 # Compile the semgrep fixture → exit 0
 semgrep_compile_exit=0
+pushd "${SEMGREP_DIR}" >/dev/null
 "${COMPILER}" "${FIXTURES}/floor-with-semgrep.md" "${SEMGREP_DIR}" >/dev/null 2>&1 || semgrep_compile_exit=$?
+popd >/dev/null
 assert_exit "semgrep fixture compiles exit 0" 0 "${semgrep_compile_exit}"
 
 # Assert: semgrep-rules.yaml exists and contains "no-hardcoded-secrets"
@@ -646,8 +653,14 @@ echo "=== ESLint Enforcement ==="
 ESLINT_DIR="${TMPDIR_ROOT}/eslint"
 mkdir -p "${ESLINT_DIR}"
 
+# Create stub rule-path files so validation passes
+mkdir -p "${ESLINT_DIR}/.claude/compliance/eslint"
+touch "${ESLINT_DIR}/.claude/compliance/eslint/no-eval.json"
+
 eslint_compile_exit=0
+pushd "${ESLINT_DIR}" >/dev/null
 "${COMPILER}" "${FIXTURES}/floor-with-eslint.md" "${ESLINT_DIR}" >/dev/null 2>&1 || eslint_compile_exit=$?
+popd >/dev/null
 assert_exit "eslint fixture compiles exit 0" 0 "${eslint_compile_exit}"
 
 assert_file_exists "eslint enforce.sh exists" "${ESLINT_DIR}/enforce.sh"
